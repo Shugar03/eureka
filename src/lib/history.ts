@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { onPhone } from "./platform";
 
 // The phone's back button (and the mouse back button on desktop) walks the
 // webview's history, so every screen change adds an entry: going back then
@@ -45,7 +46,18 @@ export function useHistoryBack<T>(value: T, restore: (v: T) => void) {
       restoreRef.current(r);
     };
     window.addEventListener("popstate", onPop);
-    return () => window.removeEventListener("popstate", onPop);
+    // Android hands the back button to the app: walk our history, and close
+    // the app only when there is nothing left to go back to.
+    let listener: Promise<{ unregister: () => Promise<void> } | null> = Promise.resolve(null);
+    if (onPhone()) {
+      listener = import("@tauri-apps/api/app")
+        .then(({ onBackButtonPress, exit }) => onBackButtonPress(() => (stack.current.length ? window.history.back() : void exit(0))))
+        .catch(() => null);
+    }
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      listener.then((l) => l?.unregister());
+    };
   }, []);
 }
 
