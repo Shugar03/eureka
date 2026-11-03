@@ -362,6 +362,12 @@ Tu cursada dentro de Eureka: períodos, materias con sus horarios, y las fechas 
 | AC-170 | `grafo` | `grafo › AC-170` (x2), `a11y` (axe) | — | `graphView.test › AC-170` (profundidad, ciclos, enlaces, mensaje) |
 | AC-169 | `piensa-y-se-adapta` | `visuales › AC-29` (en curso → llega, el borrador queda), `visuales › AC-30` | — | `research::background_jobs…`, `agent::research_runs_in_the_background_and_arrives_once`, `agent::research_cut_by_closing_the_app_says_so` |
 | AC-176 | `grafo` | `grafo › AC-176`, `a11y` (axe) | — | `NeuronGraph.test › neuron labels` |
+| AC-177 | `android` | — (emulador, a mano) | — | `NavDrawer.test` |
+| AC-178 | `android` | — (emulador, a mano) | — | `history.test` |
+| AC-179 | `android` | — (emulador, a mano) | — | — |
+| AC-180 | `android` | — (emulador, a mano) | — | `share::*` (formato del mazo) |
+| AC-181 | `android` | — (emulador, a mano) | — | — |
+| AC-182 | `android` | — (emulador, a mano) | — | `reminders.test › the phone schedules ahead` |
 | AC-171 | `codigo` | `codigo › AC-171` | — | `runner::{c,cpp,java,go,csharp}_…` y `runner::sql_runs_inside_eureka` (compiladores reales), `sql::*`, `tools::every_language_of_the_console…`, `code.test › the new languages` |
 | AC-172 | `codigo` | — | — | `project::{a_go_module,java_classes,c_sources,cpp_sources,a_csharp_project,sql_scripts}_…` (compiladores reales), `projects.test` |
 | AC-168 | `piensa-y-se-adapta` | `piensa-y-se-adapta › AC-168`, `a11y` (axe) | — | `practice::a_nudge_starts_from…`, `agent::practice_is_written_one_by_one…` |
@@ -525,3 +531,14 @@ Un banco de citas de autores y filósofos que viene con la app (`src/data/quotes
 ### El grafo como neuronas (AC-176)
 
 - **AC-176** — **Neuronas** es la vista por defecto del grafo (además de «Por profundidad» y «Libre»; la elegida se recuerda). Cada idea es un punto que brilla con un halo que respira despacio, más grande cuanto más se conecta; las ideas conectadas se atraen y el resto se separa (fuerzas). Un solo color, líneas finas y rectas (punteadas si unen sesiones distintas). Se arrastra un punto, se arrastra el fondo para moverse, la rueda hace zoom y **Centrar** vuelve a encuadrar todo. Pasar el mouse o elegir una idea enciende sus conexiones y apaga el resto; se elige también con el teclado (Enter). Con el grafo lejos se ven los nombres de las 5 ideas más conectadas; de cerca, todos, completos en hasta tres renglones (nunca recortados: lo que se lee en voz alta es lo que se ve). Con movimiento reducido, nada respira ni se anima.
+
+### Eureka en Android (AC-177..AC-182)
+
+La misma app (React y Rust) corre en un celular Android con Tauri 2 mobile. Se compila y se instala a mano (`npx tauri android build --debug --apk`); no se publica en tiendas. iOS queda fuera.
+
+- **AC-177** — **Navegar en pantalla angosta**: hasta 900 px de ancho una barra arriba con **Menú** abre la barra lateral como cajón (Esc o tocar el fondo lo cierran) y **Buscar** abre el menú de comandos sin Ctrl K.
+- **AC-178** — **Botón atrás**: cada cambio de pantalla queda en el historial; atrás (el del celular o el del mouse) vuelve a la pantalla anterior, un «Volver» a la pantalla recién dejada no la apila de nuevo, y en el celular, sin nada atrás, se cierra la app.
+- **AC-179** — **Guardar archivos en el celular**: respaldo, `.apkg`, `.eureka`, `.ics`, `.txt` de Anki, diario y hoja de repaso abren el «Guardar como» de Android y quedan donde la persona elige (Descargas, Drive…); cancelar no guarda nada ni muestra error. **Mostrar en la carpeta** no aparece. En escritorio siguen yendo a Descargas.
+- **AC-180** — **Abrir un `.eureka` desde otra app**: abrirlo desde Archivos, un chat o «Compartir» lleva a Tarjetas con la vista previa del mazo (AC-154), con la app cerrada o abierta. Eureka copia el archivo al recibirlo (la dirección `content://` dura lo que dura ese pase) y solo toma mazos válidos.
+- **AC-181** — **Consola de código en el celular**: solo corre SQL (SQLite viene adentro) y la consola arranca en SQL; los demás lenguajes dicen «disponible en la versión de escritorio» y no se buscan intérpretes.
+- **AC-182** — **Recordatorios con la app cerrada**: en el celular, al abrir Eureka y cada vez que se sale de ella, los recordatorios de clases, exámenes, fechas de Mi cursada y tarjetas de los próximos 7 días (como mucho 60) se le pasan al sistema como notificaciones programadas, cada una en el momento en que vence según AC-62/AC-103; la lista nueva reemplaza la anterior y con los recordatorios apagados se borran. Lo que ya se avisó hoy no se repite; con la app abierta se ve además el aviso de adentro. Los textos dicen «este celular» y «ajustes del sistema» en vez de «esta PC» y «Windows»; la voz «En esta PC» no se ofrece.

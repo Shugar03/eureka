@@ -8,6 +8,7 @@ import { CodeEditor } from "./CodeEditor";
 import { ProjectPanel } from "./ProjectPanel";
 import { localDate } from "../../lib/exam";
 import { useStudyContext } from "../pomodoro/PomodoroContext";
+import { onPhone } from "../../lib/platform";
 
 /** Code handed over from a session (the teacher's show_code). */
 export interface CodeSeed {
@@ -42,8 +43,10 @@ const LEVELS = ["básico", "medio", "avanzado"];
 
 /** AC-53…55: write, run and debug code; practice with exercises. */
 export function CodeScreen({ seed }: Props) {
-  const [lang, setLang] = useState<Lang>(seed?.lang ?? "python");
-  const [code, setCode] = useState(() => seed?.code ?? loadDraft(seed?.lang ?? "python") ?? LANGS[0].starter);
+  // The phone runs only SQL (SQLite comes inside Eureka), so it starts there.
+  const first: Lang = seed?.lang ?? (onPhone() ? "sql" : "python");
+  const [lang, setLang] = useState<Lang>(first);
+  const [code, setCode] = useState(() => seed?.code ?? loadDraft(first) ?? LANGS.find((x) => x.id === first)!.starter);
   const [stdin, setStdin] = useState("");
   const [runtimes, setRuntimes] = useState<Runtime[] | null>(null);
   const [result, setResult] = useState<RunResult | null>(null);
@@ -213,7 +216,7 @@ export function CodeScreen({ seed }: Props) {
             </button>
           </div>
           <span className="muted small" data-testid="runtime">
-            {runtimes == null ? "Buscando intérpretes…" : rt?.program ? rt.version : `${langLabel(lang)} no está instalado`}
+            {runtimes == null ? "Buscando intérpretes…" : rt?.program ? rt.version : onPhone() ? `${langLabel(lang)}: disponible en la versión de escritorio` : `${langLabel(lang)} no está instalado`}
           </span>
         </div>
 
@@ -258,7 +261,7 @@ export function CodeScreen({ seed }: Props) {
         </details>
 
         <div className="row-between">
-          <span className="muted small">Ctrl+Enter para ejecutar · corre en tu PC con un límite de 10 s</span>
+          <span className="muted small">{onPhone() ? "Corre en tu celular" : "Ctrl+Enter para ejecutar · corre en tu PC"} con un límite de 10 s</span>
           <span className="row">
             <button
               className="btn ghost small"

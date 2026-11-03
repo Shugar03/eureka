@@ -4,7 +4,7 @@ import type { Theme } from "../../lib/theme";
 import { EMPTY_IDENTITY, useWorkspace } from "./WorkspaceContext";
 import { AboutFields, NameFields, TreatmentFields } from "./IdentityFields";
 import { QuotesSection } from "../quotes/QuotesSection";
-import { thisDevice } from "../../lib/platform";
+import { thisDevice, yourDevice } from "../../lib/platform";
 
 const THEMES: { id: Theme; label: string }[] = [
   { id: "light", label: "Claro" },
@@ -88,7 +88,7 @@ export function WorkspaceTab() {
             {busy ? "Leyendo la imagen…" : "Usar una imagen mía"}
           </button>
           <input ref={file} type="file" accept="image/*" hidden aria-label="Elegir una imagen de fondo" onChange={(e) => upload(e.target.files?.[0])} />
-          <span className="muted small">La imagen no sale de tu computadora.</span>
+          <span className="muted small">La imagen no sale de {yourDevice()}.</span>
         </div>
         {error && (
           <p className="error-text" role="alert">

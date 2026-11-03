@@ -1550,8 +1550,41 @@ pub fn run() {
             generate_code_exercise,
             study_log,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while running tauri application")
+        .run(|_app, _event| {
+            #[cfg(target_os = "android")]
+            if let tauri::RunEvent::Opened { urls } = _event {
+                receive_opened(_app, urls);
+            }
+        });
+}
+
+/// AC-154 on Android: another app hands Eureka a `.eureka` as a content://
+/// address that only works while that hand-over lasts, so it is copied in now.
+#[cfg(target_os = "android")]
+fn receive_opened(app: &tauri::AppHandle, urls: Vec<tauri::Url>) {
+    let Some(url) = urls.into_iter().find(|u| matches!(u.scheme(), "content" | "file")) else { return };
+    let app = app.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        use std::io::Read;
+        use tauri::Emitter;
+        use tauri_plugin_fs::FsExt;
+        let mut opts = tauri_plugin_fs::OpenOptions::new();
+        opts.read(true);
+        let Ok(file) = app.fs().open(tauri_plugin_fs::FilePath::Url(url), opts) else { return };
+        // One byte over the limit is enough for `opened_deck` to say it is too big.
+        let mut bytes = Vec::new();
+        if file.take(share::MAX_SHARED_BYTES as u64 + 1).read_to_end(&mut bytes).is_err() {
+            return;
+        }
+        let state = app.state::<AppState>();
+        let path = state.data_dir.join("abierto.eureka");
+        if std::fs::write(&path, bytes).is_ok() {
+            *state.opened.lock().unwrap() = Some(path);
+            let _ = app.emit("deck-opened", ());
+        }
+    });
 }
 
 /// IPC contract: the exact JSON shapes `src/api.ts` / `src/types.ts` use. The

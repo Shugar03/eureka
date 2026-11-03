@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { api, errorText } from "../api";
 import type { SetupDone, SettingsView } from "../types";
-import { onPhone } from "../lib/platform";
+import { onPhone, thisDevice } from "../lib/platform";
 
 const LABEL: Record<string, string> = { openrouter: "OpenRouter", openai: "OpenAI", anthropic: "Anthropic", gemini: "Google Gemini", deepseek: "DeepSeek", "opencode-go": "OpenCode Go" };
 
@@ -93,7 +93,7 @@ export function QuickSetup({ onDone }: { onDone?: (d: SetupDone) => void }) {
   return (
     <section className="card quick-setup" aria-label="Conectar con una clave">
       <h2>Pegá tu clave y listo</h2>
-      <p className="muted small">Con la clave de tu servicio de IA (OpenCode Go, OpenRouter, OpenAI, Anthropic, Gemini o DeepSeek) Eureka elige el modelo y hace una prueba corta para ver que ande. La clave queda solo en esta computadora y se usa solo con ese servicio.</p>
+      <p className="muted small">Con la clave de tu servicio de IA (OpenCode Go, OpenRouter, OpenAI, Anthropic, Gemini o DeepSeek) Eureka elige el modelo y hace una prueba corta para ver que ande. La clave queda solo en {thisDevice()} y se usa solo con ese servicio.</p>
       <div className="row quick-setup-row">
         <input type="password" value={key} onChange={(e) => (setKey(e.target.value), setChoose(null))} placeholder="Tu clave de acceso" aria-label="Tu clave de acceso" autoComplete="off" />
         <button className="btn primary" onClick={() => connect(null)} disabled={busy || !key.trim()}>

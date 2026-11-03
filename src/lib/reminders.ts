@@ -86,6 +86,54 @@ export function dueReminders(now: Date, exams: ExamSummary[], cardsDue: number, 
   return out.filter((r) => !sent.has(r.id));
 }
 
+/** A reminder and the moment it is due. */
+export interface Scheduled {
+  at: Date;
+  reminder: Reminder;
+}
+
+/**
+ * The reminders of the next `days` days, each at the moment it becomes due, so
+ * the phone can hand them to the system: Android freezes a closed app and the
+ * minute check never runs. It asks `dueReminders` at each candidate moment, so
+ * the rules and texts are the same. Later days don't know their card count yet.
+ */
+export function upcomingReminders(now: Date, days: number, exams: ExamSummary[], cards: { today: number; any: boolean }, s: ReminderSettings, sent: Set<string>, academic?: AcademicData | null): Scheduled[] {
+  if (!s.enabled) return [];
+  const moments: Date[] = [];
+  for (let d = 0; d < days; d++) {
+    const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() + d);
+    const weekday = isoWeekday(localDate(day));
+    const term = academic?.active_term;
+    const starts = [
+      ...slotsOn(exams, weekday).map((x) => x.start),
+      ...(term && academic ? academic.courses.filter((c) => c.term_id === term).flatMap((c) => c.slots.filter((x) => x.weekday === weekday).map((x) => x.start)) : []),
+    ];
+    const minutes = [...starts.map((t) => Math.max(0, minutesOf(t) - s.slotMinutes)), 9 * 60, ...(s.cardsAt ? [minutesOf(s.cardsAt)] : [])];
+    for (const m of minutes) moments.push(new Date(day.getFullYear(), day.getMonth(), day.getDate(), Math.floor(m / 60), m % 60));
+  }
+  moments.sort((a, b) => a.getTime() - b.getTime());
+  // Each reminder goes at its first moment, even one already past (then it isn't scheduled again later).
+  const seen = new Set(sent);
+  const out: Scheduled[] = [];
+  for (const at of moments) {
+    const later = localDate(at) !== localDate(now);
+    for (const r of dueReminders(at, exams, later ? Number(cards.any) : cards.today, s, seen, academic)) {
+      seen.add(r.id);
+      if (at.getTime() <= now.getTime()) continue;
+      out.push({ at, reminder: later && r.id.endsWith(":cards") ? { ...r, body: "Repasá las tarjetas de hoy: son pocos minutos." } : r });
+    }
+  }
+  return out;
+}
+
+/** The number the system's notifications need, the same for the same reminder. */
+export function notificationId(id: string): number {
+  let h = 0;
+  for (const c of id) h = (h * 31 + c.charCodeAt(0)) | 0;
+  return Math.abs(h) || 1;
+}
+
 /** When the last "stand up" and "water" reminders were due (ms epoch); the next ones count from here. */
 export interface HealthClock {
   standAt: number;

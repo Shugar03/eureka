@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { thisDevice } from "../../lib/platform";
 import { api, companionApi, errorText } from "../../api";
 import type { CompanionView } from "../../types";
 import { Icon } from "../Icon";
@@ -92,7 +93,7 @@ function Gate({ provider, onAccept }: { provider: string; onAccept: () => void }
           <strong>No es terapia</strong> y no reemplaza a una persona profesional ni a alguien de confianza. <strong>Tampoco es para emergencias</strong>: si estás en peligro, llamá a emergencias.
         </li>
         <li>
-          <strong>Tus mensajes viajan a {provider ? `tu proveedor del modelo (${provider})` : "tu proveedor del modelo"}</strong> para poder responderte. Eureka no los vende ni los usa para otra cosa, pero esa empresa sí los recibe. Tu diario, en cambio, se guarda solo en esta computadora.
+          <strong>Tus mensajes viajan a {provider ? `tu proveedor del modelo (${provider})` : "tu proveedor del modelo"}</strong> para poder responderte. Eureka no los vende ni los usa para otra cosa, pero esa empresa sí los recibe. Tu diario, en cambio, se guarda solo en {thisDevice()}.
         </li>
         <li>
           <strong>El profesor no lee nada de esto</strong> ni se usa para enseñarte. Podés ponerle un PIN al diario y borrarlo todo cuando quieras.

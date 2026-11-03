@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, backupApi, codeApi, errorText, learnerApi } from "../api";
 import { keepFile } from "../lib/saveFile";
-import { onPhone, thisDevice } from "../lib/platform";
+import { onPhone, thisDevice, yourDevice } from "../lib/platform";
 import { LOCAL_SPEECH, type Accessibility, type LearnerProfile, type ModelRef, type PromptView, type ProviderInput, type RememberedSession, type Roles, type Runtime, type SettingsView } from "../types";
 import { langLabel } from "../lib/code";
 import { speechModelWarning } from "../lib/speechModel";
@@ -325,7 +325,7 @@ function ConnectionTab() {
         <label className="field">
           <span>Clave de acceso</span>
           <input type="password" aria-label="Clave de acceso" value={key} onChange={(e) => setKey(e.target.value)} placeholder={hasKey ? "•••••• guardada (pegá otra para cambiarla)" : "Pegala acá"} />
-          <small className="muted">{KEY_HELP[provider] ?? "Te la da el servicio en tu cuenta."} Queda solo en tu computadora.</small>
+          <small className="muted">{KEY_HELP[provider] ?? "Te la da el servicio en tu cuenta."} Queda solo en {yourDevice()}.</small>
         </label>
 
         <label className="field">
@@ -632,15 +632,21 @@ function RuntimesSection() {
     <section className="card" aria-label="Consola de código">
       <div className="row-between">
         <h2>Consola de código</h2>
-        <button className="btn ghost small" disabled={busy} onClick={() => load(true)}>
-          {busy ? "Buscando…" : "Volver a detectar"}
-        </button>
+        {!onPhone() && (
+          <button className="btn ghost small" disabled={busy} onClick={() => load(true)}>
+            {busy ? "Buscando…" : "Volver a detectar"}
+          </button>
+        )}
       </div>
-      <p className="muted small">El código corre con lo que tengas instalado en esta PC. Si instalás algo nuevo, tocá "Volver a detectar".</p>
+      <p className="muted small">
+        {onPhone()
+          ? "En el celular solo corre SQL, que viene incluido. Los demás lenguajes están en la versión de escritorio."
+          : 'El código corre con lo que tengas instalado en esta PC. Si instalás algo nuevo, tocá "Volver a detectar".'}
+      </p>
       <ul className="runtime-list">
         {(rts ?? []).map((r) => (
           <li key={r.lang}>
-            <strong>{langLabel(r.lang)}:</strong> {r.program ? r.version : <span className="muted">no instalado</span>}
+            <strong>{langLabel(r.lang)}:</strong> {r.program ? r.version : <span className="muted">{onPhone() ? "solo en escritorio" : "no instalado"}</span>}
           </li>
         ))}
       </ul>

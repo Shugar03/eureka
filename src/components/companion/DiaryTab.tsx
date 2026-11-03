@@ -6,7 +6,7 @@ import { DraftEditor } from "./DraftEditor";
 import { EmotionWheel } from "./EmotionWheel";
 import { InsightsPanel } from "./InsightsPanel";
 import { saveFile } from "../../lib/saveFile";
-import { thisDevice } from "../../lib/platform";
+import { thisDevice, yourDevice } from "../../lib/platform";
 
 /** AC-83: check-ins and entries, newest first. */
 export function DiaryTab({ view, onView }: { view: CompanionView; onView: (v: CompanionView) => void }) {
@@ -229,7 +229,7 @@ function Privacy({ view, onView }: { view: CompanionView; onView: (v: CompanionV
             </button>
           )}
         </div>
-        <span className="muted small">El PIN evita que alguien que use tu computadora vea el diario. No cifra los archivos.</span>
+        <span className="muted small">El PIN evita que alguien que use {yourDevice()} vea el diario. No cifra los archivos.</span>
       </div>
 
       <label className="field">

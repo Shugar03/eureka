@@ -4,6 +4,7 @@ export const onPhone = () => /Android|iPhone|iPad/i.test(navigator.userAgent);
 
 /** Where the data stays: "esta computadora" or "este celular". */
 export const thisDevice = () => (onPhone() ? "este celular" : "esta computadora");
+export const yourDevice = () => (onPhone() ? "tu celular" : "tu computadora");
 
 /** The computer's own dictation, mentioned while no voice model is chosen. */
 export const systemDictation = () => (onPhone() ? "" : " Mientras tanto, Win + H dicta en Windows.");

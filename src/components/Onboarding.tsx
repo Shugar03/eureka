@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { thisDevice } from "../lib/platform";
 import type { Identity } from "../types";
 import type { Theme } from "../lib/theme";
 import { greeting, PRESETS, sceneUrl } from "../lib/workspace";
@@ -132,7 +133,7 @@ export function Onboarding() {
           </>
         )}
 
-        <p className="muted small onboarding-privacy">Tu nombre, cómo preferís que te hablemos y qué estudiás se comparten con el modelo de IA que elijas para poder hablarte así. Lo demás queda en esta computadora.</p>
+        <p className="muted small onboarding-privacy">Tu nombre, cómo preferís que te hablemos y qué estudiás se comparten con el modelo de IA que elijas para poder hablarte así. Lo demás queda en {thisDevice()}.</p>
 
         <div className="onboarding-actions">
           <button className="btn ghost" onClick={skipAll}>

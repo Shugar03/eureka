@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_REMINDERS, dueReminders, healthDue, validReminders } from "./reminders";
+import { DEFAULT_REMINDERS, dueReminders, healthDue, notificationId, upcomingReminders, validReminders } from "./reminders";
 import type { AcademicData, ExamSummary, Slot } from "../types";
 
 const slot = (weekday: number, start: string, end: string, kind: Slot["kind"] = "class", place = ""): Slot => ({ weekday, start, end, kind, place });
@@ -144,5 +144,34 @@ describe("Mi cursada in the reminders (AC-103)", () => {
     expect(dueReminders(at(9, 50), [], 0, DEFAULT_REMINDERS, new Set())).toEqual([]); // older callers, no argument
     expect(dueReminders(at(9, 50), [], 0, { ...DEFAULT_REMINDERS, enabled: false }, new Set(), academic)).toEqual([]);
     expect(due(at(9, 50), { ...academic, active_term: null })).toEqual([]);
+  });
+});
+
+describe("reminders the phone schedules ahead", () => {
+  const exams = [exam("Física", [slot(2, "18:00", "20:00", "class", "Aula 5"), slot(3, "18:00", "20:00")], "2026-10-30")];
+  const plan = (now: Date, sent = new Set<string>(), cards = { today: 4, any: true }) =>
+    upcomingReminders(now, 2, exams, cards, DEFAULT_REMINDERS, sent).map((x) => [x.at.toTimeString().slice(0, 5), x.at.getDate(), x.reminder.id, x.reminder.body]);
+
+  it("puts each reminder at the moment it becomes due, from now on", () => {
+    expect(plan(at(12, 0))).toEqual([
+      ["17:45", 27, "2026-10-27:slot:Física:18:00", "En 15 min (18:00–20:00) · Aula 5"],
+      ["19:00", 27, "2026-10-27:cards", "Tenés 4 tarjetas para repasar: son pocos minutos."],
+      ["17:45", 28, "2026-10-28:slot:Física:18:00", "En 15 min (18:00–20:00)"],
+      ["19:00", 28, "2026-10-28:cards", "Repasá las tarjetas de hoy: son pocos minutos."],
+    ]);
+  });
+
+  it("skips what already went out or is already past, and what has nothing to say", () => {
+    const tomorrow = plan(at(8, 0), new Set(["2026-10-27:slot:Física:18:00"]), { today: 0, any: false });
+    expect(tomorrow.map((x) => x[2])).toEqual(["2026-10-27:exam:Física", "2026-10-28:slot:Física:18:00"]);
+    // The exam countdown is due at 9:00: opened at 12:00 it is not scheduled for later that day.
+    expect(plan(at(12, 0)).some((x) => x[2] === "2026-10-27:exam:Física")).toBe(false);
+    expect(upcomingReminders(at(8, 0), 2, exams, { today: 1, any: true }, { ...DEFAULT_REMINDERS, enabled: false }, new Set())).toEqual([]);
+  });
+
+  it("gives each reminder a stable notification number", () => {
+    expect(notificationId("2026-10-27:cards")).toBe(notificationId("2026-10-27:cards"));
+    expect(notificationId("2026-10-27:cards")).not.toBe(notificationId("2026-10-28:cards"));
+    expect(notificationId("x")).toBeGreaterThan(0);
   });
 });

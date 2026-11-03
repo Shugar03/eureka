@@ -174,6 +174,19 @@ async fn dotnet() -> (Option<String>, Option<String>) {
 }
 
 pub async fn detect() -> Vec<Runtime> {
+    // A phone has no compilers or interpreters to find: only the bundled SQLite runs.
+    #[cfg(mobile)]
+    return Lang::ALL.map(|lang| if lang == Lang::Sql { sqlite() } else { Runtime { lang, program: None, version: None } }).to_vec();
+    #[cfg(desktop)]
+    detect_installed().await
+}
+
+fn sqlite() -> Runtime {
+    Runtime { lang: Lang::Sql, program: Some("sqlite".into()), version: Some(format!("SQLite {} (incluido en Eureka)", rusqlite::version())) }
+}
+
+#[cfg(desktop)]
+async fn detect_installed() -> Vec<Runtime> {
     let mut python = (None, None);
     for (p, args) in PYTHONS {
         if let Some(v) = version_of(p, args).await {
@@ -202,7 +215,7 @@ pub async fn detect() -> Vec<Runtime> {
         Runtime { lang: Lang::Java, program: java.as_ref().map(|_| "java".into()), version: java },
         Runtime { lang: Lang::Csharp, program: dotnet, version: sdk.map(|v| format!(".NET SDK {v}")) },
         Runtime { lang: Lang::Go, program: go.as_ref().map(|_| "go".into()), version: go },
-        Runtime { lang: Lang::Sql, program: Some("sqlite".into()), version: Some(format!("SQLite {} (incluido en Eureka)", rusqlite::version())) },
+        sqlite(),
     ]
 }
 

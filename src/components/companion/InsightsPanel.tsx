@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { yourDevice } from "../../lib/platform";
 import { companionApi, errorText } from "../../api";
 import type { CompanionView } from "../../types";
 import { computeInsights, missingForInsights, type Insight } from "../../lib/insights";
@@ -30,7 +31,7 @@ export function InsightsPanel({ view, onView }: { view: CompanionView; onView: (
   return (
     <section className="card" aria-label="Lo que noté">
       <h2>Lo que noté</h2>
-      <p className="muted small">Son solo patrones de lo que anotaste: no son un diagnóstico ni explican por qué. Vos sabés si te suenan. Se calculan en tu computadora y no se envían a ningún lado.</p>
+      <p className="muted small">Son solo patrones de lo que anotaste: no son un diagnóstico ni explican por qué. Vos sabés si te suenan. Se calculan en {yourDevice()} y no se envían a ningún lado.</p>
 
       {found.length === 0 && (
         <p className="muted" data-testid="insights-empty">
