@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web-e2e",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:e2e"],
+      "port": 1430
+    }
+  ]
+}

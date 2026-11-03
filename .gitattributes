@@ -1,0 +1,15 @@
+# Text files: LF in the repo, the platform's ending in the checkout.
+* text=auto
+
+# Binaries: never touch their bytes.
+*.pdf binary
+*.png binary
+*.jpg binary
+*.ico binary
+*.icns binary
+*.woff2 binary
+*.wav binary
+*.zip binary
+*.apkg binary
+*.eureka binary
+*.bytes binary

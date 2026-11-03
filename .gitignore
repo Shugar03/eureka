@@ -1,0 +1,49 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# app data / secrets in dev
+auth.json
+.env
+
+# tester-army e2e output
+.e2e/
+
+# coverage reports
+coverage/
+
+# mutation testing
+.stryker-tmp/
+reports/
+mutants.out*/
+
+# built app (Actualizar-Eureka.bat copies it here)
+/Eureka.exe
+
+# local Claude Code settings
+.claude/settings.local.json
+
+# update signing key and token: never in the repo
+*.key
+.update-token

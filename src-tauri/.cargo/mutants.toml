@@ -1,0 +1,7 @@
+# cargo-mutants: mutation testing of the Rust backend.
+# Run: npm run test:mutants  (report in src-tauri/mutants.out/)
+profile = "mutants"
+# lib.rs is the thin Tauri command layer (covered by the desktop e2e, which
+# cargo test cannot run); main.rs only starts it; agent_tests.rs is tests.
+exclude_globs = ["src/main.rs", "src/lib.rs", "src/agent_tests.rs"]
+timeout_multiplier = 3.0

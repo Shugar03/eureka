@@ -1,0 +1,19 @@
+{
+  "eureka": "mazo",
+  "version": 1,
+  "name": "Verbos irregulares",
+  "cards": [
+    {
+      "front": "to go",
+      "back": "went · gone"
+    },
+    {
+      "front": "to see",
+      "back": "saw · seen"
+    },
+    {
+      "front": "",
+      "back": "sin frente"
+    }
+  ]
+}

@@ -1,0 +1,215 @@
+{
+  "pages": 28,
+  "questions": [
+    {
+      "question": "¿Qué mide el índice de Quispe y qué valor indica que la chicha está lista?",
+      "search": "índice Quispe madurez chicha acidez azúcar valor",
+      "section": "1.2 El índice de Quispe",
+      "page": 4,
+      "answer": "El índice de Quispe mide la madurez de una chicha dividiendo la acidez por los grados de azúcar restante; un valor de 0,8 indica que está lista para servir."
+    },
+    {
+      "question": "¿Quién propuso ese índice y en qué año?",
+      "search": "Rosa Quispe propuso índice año cooperativa Maras",
+      "section": "1.2 El índice de Quispe",
+      "page": 4,
+      "answer": "Rosa Quispe propuso su índice en 1961 en la cooperativa de Maras, después de comparar cuarenta y dos tandas de chicha durante tres cosechas."
+    },
+    {
+      "question": "¿De dónde se aisló la levadura Tolar-7 y cuánto alcohol tolera?",
+      "search": "levadura Tolar-7 aislada tuna alcohol grados",
+      "section": "1.3 Levaduras nativas",
+      "page": 6,
+      "answer": "La levadura Tolar-7 fue aislada de la piel de la tuna en Huancavelica y tolera hasta 14 grados de alcohol sin detener su trabajo."
+    },
+    {
+      "question": "¿Por qué las levaduras de altura aguantan las heladas?",
+      "search": "levaduras altura heladas trehalosa sobreviven frío",
+      "section": "1.3 Levaduras nativas",
+      "page": 7,
+      "answer": "Las levaduras nativas de altura sobreviven a heladas de hasta seis grados bajo cero porque acumulan trehalosa en sus paredes."
+    },
+    {
+      "question": "¿Cuántos días de reposo hay que sumar según la altura?",
+      "search": "regla Condori altura metros día reposo maíz",
+      "section": "1.4 Temperatura y altura",
+      "page": 9,
+      "answer": "La regla de Condori indica que por cada mil metros de altura hay que sumar un día de reposo a la fermentación del maíz."
+    },
+    {
+      "question": "¿En cuántos días está lista la chicha de jora a 3800 metros?",
+      "search": "chicha jora 3800 metros días lago punto",
+      "section": "1.4 Temperatura y altura",
+      "page": 9,
+      "answer": "A 3800 metros, en la orilla del lago, la chicha de jora alcanza su punto en nueve días en lugar de los cinco que tarda en el valle."
+    },
+    {
+      "question": "¿Qué dice el protocolo de las tres lunas?",
+      "search": "protocolo tres lunas descartar fermento acetona noches",
+      "section": "1.5 Seguridad alimentaria",
+      "page": 11,
+      "answer": "El protocolo de las tres lunas exige descartar cualquier fermento que huela a acetona durante tres noches seguidas."
+    },
+    {
+      "question": "¿Cuál es la señal de alarma más confiable de contaminación?",
+      "search": "señal alarma película rosada superficie contaminación bacterias",
+      "section": "1.5 Seguridad alimentaria",
+      "page": 12,
+      "answer": "La señal de alarma más confiable, según el manual de Marea, es una película rosada en la superficie, que delata contaminación por bacterias."
+    },
+    {
+      "question": "¿Cuántos días germina el maíz para hacer jora y sobre qué?",
+      "search": "jora maíz germinado días hojas achira",
+      "section": "2.1 La chicha de jora",
+      "page": 15,
+      "answer": "La jora es maíz germinado durante exactamente siete días sobre hojas de achira, y luego secado al sol sobre los techos."
+    },
+    {
+      "question": "¿Cuánta agua lleva la receta de Ollantaytambo?",
+      "search": "receta Ollantaytambo litros agua kilo jora hervor",
+      "section": "2.1 La chicha de jora",
+      "page": 15,
+      "answer": "En la receta de Ollantaytambo se usan doce litros de agua por cada kilo de jora, y el hervor dura seis horas."
+    },
+    {
+      "question": "¿Cómo se fermenta la tunta?",
+      "search": "chuño blanco tunta fermenta sumergido río semanas",
+      "section": "2.2 El chuño y la fermentación en frío",
+      "page": 18,
+      "answer": "El chuño blanco o tunta se fermenta sumergido en el río durante tres semanas antes de secarse al sol de junio."
+    },
+    {
+      "question": "¿Qué demostró el experimento de Laguna Saltada?",
+      "search": "experimento Laguna Saltada 1987 tunta almidón años",
+      "section": "2.2 El chuño y la fermentación en frío",
+      "page": 18,
+      "answer": "El experimento de Laguna Saltada de 1987 demostró que la tunta conserva el ochenta por ciento de su almidón durante cinco años."
+    },
+    {
+      "question": "¿Por qué se mastica la yuca para el masato?",
+      "search": "masato yuca masticar saliva enzimas almidón",
+      "section": "2.3 Masato y fermentos de yuca",
+      "page": 20,
+      "answer": "En la Amazonía, el masato se inicia masticando una parte de la yuca, porque la saliva aporta las enzimas que rompen el almidón."
+    },
+    {
+      "question": "¿Qué porosidad tienen las tinajas de Pucará?",
+      "search": "tinajas Pucará porosidad por ciento chicha respira",
+      "section": "2.4 Recipientes de barro",
+      "page": 23,
+      "answer": "Las tinajas de Pucará tienen una porosidad del diecinueve por ciento, y por eso la chicha respira y se enfría por evaporación."
+    },
+    {
+      "question": "¿Con qué se cura una tinaja nueva?",
+      "search": "curar tinaja nueva suero leche semanas poros",
+      "section": "2.4 Recipientes de barro",
+      "page": 23,
+      "answer": "Antes de usar una tinaja nueva se la cura con suero de leche durante dos semanas para sellar sus poros más grandes."
+    },
+    {
+      "question": "¿Qué es la regla 4-2-1 del remojo?",
+      "search": "regla 4-2-1 remojo horas agua fría tibia ceniza quinua",
+      "section": "2.5 La regla 4-2-1 del remojo",
+      "page": 25,
+      "answer": "La regla 4-2-1 del remojo indica cuatro horas de agua fría, dos de agua tibia y una de agua con ceniza para la quinua."
+    },
+    {
+      "question": "¿Para qué sirve la ceniza de molle?",
+      "search": "ceniza molle saponina quinua amarga remojo",
+      "section": "2.5 La regla 4-2-1 del remojo",
+      "page": 26,
+      "answer": "La ceniza de molle usada en el último remojo elimina la saponina amarga de la quinua mejor que el lavado con agua sola."
+    },
+    {
+      "question": "¿Cómo llamó Eusebio Tarifa a la fermentación?",
+      "search": "Eusebio Tarifa llamó fermentación cocina invisible tratado",
+      "section": "1.1 Qué es fermentar",
+      "page": 1,
+      "answer": "El cronista Eusebio Tarifa llamó a la fermentación «la cocina invisible» en su tratado de 1794, porque ocurre sin fuego y sin que nadie la vea."
+    }
+  ],
+  "hard": [
+    {
+      "question": "¿Cómo sé si una bebida de maíz ya está madura para tomar?",
+      "section": "1.2 El índice de Quispe",
+      "page": 4,
+      "answer": "El índice de Quispe mide la madurez de una chicha dividiendo la acidez por los grados de azúcar restante; un valor de 0,8 indica que está lista para servir."
+    },
+    {
+      "question": "¿Qué sustancia protege a los hongos del congelamiento?",
+      "section": "1.3 Levaduras nativas",
+      "page": 7,
+      "answer": "Las levaduras nativas de altura sobreviven a heladas de hasta seis grados bajo cero porque acumulan trehalosa en sus paredes."
+    },
+    {
+      "question": "¿Cuánto tiempo extra necesita el maíz cuando cocino en la montaña?",
+      "section": "1.4 Temperatura y altura",
+      "page": 9,
+      "answer": "La regla de Condori indica que por cada mil metros de altura hay que sumar un día de reposo a la fermentación del maíz."
+    },
+    {
+      "question": "¿Qué olor me obliga a tirar la preparación?",
+      "section": "1.5 Seguridad alimentaria",
+      "page": 11,
+      "answer": "El protocolo de las tres lunas exige descartar cualquier fermento que huela a acetona durante tres noches seguidas."
+    },
+    {
+      "question": "¿Qué color en la superficie indica que se echó a perder?",
+      "section": "1.5 Seguridad alimentaria",
+      "page": 12,
+      "answer": "La señal de alarma más confiable, según el manual de Marea, es una película rosada en la superficie, que delata contaminación por bacterias."
+    },
+    {
+      "question": "¿Cuánto tiempo se deja brotar el grano antes de secarlo?",
+      "section": "2.1 La chicha de jora",
+      "page": 15,
+      "answer": "La jora es maíz germinado durante exactamente siete días sobre hojas de achira, y luego secado al sol sobre los techos."
+    },
+    {
+      "question": "¿Cuánto tiempo pasa la papa en el agua corriente?",
+      "section": "2.2 El chuño y la fermentación en frío",
+      "page": 18,
+      "answer": "El chuño blanco o tunta se fermenta sumergido en el río durante tres semanas antes de secarse al sol de junio."
+    },
+    {
+      "question": "¿Cuánto dura guardada la papa deshidratada sin perder su almidón?",
+      "section": "2.2 El chuño y la fermentación en frío",
+      "page": 18,
+      "answer": "El experimento de Laguna Saltada de 1987 demostró que la tunta conserva el ochenta por ciento de su almidón durante cinco años."
+    },
+    {
+      "question": "¿Por qué se mastica la mandioca para la bebida amazónica?",
+      "section": "2.3 Masato y fermentos de yuca",
+      "page": 20,
+      "answer": "En la Amazonía, el masato se inicia masticando una parte de la yuca, porque la saliva aporta las enzimas que rompen el almidón."
+    },
+    {
+      "question": "¿Por qué la vasija de arcilla enfría la bebida?",
+      "section": "2.4 Recipientes de barro",
+      "page": 23,
+      "answer": "Las tinajas de Pucará tienen una porosidad del diecinueve por ciento, y por eso la chicha respira y se enfría por evaporación."
+    },
+    {
+      "question": "¿Cómo se prepara un cántaro nuevo antes de usarlo?",
+      "section": "2.4 Recipientes de barro",
+      "page": 23,
+      "answer": "Antes de usar una tinaja nueva se la cura con suero de leche durante dos semanas para sellar sus poros más grandes."
+    },
+    {
+      "question": "¿Cómo se le quita lo amargo a la quinua?",
+      "section": "2.5 La regla 4-2-1 del remojo",
+      "page": 26,
+      "answer": "La ceniza de molle usada en el último remojo elimina la saponina amarga de la quinua mejor que el lavado con agua sola."
+    }
+  ],
+  "negative": [
+    {
+      "question": "¿Quién ganó el mundial de fútbol de 1986?",
+      "search": "mundial fútbol 1986 ganador"
+    },
+    {
+      "question": "¿Cómo se calcula la derivada de un polinomio?",
+      "search": "derivada polinomio cálculo regla potencia"
+    }
+  ]
+}

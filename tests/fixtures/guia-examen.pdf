@@ -1,0 +1,53 @@
+%PDF-1.4
+%âãÏÓ
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 637 >>
+stream
+BT
+/F1 11 Tf
+16 TL
+56 760 Td
+(Guía del examen Google Cloud Digital Leader) Tj T*
+() Tj T*
+(Dominio 1: Transformación digital con Google Cloud \(30%\)) Tj T*
+(• Por qué la nube cambia el negocio) Tj T*
+(– Escalabilidad y costo variable) Tj T*
+(– Innovación más rápida) Tj T*
+() Tj T*
+(Dominio 2: Innovación con datos e IA \(40%\)) Tj T*
+(• Valor de los datos) Tj T*
+(– Data warehouse y data lake) Tj T*
+(• Inteligencia artificial responsable) Tj T*
+(– Sesgos y explicabilidad) Tj T*
+() Tj T*
+(Dominio 3: Seguridad y operaciones \(30%\)) Tj T*
+(• Modelo de responsabilidad compartida) Tj T*
+(– Qué protege Google y qué el cliente) Tj T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000121 00000 n 
+0000000247 00000 n 
+0000000935 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1032
+%%EOF

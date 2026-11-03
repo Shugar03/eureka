@@ -1,0 +1,47 @@
+{
+  "book_tokens": 13979,
+  "hard": {
+    "answer_in_passages": 0.75,
+    "mrr": 0.6388888888888888,
+    "page_right": 0.75,
+    "query_ms": 3.606358333333334,
+    "questions": 12,
+    "section_at_1": 0.5,
+    "section_at_4": 0.8333333333333334,
+    "tokens_per_query": 1153.1666666666667
+  },
+  "import_ms": 10.2387,
+  "index_ms": 90.8041,
+  "negative": [
+    {
+      "all_weak": true,
+      "hits": 0,
+      "query": "mundial fútbol 1986 ganador"
+    },
+    {
+      "all_weak": true,
+      "hits": 4,
+      "query": "derivada polinomio cálculo regla potencia"
+    }
+  ],
+  "question": {
+    "answer_in_passages": 1.0,
+    "mrr": 1.0,
+    "page_right": 1.0,
+    "query_ms": 2.8112222222222223,
+    "questions": 18,
+    "section_at_1": 1.0,
+    "section_at_4": 1.0,
+    "tokens_per_query": 954.6111111111111
+  },
+  "search": {
+    "answer_in_passages": 1.0,
+    "mrr": 1.0,
+    "page_right": 1.0,
+    "query_ms": 3.5389888888888894,
+    "questions": 18,
+    "section_at_1": 1.0,
+    "section_at_4": 1.0,
+    "tokens_per_query": 1152.6666666666667
+  }
+}

@@ -1,0 +1,6 @@
+#separator:tab
+#html:true
+#notetype column:1
+Básico	¿Puerto de <b>HTTPS</b>?	443
+Básico	¿Puerto de SSH?	22
+Básico	sin dorso	

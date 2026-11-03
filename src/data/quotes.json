@@ -1,0 +1,4349 @@
+[
+ {
+  "id": "lao-tse-1",
+  "day": "01-01",
+  "text": "Un viaje de mil leguas empieza con un solo paso.",
+  "author": "Lao Tsé",
+  "work": "Tao Te Ching, 64",
+  "original": false,
+  "themes": [
+   "comienzos",
+   "constancia"
+  ]
+ },
+ {
+  "id": "marco-aurelio-1",
+  "day": "01-02",
+  "text": "Al amanecer, cuando te cueste levantarte, ten presente este pensamiento: me levanto para hacer el trabajo propio de un ser humano.",
+  "author": "Marco Aurelio",
+  "work": "Meditaciones, V, 1",
+  "original": false,
+  "themes": [
+   "comienzos",
+   "constancia"
+  ]
+ },
+ {
+  "id": "antonio-machado-1",
+  "day": "01-03",
+  "text": "Caminante, son tus huellas el camino y nada más; caminante, no hay camino, se hace camino al andar.",
+  "author": "Antonio Machado",
+  "work": "Proverbios y cantares, XXIX (Campos de Castilla)",
+  "original": true,
+  "themes": [
+   "comienzos",
+   "constancia"
+  ]
+ },
+ {
+  "id": "horacio-1",
+  "day": "01-04",
+  "text": "Quien ha empezado tiene hecha la mitad de la obra: atrévete a saber, empieza.",
+  "author": "Horacio",
+  "work": "Epístolas, I, 2, 40",
+  "original": false,
+  "themes": [
+   "comienzos",
+   "coraje"
+  ]
+ },
+ {
+  "id": "rainer-maria-rilke-1",
+  "day": "01-05",
+  "text": "Debes cambiar tu vida.",
+  "author": "Rainer Maria Rilke",
+  "work": "«Torso arcaico de Apolo», en Nuevos poemas, 1908",
+  "original": false,
+  "themes": [
+   "comienzos",
+   "coraje"
+  ]
+ },
+ {
+  "id": "lao-tse-2",
+  "day": "01-06",
+  "text": "Un árbol que apenas abarcan los brazos nació de un brote diminuto.",
+  "author": "Lao Tsé",
+  "work": "Tao Te Ching, 64",
+  "original": false,
+  "themes": [
+   "comienzos",
+   "paciencia"
+  ]
+ },
+ {
+  "id": "epicteto-1",
+  "day": "01-07",
+  "text": "Primero dite a ti mismo quién quieres ser; después haz lo que tienes que hacer.",
+  "author": "Epicteto",
+  "work": "Disertaciones, III, 23",
+  "original": false,
+  "themes": [
+   "comienzos",
+   "sentido"
+  ]
+ },
+ {
+  "id": "lao-tse-3",
+  "day": "01-08",
+  "text": "Lo difícil del mundo se resuelve cuando todavía es fácil; lo grande del mundo se hace cuando todavía es pequeño.",
+  "author": "Lao Tsé",
+  "work": "Tao Te Ching, 63",
+  "original": false,
+  "themes": [
+   "comienzos",
+   "paciencia"
+  ]
+ },
+ {
+  "id": "seneca-1",
+  "day": "01-09",
+  "text": "Buena parte de la bondad es querer ser bueno.",
+  "author": "Séneca",
+  "work": "Cartas a Lucilio, 34, 3",
+  "original": false,
+  "themes": [
+   "esfuerzo",
+   "comienzos"
+  ]
+ },
+ {
+  "id": "friedrich-nietzsche-1",
+  "day": "01-10",
+  "text": "¡Llega a ser el que eres!",
+  "author": "Friedrich Nietzsche",
+  "work": "La gaya ciencia, 270",
+  "original": false,
+  "themes": [
+   "sentido",
+   "comienzos"
+  ]
+ },
+ {
+  "id": "platon-1",
+  "day": "01-11",
+  "text": "El comienzo es la parte más importante de toda obra.",
+  "author": "Platón",
+  "work": "República, II, 377a",
+  "original": false,
+  "themes": [
+   "comienzos"
+  ]
+ },
+ {
+  "id": "seneca-2",
+  "day": "01-12",
+  "text": "Si uno no sabe a qué puerto se dirige, ningún viento le es favorable.",
+  "author": "Séneca",
+  "work": "Cartas a Lucilio, 71, 3",
+  "original": false,
+  "themes": [
+   "sentido",
+   "comienzos"
+  ]
+ },
+ {
+  "id": "walt-whitman-1",
+  "day": "01-13",
+  "text": "A pie y con el corazón ligero me echo al camino abierto, sano, libre, con el mundo ante mí.",
+  "author": "Walt Whitman",
+  "work": "Canto del camino abierto",
+  "original": false,
+  "themes": [
+   "comienzos",
+   "libertad"
+  ]
+ },
+ {
+  "id": "epicuro-1",
+  "day": "01-14",
+  "text": "Que nadie, por ser joven, vacile en filosofar, ni por ser viejo se canse de filosofar.",
+  "author": "Epicuro",
+  "work": "Carta a Meneceo, 122",
+  "original": false,
+  "themes": [
+   "estudio",
+   "comienzos"
+  ]
+ },
+ {
+  "id": "katha-upanishad-1",
+  "day": "01-15",
+  "text": "Levántense, despierten; acérquense a los que saben y aprendan.",
+  "author": "Katha Upanishad",
+  "work": "I, 3, 14",
+  "original": false,
+  "themes": [
+   "comienzos",
+   "estudio"
+  ]
+ },
+ {
+  "id": "hillel-1",
+  "day": "01-16",
+  "text": "Si yo no soy para mí, ¿quién será para mí? Y si soy solo para mí, ¿qué soy? Y si no ahora, ¿cuándo?",
+  "author": "Hillel",
+  "work": "Pirké Avot, 1, 14",
+  "original": false,
+  "themes": [
+   "comienzos",
+   "sentido"
+  ]
+ },
+ {
+  "id": "henry-david-thoreau-1",
+  "day": "01-17",
+  "text": "Solo amanece el día para el que estamos despiertos.",
+  "author": "Henry David Thoreau",
+  "work": "Walden, Conclusión",
+  "original": false,
+  "themes": [
+   "presente",
+   "comienzos"
+  ]
+ },
+ {
+  "id": "seneca-3",
+  "day": "01-18",
+  "text": "Reclama tu derecho sobre ti mismo, y el tiempo que hasta hoy te quitaban, o te robaban, o se te escapaba, recógelo y guárdalo.",
+  "author": "Séneca",
+  "work": "Cartas a Lucilio, 1, 1",
+  "original": false,
+  "themes": [
+   "tiempo",
+   "comienzos"
+  ]
+ },
+ {
+  "id": "franz-kafka-1",
+  "day": "01-19",
+  "text": "Desde cierto punto ya no hay retorno. Ese es el punto que hay que alcanzar.",
+  "author": "Franz Kafka",
+  "work": "Aforismos, Cuaderno octavo",
+  "original": false,
+  "themes": [
+   "coraje",
+   "comienzos"
+  ]
+ },
+ {
+  "id": "gustavo-adolfo-becquer-1",
+  "day": "01-20",
+  "text": "Podrá no haber poetas; pero siempre habrá poesía.",
+  "author": "Gustavo Adolfo Bécquer",
+  "work": "Rimas, IV",
+  "original": true,
+  "themes": [
+   "sentido",
+   "esperanza"
+  ]
+ },
+ {
+  "id": "friedrich-holderlin-1",
+  "day": "01-21",
+  "text": "Pero donde está el peligro, crece también lo que salva.",
+  "author": "Friedrich Hölderlin",
+  "work": "Patmos",
+  "original": false,
+  "themes": [
+   "coraje",
+   "esperanza"
+  ]
+ },
+ {
+  "id": "ciceron-1",
+  "day": "01-22",
+  "text": "Mientras hay vida, hay esperanza.",
+  "author": "Cicerón",
+  "work": "Cartas a Ático, IX, 10",
+  "original": false,
+  "themes": [
+   "esperanza",
+   "coraje"
+  ]
+ },
+ {
+  "id": "william-james-1",
+  "day": "01-23",
+  "text": "El hábito es el enorme volante de la sociedad.",
+  "author": "William James",
+  "work": "Principios de psicología, 1890, cap. 4",
+  "original": false,
+  "themes": [
+   "constancia"
+  ]
+ },
+ {
+  "id": "aristoteles-1",
+  "day": "01-24",
+  "text": "Lo que hay que aprender a hacer lo aprendemos haciéndolo: nos hacemos justos practicando la justicia, valientes practicando la valentía.",
+  "author": "Aristóteles",
+  "work": "Ética a Nicómaco, II, 1",
+  "original": false,
+  "themes": [
+   "constancia",
+   "esfuerzo"
+  ]
+ },
+ {
+  "id": "buda-1",
+  "day": "01-25",
+  "text": "Atento entre los distraídos, despierto entre los dormidos, el sabio avanza como un caballo veloz que deja atrás al lento.",
+  "author": "Buda",
+  "work": "Dhammapada, 29",
+  "original": false,
+  "themes": [
+   "constancia",
+   "estudio"
+  ]
+ },
+ {
+  "id": "hesiodo-1",
+  "day": "01-26",
+  "text": "Delante de la virtud pusieron los dioses el sudor.",
+  "author": "Hesíodo",
+  "work": "Trabajos y días, 289",
+  "original": false,
+  "themes": [
+   "esfuerzo",
+   "constancia"
+  ]
+ },
+ {
+  "id": "marco-aurelio-2",
+  "day": "01-27",
+  "text": "Que te dé igual tener frío o calor, con tal de cumplir con tu deber; y estar con sueño o haber dormido bien.",
+  "author": "Marco Aurelio",
+  "work": "Meditaciones, VI, 2",
+  "original": false,
+  "themes": [
+   "esfuerzo",
+   "constancia"
+  ]
+ },
+ {
+  "id": "sor-juana-ines-de-la-cru-1",
+  "day": "01-28",
+  "text": "Mi inclinación a las letras fue tan vehemente, que ni ajenas reprensiones han bastado a que deje de seguir este natural impulso.",
+  "author": "Sor Juana Inés de la Cruz",
+  "work": "Respuesta a Sor Filotea de la Cruz",
+  "original": true,
+  "themes": [
+   "estudio",
+   "constancia"
+  ]
+ },
+ {
+  "id": "henry-w-longfellow-1",
+  "day": "01-29",
+  "text": "Las alturas que los grandes hombres alcanzaron y conservaron no las lograron de un vuelo repentino: mientras sus compañeros dormían, ellos subían trabajando en la noche.",
+  "author": "Henry W. Longfellow",
+  "work": "«La escalera de san Agustín», 1858",
+  "original": false,
+  "themes": [
+   "constancia",
+   "esfuerzo"
+  ]
+ },
+ {
+  "id": "marco-aurelio-3",
+  "day": "01-30",
+  "text": "Recuerda cuánto tiempo llevas postergando esto, y cuántas veces los dioses te dieron plazos que no aprovechaste.",
+  "author": "Marco Aurelio",
+  "work": "Meditaciones, II, 4",
+  "original": false,
+  "themes": [
+   "tiempo",
+   "constancia"
+  ]
+ },
+ {
+  "id": "alfred-tennyson-1",
+  "day": "01-31",
+  "text": "Esforzarse, buscar, hallar y no rendirse.",
+  "author": "Alfred Tennyson",
+  "work": "Ulises, 1842",
+  "original": false,
+  "themes": [
+   "constancia",
+   "coraje"
+  ]
+ },
+ {
+  "id": "ludwig-wittgenstein-1",
+  "day": "02-01",
+  "text": "Los límites de mi lenguaje son los límites de mi mundo.",
+  "author": "Ludwig Wittgenstein",
+  "work": "Tractatus lógico-philosophicus, 5.6",
+  "original": false,
+  "themes": [
+   "estudio",
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "platon-2",
+  "day": "02-02",
+  "text": "La educación no consiste en lo que algunos proclaman: poner ciencia en un alma que no la tiene, como quien pone vista en ojos ciegos.",
+  "author": "Platón",
+  "work": "República, VII, 518b",
+  "original": false,
+  "themes": [
+   "estudio",
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "claude-bernard-1",
+  "day": "02-03",
+  "text": "Quien no sabe lo que busca no entiende lo que encuentra.",
+  "author": "Claude Bernard",
+  "work": "Introducción al estudio de la medicina experimental, 1865",
+  "original": false,
+  "themes": [
+   "estudio",
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "michel-de-montaigne-1",
+  "day": "02-04",
+  "text": "Las abejas liban aquí y allá las flores, pero luego hacen con ellas la miel, que es toda suya.",
+  "author": "Michel de Montaigne",
+  "work": "Ensayos, I, 26",
+  "original": false,
+  "themes": [
+   "estudio",
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "aristoteles-2",
+  "day": "02-05",
+  "text": "Todos los hombres desean por naturaleza saber.",
+  "author": "Aristóteles",
+  "work": "Metafísica, I, 1",
+  "original": false,
+  "themes": [
+   "curiosidad",
+   "estudio"
+  ]
+ },
+ {
+  "id": "solon-1",
+  "day": "02-06",
+  "text": "Envejezco aprendiendo siempre muchas cosas.",
+  "author": "Solón",
+  "work": "Fragmento 18 (West)",
+  "original": false,
+  "themes": [
+   "estudio",
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "ciceron-2",
+  "day": "02-07",
+  "text": "No saber lo que ocurrió antes de que uno naciera es ser siempre un niño.",
+  "author": "Cicerón",
+  "work": "El orador, 120",
+  "original": false,
+  "themes": [
+   "estudio",
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "plutarco-1",
+  "day": "02-08",
+  "text": "La mente no es un recipiente que haya que llenar, sino una leña que solo necesita una chispa para encenderse.",
+  "author": "Plutarco",
+  "work": "Sobre el modo de escuchar, 18",
+  "original": false,
+  "themes": [
+   "estudio",
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "emily-dickinson-1",
+  "day": "02-09",
+  "text": "No hay fragata como un libro para llevarnos a tierras lejanas.",
+  "author": "Emily Dickinson",
+  "work": "Poema 1263",
+  "original": false,
+  "themes": [
+   "estudio",
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "georg-christoph-lichtenb-1",
+  "day": "02-10",
+  "text": "Quien solo sabe de química, ni de química sabe.",
+  "author": "Georg Christoph Lichtenberg",
+  "work": "Cuadernos de notas (Sudelbücher)",
+  "original": false,
+  "themes": [
+   "estudio",
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "dante-alighieri-1",
+  "day": "02-11",
+  "text": "No habéis nacido para vivir como brutos, sino para seguir virtud y conocimiento.",
+  "author": "Dante Alighieri",
+  "work": "Divina comedia, Infierno, XXVI",
+  "original": false,
+  "themes": [
+   "curiosidad",
+   "estudio"
+  ]
+ },
+ {
+  "id": "pedro-abelardo-1",
+  "day": "02-12",
+  "text": "Dudando llegamos a investigar; investigando, alcanzamos la verdad.",
+  "author": "Pedro Abelardo",
+  "work": "Sic et non, Prólogo",
+  "original": false,
+  "themes": [
+   "curiosidad",
+   "estudio"
+  ]
+ },
+ {
+  "id": "galileo-galilei-1",
+  "day": "02-13",
+  "text": "La filosofía está escrita en ese grandísimo libro que continuamente está abierto ante nuestros ojos: el universo.",
+  "author": "Galileo Galilei",
+  "work": "El ensayador, 1623",
+  "original": false,
+  "themes": [
+   "curiosidad",
+   "estudio"
+  ]
+ },
+ {
+  "id": "confucio-1",
+  "day": "02-14",
+  "text": "Quien sabe algo no iguala a quien lo ama, y quien lo ama no iguala a quien disfruta de él.",
+  "author": "Confucio",
+  "work": "Analectas, 6, 20",
+  "original": false,
+  "themes": [
+   "curiosidad",
+   "estudio"
+  ]
+ },
+ {
+  "id": "michel-de-montaigne-2",
+  "day": "02-15",
+  "text": "Hay más trabajo en interpretar las interpretaciones que en interpretar las cosas.",
+  "author": "Michel de Montaigne",
+  "work": "Ensayos, III, 13",
+  "original": false,
+  "themes": [
+   "estudio",
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "miguel-de-cervantes-1",
+  "day": "02-16",
+  "text": "El que lee mucho y anda mucho, ve mucho y sabe mucho.",
+  "author": "Miguel de Cervantes",
+  "work": "Don Quijote de la Mancha, II, 25",
+  "original": true,
+  "themes": [
+   "estudio",
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "johann-wolfgang-von-goet-1",
+  "day": "02-17",
+  "text": "Quien no conoce lenguas extranjeras no sabe nada de la propia.",
+  "author": "Johann Wolfgang von Goethe",
+  "work": "Máximas y reflexiones",
+  "original": false,
+  "themes": [
+   "estudio",
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "seneca-4",
+  "day": "02-18",
+  "text": "Hay que aprender mientras se ignora, y, si creemos al proverbio, mientras se vive.",
+  "author": "Séneca",
+  "work": "Cartas a Lucilio, 76, 3",
+  "original": false,
+  "themes": [
+   "estudio",
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "zhuangzi-1",
+  "day": "02-19",
+  "text": "Una vez Zhuang Zhou soñó que era una mariposa. Al despertar no supo si era Zhou que había soñado ser mariposa, o una mariposa que soñaba ser Zhou.",
+  "author": "Zhuangzi",
+  "work": "Zhuangzi, 2",
+  "original": false,
+  "themes": [
+   "sentido",
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "rainer-maria-rilke-2",
+  "day": "02-20",
+  "text": "Ten paciencia con todo lo que no está resuelto en tu corazón, e intenta querer las preguntas mismas. Vive ahora las preguntas.",
+  "author": "Rainer Maria Rilke",
+  "work": "Cartas a un joven poeta, carta 4",
+  "original": false,
+  "themes": [
+   "paciencia",
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "zhuangzi-2",
+  "day": "02-21",
+  "text": "A una rana de pozo no se le puede hablar del mar: está limitada por su agujero.",
+  "author": "Zhuangzi",
+  "work": "Zhuangzi, 17",
+  "original": false,
+  "themes": [
+   "curiosidad",
+   "humildad"
+  ]
+ },
+ {
+  "id": "rene-descartes-1",
+  "day": "02-22",
+  "text": "Pienso, luego existo.",
+  "author": "René Descartes",
+  "work": "Discurso del método, IV",
+  "original": false,
+  "themes": [
+   "sentido",
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "john-stuart-mill-1",
+  "day": "02-23",
+  "text": "Es mejor ser un Sócrates insatisfecho que un necio satisfecho.",
+  "author": "John Stuart Mill",
+  "work": "El utilitarismo, 1863, cap. 2",
+  "original": false,
+  "themes": [
+   "curiosidad",
+   "humildad"
+  ]
+ },
+ {
+  "id": "simon-rodriguez-1",
+  "day": "02-24",
+  "text": "O inventamos o erramos.",
+  "author": "Simón Rodríguez",
+  "work": "Sociedades americanas, 1842",
+  "original": true,
+  "themes": [
+   "coraje",
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "yehoshua-ben-perajia-1",
+  "day": "02-25",
+  "text": "Hazte de un maestro, gánate un amigo, y juzga a cada persona con benevolencia.",
+  "author": "Yehoshúa ben Perajiá",
+  "work": "Pirké Avot, 1, 6",
+  "original": false,
+  "themes": [
+   "estudio",
+   "amistad"
+  ]
+ },
+ {
+  "id": "confucio-2",
+  "day": "02-26",
+  "text": "¿No es un placer aprender y practicar lo aprendido? ¿No es una alegría que vengan amigos de lejos?",
+  "author": "Confucio",
+  "work": "Analectas, 1, 1",
+  "original": false,
+  "themes": [
+   "estudio",
+   "amistad"
+  ]
+ },
+ {
+  "id": "blaise-pascal-1",
+  "day": "02-27",
+  "text": "El último paso de la razón es reconocer que hay una infinidad de cosas que la superan.",
+  "author": "Blaise Pascal",
+  "work": "Pensamientos, 188",
+  "original": false,
+  "themes": [
+   "humildad",
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "immanuel-kant-1",
+  "day": "02-28",
+  "text": "Dos cosas llenan el ánimo de admiración y respeto siempre nuevos y crecientes: el cielo estrellado sobre mí y la ley moral en mí.",
+  "author": "Immanuel Kant",
+  "work": "Crítica de la razón práctica, Conclusión",
+  "original": false,
+  "themes": [
+   "sentido",
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "seneca-5",
+  "day": "02-29",
+  "text": "Todo, Lucilio, es ajeno; solo el tiempo es nuestro.",
+  "author": "Séneca",
+  "work": "Cartas a Lucilio, 1, 3",
+  "original": false,
+  "themes": [
+   "tiempo",
+   "presente"
+  ]
+ },
+ {
+  "id": "johann-wolfgang-von-goet-2",
+  "day": "03-01",
+  "text": "No basta con saber: hay que aplicar. No basta con querer: hay que hacer.",
+  "author": "Johann Wolfgang von Goethe",
+  "work": "Años de aprendizaje de Wilhelm Meister, V, 12",
+  "original": false,
+  "themes": [
+   "esfuerzo",
+   "estudio"
+  ]
+ },
+ {
+  "id": "santiago-ramon-y-cajal-1",
+  "day": "03-02",
+  "text": "Todo hombre puede ser, si se lo propone, escultor de su propio cerebro.",
+  "author": "Santiago Ramón y Cajal",
+  "work": "Reglas y consejos sobre investigación científica (discurso de 1897)",
+  "original": true,
+  "themes": [
+   "estudio",
+   "esfuerzo"
+  ]
+ },
+ {
+  "id": "johann-wolfgang-von-goet-3",
+  "day": "03-03",
+  "text": "Lo que heredaste de tus padres, adquiérelo para poseerlo.",
+  "author": "Johann Wolfgang von Goethe",
+  "work": "Fausto, I",
+  "original": false,
+  "themes": [
+   "estudio",
+   "esfuerzo"
+  ]
+ },
+ {
+  "id": "raban-shimon-ben-gamliel-1",
+  "day": "03-04",
+  "text": "No es el estudio lo esencial, sino la acción.",
+  "author": "Rabán Shimón ben Gamliel",
+  "work": "Pirké Avot, 1, 17",
+  "original": false,
+  "themes": [
+   "esfuerzo",
+   "estudio"
+  ]
+ },
+ {
+  "id": "euclides-1",
+  "day": "03-05",
+  "text": "No hay un camino real hacia la geometría.",
+  "author": "Euclides",
+  "work": "Según Proclo, Comentario al libro I de los Elementos",
+  "original": false,
+  "themes": [
+   "esfuerzo",
+   "estudio"
+  ]
+ },
+ {
+  "id": "mark-twain-1",
+  "day": "03-06",
+  "text": "La diferencia entre la palabra casi correcta y la correcta es la misma que entre la luciérnaga y el relámpago.",
+  "author": "Mark Twain",
+  "work": "Carta a George Bainton, 15 de octubre de 1888",
+  "original": false,
+  "themes": [
+   "estudio",
+   "esfuerzo"
+  ]
+ },
+ {
+  "id": "baltasar-gracian-1",
+  "day": "03-07",
+  "text": "Más obran quintas esencias que fárragos.",
+  "author": "Baltasar Gracián",
+  "work": "Oráculo manual y arte de prudencia, 105",
+  "original": true,
+  "themes": [
+   "estudio",
+   "esfuerzo"
+  ]
+ },
+ {
+  "id": "wang-yangming-1",
+  "day": "03-08",
+  "text": "Saber y hacer son una sola cosa.",
+  "author": "Wang Yangming",
+  "work": "Instrucciones para la práctica",
+  "original": false,
+  "themes": [
+   "estudio",
+   "esfuerzo"
+  ]
+ },
+ {
+  "id": "baltasar-gracian-2",
+  "day": "03-09",
+  "text": "Lo bueno, si breve, dos veces bueno.",
+  "author": "Baltasar Gracián",
+  "work": "Oráculo manual y arte de prudencia, 105",
+  "original": true,
+  "themes": [
+   "estudio",
+   "esfuerzo"
+  ]
+ },
+ {
+  "id": "aristoteles-3",
+  "day": "03-10",
+  "text": "La educación tiene raíces amargas, pero sus frutos son dulces.",
+  "author": "Aristóteles",
+  "work": "Citado por Diógenes Laercio, V, 18",
+  "original": false,
+  "themes": [
+   "estudio",
+   "esfuerzo"
+  ]
+ },
+ {
+  "id": "buda-2",
+  "day": "03-11",
+  "text": "Ustedes mismos deben hacer el esfuerzo; los buenos maestros solo indican el camino.",
+  "author": "Buda",
+  "work": "Dhammapada, 276",
+  "original": false,
+  "themes": [
+   "esfuerzo",
+   "estudio"
+  ]
+ },
+ {
+  "id": "rene-descartes-2",
+  "day": "03-12",
+  "text": "Dividir cada una de las dificultades que examinara en tantas partes como fuera posible y necesario para resolverlas mejor.",
+  "author": "René Descartes",
+  "work": "Discurso del método, II",
+  "original": false,
+  "themes": [
+   "estudio",
+   "esfuerzo"
+  ]
+ },
+ {
+  "id": "epicteto-2",
+  "day": "03-13",
+  "text": "Es imposible empezar a aprender lo que uno cree que ya sabe.",
+  "author": "Epicteto",
+  "work": "Disertaciones, II, 17",
+  "original": false,
+  "themes": [
+   "humildad",
+   "estudio"
+  ]
+ },
+ {
+  "id": "rene-descartes-3",
+  "day": "03-14",
+  "text": "No basta con tener buen ingenio: lo principal es aplicarlo bien.",
+  "author": "René Descartes",
+  "work": "Discurso del método, I",
+  "original": false,
+  "themes": [
+   "esfuerzo",
+   "estudio"
+  ]
+ },
+ {
+  "id": "alexander-pope-1",
+  "day": "03-15",
+  "text": "Un poco de saber es cosa peligrosa: bebe hondo, o no pruebes la fuente de Pieria.",
+  "author": "Alexander Pope",
+  "work": "Ensayo sobre la crítica, 1711",
+  "original": false,
+  "themes": [
+   "estudio",
+   "humildad"
+  ]
+ },
+ {
+  "id": "rene-descartes-4",
+  "day": "03-16",
+  "text": "El buen sentido es la cosa mejor repartida del mundo.",
+  "author": "René Descartes",
+  "work": "Discurso del método, I",
+  "original": false,
+  "themes": [
+   "estudio",
+   "humildad"
+  ]
+ },
+ {
+  "id": "william-james-2",
+  "day": "03-17",
+  "text": "Mi experiencia es aquello a lo que acepto prestar atención.",
+  "author": "William James",
+  "work": "Principios de psicología, 1890, cap. 11",
+  "original": false,
+  "themes": [
+   "presente",
+   "estudio"
+  ]
+ },
+ {
+  "id": "charles-darwin-1",
+  "day": "03-18",
+  "text": "La ignorancia engendra confianza con más frecuencia que el conocimiento.",
+  "author": "Charles Darwin",
+  "work": "El origen del hombre, Introducción",
+  "original": false,
+  "themes": [
+   "humildad",
+   "estudio"
+  ]
+ },
+ {
+  "id": "seneca-6",
+  "day": "03-19",
+  "text": "Cuando se había retirado la luz y mi mujer, que conocía mi costumbre, callaba, yo examinaba mi día entero y volvía sobre lo que había dicho y hecho.",
+  "author": "Séneca",
+  "work": "Sobre la ira, III, 36",
+  "original": false,
+  "themes": [
+   "estudio",
+   "error"
+  ]
+ },
+ {
+  "id": "immanuel-kant-2",
+  "day": "03-20",
+  "text": "Todo nuestro conocimiento comienza con los sentidos, pasa de allí al entendimiento y termina en la razón.",
+  "author": "Immanuel Kant",
+  "work": "Crítica de la razón pura, A298",
+  "original": false,
+  "themes": [
+   "estudio"
+  ]
+ },
+ {
+  "id": "ciceron-3",
+  "day": "03-21",
+  "text": "Los estudios alimentan la juventud, alegran la vejez, adornan la fortuna próspera y son refugio y consuelo en la adversidad.",
+  "author": "Cicerón",
+  "work": "En defensa del poeta Arquias, 16",
+  "original": false,
+  "themes": [
+   "estudio",
+   "descanso"
+  ]
+ },
+ {
+  "id": "henri-poincare-1",
+  "day": "03-22",
+  "text": "La ciencia se construye con hechos como una casa con piedras; pero una acumulación de hechos no es más una ciencia que un montón de piedras es una casa.",
+  "author": "Henri Poincaré",
+  "work": "La ciencia y la hipótesis, 1902",
+  "original": false,
+  "themes": [
+   "estudio"
+  ]
+ },
+ {
+  "id": "michel-de-montaigne-3",
+  "day": "03-23",
+  "text": "Saber de memoria no es saber.",
+  "author": "Michel de Montaigne",
+  "work": "Ensayos, I, 26",
+  "original": false,
+  "themes": [
+   "estudio"
+  ]
+ },
+ {
+  "id": "dogen-1",
+  "day": "03-24",
+  "text": "Estudiar el camino es estudiarse a uno mismo.",
+  "author": "Dōgen",
+  "work": "Genjōkōan, 1233",
+  "original": false,
+  "themes": [
+   "sentido",
+   "estudio"
+  ]
+ },
+ {
+  "id": "simon-bolivar-1",
+  "day": "03-25",
+  "text": "Moral y luces son nuestras primeras necesidades.",
+  "author": "Simón Bolívar",
+  "work": "Discurso de Angostura, 1819",
+  "original": true,
+  "themes": [
+   "estudio",
+   "sentido"
+  ]
+ },
+ {
+  "id": "louis-pasteur-1",
+  "day": "03-26",
+  "text": "En los campos de la observación, el azar solo favorece a los espíritus preparados.",
+  "author": "Louis Pasteur",
+  "work": "Discurso en Lille, 7 de diciembre de 1854",
+  "original": false,
+  "themes": [
+   "estudio",
+   "constancia"
+  ]
+ },
+ {
+  "id": "sor-juana-ines-de-la-cru-2",
+  "day": "03-27",
+  "text": "Yo no estudio para escribir, ni menos para enseñar (que fuera en mí desmedida soberbia), sino sólo por ver si con estudiar ignoro menos.",
+  "author": "Sor Juana Inés de la Cruz",
+  "work": "Respuesta a Sor Filotea de la Cruz",
+  "original": true,
+  "themes": [
+   "estudio",
+   "humildad"
+  ]
+ },
+ {
+  "id": "michel-de-montaigne-4",
+  "day": "03-28",
+  "text": "Más vale una cabeza bien hecha que una cabeza bien llena.",
+  "author": "Michel de Montaigne",
+  "work": "Ensayos, I, 26",
+  "original": false,
+  "themes": [
+   "estudio"
+  ]
+ },
+ {
+  "id": "confucio-3",
+  "day": "03-29",
+  "text": "Si caminan tres personas, siempre hay una de la que puedo aprender.",
+  "author": "Confucio",
+  "work": "Analectas, 7, 22",
+  "original": false,
+  "themes": [
+   "humildad",
+   "estudio"
+  ]
+ },
+ {
+  "id": "platon-3",
+  "day": "03-30",
+  "text": "No eduques a los niños por la fuerza: hazlo jugando, y así verás mejor para qué sirve cada uno.",
+  "author": "Platón",
+  "work": "República, VII, 536e",
+  "original": false,
+  "themes": [
+   "estudio"
+  ]
+ },
+ {
+  "id": "federico-garcia-lorca-1",
+  "day": "03-31",
+  "text": "Si yo tuviera hambre y estuviera desvalido en la calle, no pediría un pan; pediría medio pan y un libro.",
+  "author": "Federico García Lorca",
+  "work": "Alocución al pueblo de Fuente Vaqueros, 1931",
+  "original": true,
+  "themes": [
+   "estudio"
+  ]
+ },
+ {
+  "id": "confucio-4",
+  "day": "04-01",
+  "text": "Por naturaleza los hombres se parecen; es la práctica la que los aleja.",
+  "author": "Confucio",
+  "work": "Analectas, 17, 2",
+  "original": false,
+  "themes": [
+   "constancia",
+   "esfuerzo"
+  ]
+ },
+ {
+  "id": "johann-wolfgang-von-goet-4",
+  "day": "04-02",
+  "text": "Al que siempre se esfuerza aspirando, a ese podemos redimirlo.",
+  "author": "Johann Wolfgang von Goethe",
+  "work": "Fausto, II",
+  "original": false,
+  "themes": [
+   "esfuerzo",
+   "constancia"
+  ]
+ },
+ {
+  "id": "virgilio-1",
+  "day": "04-03",
+  "text": "El trabajo tenaz lo vence todo.",
+  "author": "Virgilio",
+  "work": "Geórgicas, I, 145",
+  "original": false,
+  "themes": [
+   "constancia",
+   "esfuerzo"
+  ]
+ },
+ {
+  "id": "musonio-rufo-1",
+  "day": "04-04",
+  "text": "Si haces algo bueno con esfuerzo, el esfuerzo pasa y lo bueno permanece; si haces algo malo con placer, el placer pasa y lo malo permanece.",
+  "author": "Musonio Rufo",
+  "work": "Citado por Aulo Gelio, Noches áticas, XVI, 1",
+  "original": false,
+  "themes": [
+   "esfuerzo",
+   "constancia"
+  ]
+ },
+ {
+  "id": "confucio-5",
+  "day": "04-05",
+  "text": "Es como levantar una montaña: si falta una sola canasta de tierra y me detengo, soy yo quien se detiene.",
+  "author": "Confucio",
+  "work": "Analectas, 9, 19",
+  "original": false,
+  "themes": [
+   "constancia",
+   "esfuerzo"
+  ]
+ },
+ {
+  "id": "johann-wolfgang-von-goet-5",
+  "day": "04-06",
+  "text": "En la limitación se muestra el maestro.",
+  "author": "Johann Wolfgang von Goethe",
+  "work": "Soneto «Naturaleza y arte»",
+  "original": false,
+  "themes": [
+   "esfuerzo",
+   "constancia"
+  ]
+ },
+ {
+  "id": "thomas-a-edison-1",
+  "day": "04-07",
+  "text": "El genio es un uno por ciento de inspiración y un noventa y nueve por ciento de transpiración.",
+  "author": "Thomas A. Edison",
+  "work": "Declaración recogida en Harper's Monthly, 1932",
+  "original": false,
+  "themes": [
+   "esfuerzo",
+   "constancia"
+  ]
+ },
+ {
+  "id": "epicteto-3",
+  "day": "04-08",
+  "text": "Todo hábito y toda facultad se afirman y crecen con los actos correspondientes: caminando, el caminar; corriendo, el correr.",
+  "author": "Epicteto",
+  "work": "Disertaciones, II, 18",
+  "original": false,
+  "themes": [
+   "constancia",
+   "esfuerzo"
+  ]
+ },
+ {
+  "id": "tiruvalluvar-1",
+  "day": "04-09",
+  "text": "Cuanto más se cava en la arena, más agua brota; cuanto más se estudia, más fluye el saber.",
+  "author": "Tiruvalluvar",
+  "work": "Tirukural, 396",
+  "original": false,
+  "themes": [
+   "estudio",
+   "constancia"
+  ]
+ },
+ {
+  "id": "seneca-7",
+  "day": "04-10",
+  "text": "La multitud de libros distrae: léelos de a pocos y vuelve sobre ellos.",
+  "author": "Séneca",
+  "work": "Cartas a Lucilio, 2, 3",
+  "original": false,
+  "themes": [
+   "estudio",
+   "constancia"
+  ]
+ },
+ {
+  "id": "xunzi-1",
+  "day": "04-11",
+  "text": "El aprendizaje no debe detenerse.",
+  "author": "Xunzi",
+  "work": "Xunzi, 1",
+  "original": false,
+  "themes": [
+   "estudio",
+   "constancia"
+  ]
+ },
+ {
+  "id": "seneca-8",
+  "day": "04-12",
+  "text": "Quien está en todas partes no está en ninguna.",
+  "author": "Séneca",
+  "work": "Cartas a Lucilio, 2, 2",
+  "original": false,
+  "themes": [
+   "constancia",
+   "estudio"
+  ]
+ },
+ {
+  "id": "plinio-el-viejo-1",
+  "day": "04-13",
+  "text": "Ningún día sin una línea.",
+  "author": "Plinio el Viejo",
+  "work": "Historia natural, XXXV, 84",
+  "original": false,
+  "themes": [
+   "constancia",
+   "estudio"
+  ]
+ },
+ {
+  "id": "benjamin-franklin-1",
+  "day": "04-14",
+  "text": "Puedes demorarte, pero el tiempo no.",
+  "author": "Benjamin Franklin",
+  "work": "Almanaque del pobre Richard, 1758 («El camino a la riqueza»)",
+  "original": false,
+  "themes": [
+   "tiempo",
+   "constancia"
+  ]
+ },
+ {
+  "id": "david-hilbert-1",
+  "day": "04-15",
+  "text": "Debemos saber. Sabremos.",
+  "author": "David Hilbert",
+  "work": "Discurso de Königsberg, 1930",
+  "original": false,
+  "themes": [
+   "curiosidad",
+   "constancia"
+  ]
+ },
+ {
+  "id": "almafuerte-1",
+  "day": "04-16",
+  "text": "No te des por vencido, ni aun vencido; no te sientas esclavo, ni aun esclavizado; trémulo de pavor, piénsate bravo, y arremete feroz, ya malherido.",
+  "author": "Almafuerte",
+  "work": "«¡Piú avanti!», en Evangélicas",
+  "original": true,
+  "themes": [
+   "coraje",
+   "constancia"
+  ]
+ },
+ {
+  "id": "marie-curie-1",
+  "day": "04-17",
+  "text": "La vida no es fácil para ninguno de nosotros. Pero ¿qué importa? Hay que tener perseverancia y, sobre todo, confianza en uno mismo. Hay que creer que se está dotado para algo.",
+  "author": "Marie Curie",
+  "work": "Carta citada en «Madame Curie», de Ève Curie, 1937",
+  "original": false,
+  "themes": [
+   "constancia",
+   "coraje"
+  ]
+ },
+ {
+  "id": "marco-aurelio-4",
+  "day": "04-18",
+  "text": "Tus pensamientos habituales darán el carácter de tu mente, porque el alma se tiñe con el color de sus pensamientos.",
+  "author": "Marco Aurelio",
+  "work": "Meditaciones, V, 16",
+  "original": false,
+  "themes": [
+   "sentido",
+   "constancia"
+  ]
+ },
+ {
+  "id": "rabi-tarfon-1",
+  "day": "04-19",
+  "text": "No te corresponde terminar la obra, pero tampoco eres libre de abandonarla.",
+  "author": "Rabí Tarfón",
+  "work": "Pirké Avot, 2, 16",
+  "original": false,
+  "themes": [
+   "constancia",
+   "paciencia"
+  ]
+ },
+ {
+  "id": "friedrich-nietzsche-2",
+  "day": "04-20",
+  "text": "Quien tiene un porqué para vivir encuentra casi siempre el cómo.",
+  "author": "Friedrich Nietzsche",
+  "work": "Crepúsculo de los ídolos, «Máximas y flechas», 12",
+  "original": false,
+  "themes": [
+   "sentido",
+   "constancia"
+  ]
+ },
+ {
+  "id": "buda-3",
+  "day": "04-21",
+  "text": "Poco a poco, una a una, momento a momento, el sabio se limpia de impurezas, como el orfebre limpia la plata.",
+  "author": "Buda",
+  "work": "Dhammapada, 239",
+  "original": false,
+  "themes": [
+   "paciencia",
+   "constancia"
+  ]
+ },
+ {
+  "id": "rudyard-kipling-1",
+  "day": "04-22",
+  "text": "Si puedes llenar el minuto implacable con sesenta segundos de esfuerzo bien corrido, tuya es la Tierra.",
+  "author": "Rudyard Kipling",
+  "work": "«Si—», 1910",
+  "original": false,
+  "themes": [
+   "constancia",
+   "tiempo"
+  ]
+ },
+ {
+  "id": "francois-de-la-rochefouc-1",
+  "day": "04-23",
+  "text": "Pocas cosas son imposibles por sí mismas; para triunfar nos falta más la perseverancia que los medios.",
+  "author": "François de La Rochefoucauld",
+  "work": "Máximas, 243",
+  "original": false,
+  "themes": [
+   "constancia",
+   "coraje"
+  ]
+ },
+ {
+  "id": "xunzi-2",
+  "day": "04-24",
+  "text": "Sin acumular pasos no se llega a mil leguas; sin acumular arroyos no se forman ríos ni mares.",
+  "author": "Xunzi",
+  "work": "Xunzi, 1",
+  "original": false,
+  "themes": [
+   "constancia",
+   "paciencia"
+  ]
+ },
+ {
+  "id": "miyamoto-musashi-1",
+  "day": "04-25",
+  "text": "Entrenar mil días para forjarse, diez mil días para pulirse.",
+  "author": "Miyamoto Musashi",
+  "work": "El libro de los cinco anillos, 1645",
+  "original": false,
+  "themes": [
+   "constancia",
+   "paciencia"
+  ]
+ },
+ {
+  "id": "buda-4",
+  "day": "04-26",
+  "text": "Con esfuerzo, atención, disciplina y dominio de sí, el sabio se hace una isla que el diluvio no sumerge.",
+  "author": "Buda",
+  "work": "Dhammapada, 25",
+  "original": false,
+  "themes": [
+   "constancia",
+   "calma"
+  ]
+ },
+ {
+  "id": "ovidio-1",
+  "day": "04-27",
+  "text": "La gota horada la piedra; el anillo se gasta con el uso.",
+  "author": "Ovidio",
+  "work": "Pónticas, IV, 10, 5",
+  "original": false,
+  "themes": [
+   "constancia",
+   "paciencia"
+  ]
+ },
+ {
+  "id": "marco-aurelio-5",
+  "day": "04-28",
+  "text": "Haz pocas cosas, si quieres tener tranquilidad.",
+  "author": "Marco Aurelio",
+  "work": "Meditaciones, IV, 24",
+  "original": false,
+  "themes": [
+   "calma",
+   "constancia"
+  ]
+ },
+ {
+  "id": "henry-david-thoreau-2",
+  "day": "04-29",
+  "text": "Si uno avanza con confianza en la dirección de sus sueños y se esfuerza por vivir la vida que ha imaginado, se encontrará con un éxito inesperado en horas comunes.",
+  "author": "Henry David Thoreau",
+  "work": "Walden, cap. 18",
+  "original": false,
+  "themes": [
+   "coraje",
+   "constancia"
+  ]
+ },
+ {
+  "id": "marco-aurelio-6",
+  "day": "04-30",
+  "text": "No te desanimes ni te des por vencido si no logras hacerlo todo como querías; cuando falles, vuelve a empezar.",
+  "author": "Marco Aurelio",
+  "work": "Meditaciones, V, 9",
+  "original": false,
+  "themes": [
+   "error",
+   "constancia"
+  ]
+ },
+ {
+  "id": "robert-browning-1",
+  "day": "05-01",
+  "text": "El alcance de un hombre debería superar lo que puede asir; si no, ¿para qué sirve un cielo?",
+  "author": "Robert Browning",
+  "work": "Andrea del Sarto, 1855",
+  "original": false,
+  "themes": [
+   "coraje",
+   "esfuerzo"
+  ]
+ },
+ {
+  "id": "marco-aurelio-7",
+  "day": "05-02",
+  "text": "El obstáculo para la acción hace avanzar la acción. Lo que se interpone en el camino se vuelve el camino.",
+  "author": "Marco Aurelio",
+  "work": "Meditaciones, V, 20",
+  "original": false,
+  "themes": [
+   "coraje",
+   "esfuerzo"
+  ]
+ },
+ {
+  "id": "platon-4",
+  "day": "05-03",
+  "text": "Vencerse a uno mismo es la primera y la mejor de las victorias.",
+  "author": "Platón",
+  "work": "Leyes, I, 626e",
+  "original": false,
+  "themes": [
+   "esfuerzo",
+   "coraje"
+  ]
+ },
+ {
+  "id": "g-w-f-hegel-1",
+  "day": "05-04",
+  "text": "Nada grande en el mundo se ha realizado sin pasión.",
+  "author": "G. W. F. Hegel",
+  "work": "Lecciones sobre la filosofía de la historia",
+  "original": false,
+  "themes": [
+   "esfuerzo",
+   "coraje"
+  ]
+ },
+ {
+  "id": "marco-aurelio-8",
+  "day": "05-05",
+  "text": "No pienses que es imposible para el hombre lo que a ti te resulta difícil; y si algo es posible y propio del hombre, considéralo también a tu alcance.",
+  "author": "Marco Aurelio",
+  "work": "Meditaciones, VI, 19",
+  "original": false,
+  "themes": [
+   "coraje",
+   "esfuerzo"
+  ]
+ },
+ {
+  "id": "buda-5",
+  "day": "05-06",
+  "text": "Más vale vencerse a uno mismo que vencer a mil hombres en el campo de batalla.",
+  "author": "Buda",
+  "work": "Dhammapada, 103",
+  "original": false,
+  "themes": [
+   "esfuerzo",
+   "coraje"
+  ]
+ },
+ {
+  "id": "frederick-douglass-1",
+  "day": "05-07",
+  "text": "Si no hay lucha, no hay progreso.",
+  "author": "Frederick Douglass",
+  "work": "Discurso por la emancipación en las Indias Occidentales, 1857",
+  "original": false,
+  "themes": [
+   "esfuerzo",
+   "coraje"
+  ]
+ },
+ {
+  "id": "ralph-waldo-emerson-1",
+  "day": "05-08",
+  "text": "Nunca se logró nada grande sin entusiasmo.",
+  "author": "Ralph Waldo Emerson",
+  "work": "Círculos, 1841",
+  "original": false,
+  "themes": [
+   "esfuerzo",
+   "coraje"
+  ]
+ },
+ {
+  "id": "homero-1",
+  "day": "05-09",
+  "text": "Aguanta, corazón: cosas más duras has soportado.",
+  "author": "Homero",
+  "work": "Odisea, XX, 18",
+  "original": false,
+  "themes": [
+   "coraje",
+   "paciencia"
+  ]
+ },
+ {
+  "id": "ralph-waldo-emerson-2",
+  "day": "05-10",
+  "text": "Confía en ti mismo: todo corazón vibra con esa cuerda de hierro.",
+  "author": "Ralph Waldo Emerson",
+  "work": "Confianza en uno mismo, 1841",
+  "original": false,
+  "themes": [
+   "coraje",
+   "sentido"
+  ]
+ },
+ {
+  "id": "epicteto-4",
+  "day": "05-11",
+  "text": "Las dificultades son las que muestran quiénes son los hombres.",
+  "author": "Epicteto",
+  "work": "Disertaciones, I, 24",
+  "original": false,
+  "themes": [
+   "coraje"
+  ]
+ },
+ {
+  "id": "platon-5",
+  "day": "05-12",
+  "text": "Ningún mal puede alcanzar al hombre bueno, ni en vida ni después de muerto.",
+  "author": "Platón",
+  "work": "Apología de Sócrates, 41d",
+  "original": false,
+  "themes": [
+   "coraje",
+   "calma"
+  ]
+ },
+ {
+  "id": "oscar-wilde-1",
+  "day": "05-13",
+  "text": "Todos estamos en la alcantarilla, pero algunos miramos las estrellas.",
+  "author": "Oscar Wilde",
+  "work": "El abanico de lady Windermere, III",
+  "original": false,
+  "themes": [
+   "coraje",
+   "sentido"
+  ]
+ },
+ {
+  "id": "hillel-2",
+  "day": "05-14",
+  "text": "Ni el tímido aprende, ni el impaciente enseña.",
+  "author": "Hillel",
+  "work": "Pirké Avot, 2, 5",
+  "original": false,
+  "themes": [
+   "coraje",
+   "paciencia"
+  ]
+ },
+ {
+  "id": "immanuel-kant-3",
+  "day": "05-15",
+  "text": "¡Sapere aude! Ten el valor de servirte de tu propio entendimiento.",
+  "author": "Immanuel Kant",
+  "work": "¿Qué es la Ilustración?, 1784",
+  "original": false,
+  "themes": [
+   "coraje",
+   "estudio"
+  ]
+ },
+ {
+  "id": "albert-camus-1",
+  "day": "05-16",
+  "text": "En medio del invierno aprendí por fin que había en mí un verano invencible.",
+  "author": "Albert Camus",
+  "work": "«Regreso a Tipasa», en El verano, 1954",
+  "original": false,
+  "themes": [
+   "coraje",
+   "calma"
+  ]
+ },
+ {
+  "id": "marco-aurelio-9",
+  "day": "05-17",
+  "text": "Sé como el promontorio contra el que se estrellan sin cesar las olas: él permanece firme, y a su alrededor se amansa la espuma del agua.",
+  "author": "Marco Aurelio",
+  "work": "Meditaciones, IV, 49",
+  "original": false,
+  "themes": [
+   "coraje",
+   "calma"
+  ]
+ },
+ {
+  "id": "michel-de-montaigne-5",
+  "day": "05-18",
+  "text": "Quien teme sufrir, ya sufre lo que teme.",
+  "author": "Michel de Montaigne",
+  "work": "Ensayos, III, 13",
+  "original": false,
+  "themes": [
+   "calma",
+   "coraje"
+  ]
+ },
+ {
+  "id": "emily-dickinson-2",
+  "day": "05-19",
+  "text": "La esperanza es esa cosa con plumas que se posa en el alma, y canta la melodía sin palabras, y nunca se detiene.",
+  "author": "Emily Dickinson",
+  "work": "Poema 254",
+  "original": false,
+  "themes": [
+   "calma",
+   "coraje"
+  ]
+ },
+ {
+  "id": "william-shakespeare-1",
+  "day": "05-20",
+  "text": "Nuestras dudas son traidoras: nos hacen perder el bien que a menudo podríamos ganar por miedo a intentarlo.",
+  "author": "William Shakespeare",
+  "work": "Medida por medida, I, 4",
+  "original": false,
+  "themes": [
+   "coraje"
+  ]
+ },
+ {
+  "id": "mary-wollstonecraft-1",
+  "day": "05-21",
+  "text": "No deseo que las mujeres tengan poder sobre los hombres, sino sobre sí mismas.",
+  "author": "Mary Wollstonecraft",
+  "work": "Vindicación de los derechos de la mujer, 1792",
+  "original": false,
+  "themes": [
+   "libertad",
+   "coraje"
+  ]
+ },
+ {
+  "id": "friedrich-nietzsche-3",
+  "day": "05-22",
+  "text": "Lo que no me mata me hace más fuerte.",
+  "author": "Friedrich Nietzsche",
+  "work": "Crepúsculo de los ídolos, «Máximas y flechas», 8",
+  "original": false,
+  "themes": [
+   "coraje",
+   "error"
+  ]
+ },
+ {
+  "id": "miguel-de-cervantes-2",
+  "day": "05-23",
+  "text": "Quien canta su mal espanta.",
+  "author": "Miguel de Cervantes",
+  "work": "Don Quijote de la Mancha, I, 22",
+  "original": true,
+  "themes": [
+   "calma",
+   "coraje"
+  ]
+ },
+ {
+  "id": "epicteto-5",
+  "day": "05-24",
+  "text": "La enfermedad es un obstáculo para el cuerpo, pero no para la voluntad, a menos que ella misma quiera.",
+  "author": "Epicteto",
+  "work": "Enquiridión, 9",
+  "original": false,
+  "themes": [
+   "coraje",
+   "calma"
+  ]
+ },
+ {
+  "id": "baruch-spinoza-1",
+  "day": "05-25",
+  "text": "La paz no es la ausencia de guerra: es una virtud que nace de la fortaleza del ánimo.",
+  "author": "Baruch Spinoza",
+  "work": "Tratado político, V, 4",
+  "original": false,
+  "themes": [
+   "calma",
+   "coraje"
+  ]
+ },
+ {
+  "id": "epicteto-6",
+  "day": "05-26",
+  "text": "Si deseas filosofar, prepárate desde ya a que se rían de ti.",
+  "author": "Epicteto",
+  "work": "Enquiridión, 22",
+  "original": false,
+  "themes": [
+   "coraje",
+   "estudio"
+  ]
+ },
+ {
+  "id": "marco-aurelio-10",
+  "day": "05-27",
+  "text": "No te agobies pensando en tu vida entera. No juntes de golpe todos los males que podrían venir; ante cada uno pregúntate: ¿qué hay en esto de insoportable?",
+  "author": "Marco Aurelio",
+  "work": "Meditaciones, VIII, 36",
+  "original": false,
+  "themes": [
+   "calma",
+   "coraje"
+  ]
+ },
+ {
+  "id": "s-ren-kierkegaard-1",
+  "day": "05-28",
+  "text": "La angustia es el vértigo de la libertad.",
+  "author": "Søren Kierkegaard",
+  "work": "El concepto de la angustia",
+  "original": false,
+  "themes": [
+   "libertad",
+   "coraje"
+  ]
+ },
+ {
+  "id": "seneca-9",
+  "day": "05-29",
+  "text": "Hay más cosas, Lucilio, que nos asustan que las que nos dañan; sufrimos más en la imaginación que en la realidad.",
+  "author": "Séneca",
+  "work": "Cartas a Lucilio, 13, 4",
+  "original": false,
+  "themes": [
+   "calma",
+   "coraje"
+  ]
+ },
+ {
+  "id": "marco-aurelio-11",
+  "day": "05-30",
+  "text": "Lo que no hace peor al hombre, tampoco hace peor su vida.",
+  "author": "Marco Aurelio",
+  "work": "Meditaciones, IV, 8",
+  "original": false,
+  "themes": [
+   "calma",
+   "coraje"
+  ]
+ },
+ {
+  "id": "fernando-pessoa-1",
+  "day": "05-31",
+  "text": "Navegar es preciso; vivir no es preciso.",
+  "author": "Fernando Pessoa",
+  "work": "Retomando una frase de Pompeyo, en Plutarco (Vida de Pompeyo)",
+  "original": false,
+  "themes": [
+   "coraje",
+   "sentido"
+  ]
+ },
+ {
+  "id": "seneca-10",
+  "day": "06-01",
+  "text": "Al que acepta, el destino lo guía; al que se resiste, lo arrastra.",
+  "author": "Séneca",
+  "work": "Cartas a Lucilio, 107, 11",
+  "original": false,
+  "themes": [
+   "calma",
+   "paciencia"
+  ]
+ },
+ {
+  "id": "lao-tse-4",
+  "day": "06-02",
+  "text": "Lo duro y lo fuerte acompañan a la muerte; lo blando y lo débil acompañan a la vida.",
+  "author": "Lao Tsé",
+  "work": "Tao Te Ching, 76",
+  "original": false,
+  "themes": [
+   "calma",
+   "paciencia"
+  ]
+ },
+ {
+  "id": "epicteto-7",
+  "day": "06-03",
+  "text": "No pretendas que lo que sucede suceda como tú quieres; quiere que suceda como sucede, y serás feliz.",
+  "author": "Epicteto",
+  "work": "Enquiridión, 8",
+  "original": false,
+  "themes": [
+   "calma",
+   "paciencia"
+  ]
+ },
+ {
+  "id": "seneca-11",
+  "day": "06-04",
+  "text": "El mejor remedio de la ira es la demora.",
+  "author": "Séneca",
+  "work": "Sobre la ira, II, 29",
+  "original": false,
+  "themes": [
+   "calma",
+   "paciencia"
+  ]
+ },
+ {
+  "id": "santa-teresa-de-jesus-1",
+  "day": "06-05",
+  "text": "Nada te turbe, nada te espante; todo se pasa; la paciencia todo lo alcanza.",
+  "author": "Santa Teresa de Jesús",
+  "work": "Poesías, «Nada te turbe»",
+  "original": true,
+  "themes": [
+   "calma",
+   "paciencia"
+  ]
+ },
+ {
+  "id": "epicteto-8",
+  "day": "06-06",
+  "text": "Conduce tu vida como en un banquete: cuando el plato llega a ti, extiende la mano y toma con moderación; si pasa de largo, no lo detengas.",
+  "author": "Epicteto",
+  "work": "Enquiridión, 15",
+  "original": false,
+  "themes": [
+   "calma",
+   "paciencia"
+  ]
+ },
+ {
+  "id": "voltaire-1",
+  "day": "06-07",
+  "text": "Hay que cultivar nuestro jardín.",
+  "author": "Voltaire",
+  "work": "Cándido, XXX",
+  "original": false,
+  "themes": [
+   "esfuerzo",
+   "calma"
+  ]
+ },
+ {
+  "id": "bhagavad-gita-1",
+  "day": "06-08",
+  "text": "Tienes derecho a la acción, pero no a los frutos de la acción.",
+  "author": "Bhagavad Gita",
+  "work": "Canto II, 47",
+  "original": false,
+  "themes": [
+   "calma",
+   "esfuerzo"
+  ]
+ },
+ {
+  "id": "ramon-de-campoamor-1",
+  "day": "06-09",
+  "text": "En este mundo traidor nada es verdad ni mentira: todo es según el color del cristal con que se mira.",
+  "author": "Ramón de Campoamor",
+  "work": "Doloras, 1846",
+  "original": true,
+  "themes": [
+   "calma",
+   "humildad"
+  ]
+ },
+ {
+  "id": "rainer-maria-rilke-3",
+  "day": "06-10",
+  "text": "Solo hay un camino: entra en ti mismo.",
+  "author": "Rainer Maria Rilke",
+  "work": "Cartas a un joven poeta, carta 1",
+  "original": false,
+  "themes": [
+   "sentido",
+   "calma"
+  ]
+ },
+ {
+  "id": "seneca-12",
+  "day": "06-11",
+  "text": "Lo que debes cambiar es el ánimo, no el cielo.",
+  "author": "Séneca",
+  "work": "Cartas a Lucilio, 28, 1",
+  "original": false,
+  "themes": [
+   "sentido",
+   "calma"
+  ]
+ },
+ {
+  "id": "marco-aurelio-12",
+  "day": "06-12",
+  "text": "La perfección del carácter consiste en vivir cada día como si fuera el último, sin agitación, sin pereza, sin fingimiento.",
+  "author": "Marco Aurelio",
+  "work": "Meditaciones, VII, 69",
+  "original": false,
+  "themes": [
+   "presente",
+   "calma"
+  ]
+ },
+ {
+  "id": "lao-tse-5",
+  "day": "06-13",
+  "text": "Quien sabe contentarse no es humillado; quien sabe detenerse no corre peligro.",
+  "author": "Lao Tsé",
+  "work": "Tao Te Ching, 44",
+  "original": false,
+  "themes": [
+   "calma",
+   "sentido"
+  ]
+ },
+ {
+  "id": "seneca-13",
+  "day": "06-14",
+  "text": "Si vives según la naturaleza, nunca serás pobre; si vives según la opinión, nunca serás rico.",
+  "author": "Séneca",
+  "work": "Cartas a Lucilio, 16, 7",
+  "original": false,
+  "themes": [
+   "sentido",
+   "calma"
+  ]
+ },
+ {
+  "id": "lao-tse-6",
+  "day": "06-15",
+  "text": "Para aprender se suma cada día; para seguir el Tao se resta cada día.",
+  "author": "Lao Tsé",
+  "work": "Tao Te Ching, 48",
+  "original": false,
+  "themes": [
+   "estudio",
+   "calma"
+  ]
+ },
+ {
+  "id": "epicteto-9",
+  "day": "06-16",
+  "text": "Recuerda que no te ofende quien te insulta, sino el juicio que tienes de que te ha ofendido.",
+  "author": "Epicteto",
+  "work": "Enquiridión, 20",
+  "original": false,
+  "themes": [
+   "calma"
+  ]
+ },
+ {
+  "id": "voltaire-2",
+  "day": "06-17",
+  "text": "Lo mejor es enemigo de lo bueno.",
+  "author": "Voltaire",
+  "work": "Diccionario filosófico, «Arte dramático»",
+  "original": false,
+  "themes": [
+   "esfuerzo",
+   "paciencia"
+  ]
+ },
+ {
+  "id": "william-shakespeare-2",
+  "day": "06-18",
+  "text": "No hay nada bueno ni malo: es el pensamiento el que lo hace así.",
+  "author": "William Shakespeare",
+  "work": "Hamlet, II, 2",
+  "original": false,
+  "themes": [
+   "calma",
+   "sentido"
+  ]
+ },
+ {
+  "id": "lao-tse-7",
+  "day": "06-19",
+  "text": "Alcanza la quietud más profunda y quédate en ella.",
+  "author": "Lao Tsé",
+  "work": "Tao Te Ching, 16",
+  "original": false,
+  "themes": [
+   "calma",
+   "descanso"
+  ]
+ },
+ {
+  "id": "epicteto-10",
+  "day": "06-20",
+  "text": "Toda cosa tiene dos asas: una por la que se la puede llevar y otra por la que no.",
+  "author": "Epicteto",
+  "work": "Enquiridión, 43",
+  "original": false,
+  "themes": [
+   "calma",
+   "sentido"
+  ]
+ },
+ {
+  "id": "epicuro-2",
+  "day": "06-21",
+  "text": "Nada es suficiente para quien lo suficiente es poco.",
+  "author": "Epicuro",
+  "work": "Sentencias vaticanas, 68",
+  "original": false,
+  "themes": [
+   "calma",
+   "sentido"
+  ]
+ },
+ {
+  "id": "marco-aurelio-13",
+  "day": "06-22",
+  "text": "La mejor venganza es no parecerse a quien te ofendió.",
+  "author": "Marco Aurelio",
+  "work": "Meditaciones, VI, 6",
+  "original": false,
+  "themes": [
+   "calma"
+  ]
+ },
+ {
+  "id": "lao-tse-8",
+  "day": "06-23",
+  "text": "Lo más elevado es como el agua: beneficia a todos los seres sin competir con ninguno.",
+  "author": "Lao Tsé",
+  "work": "Tao Te Ching, 8",
+  "original": false,
+  "themes": [
+   "calma",
+   "amistad"
+  ]
+ },
+ {
+  "id": "epicteto-11",
+  "day": "06-24",
+  "text": "Lo que perturba a los hombres no son las cosas, sino los juicios que se forman sobre ellas.",
+  "author": "Epicteto",
+  "work": "Enquiridión, 5",
+  "original": false,
+  "themes": [
+   "calma"
+  ]
+ },
+ {
+  "id": "baruch-spinoza-2",
+  "day": "06-25",
+  "text": "Todas las cosas excelentes son tan difíciles como raras.",
+  "author": "Baruch Spinoza",
+  "work": "Ética, V, 42",
+  "original": false,
+  "themes": [
+   "esfuerzo",
+   "paciencia"
+  ]
+ },
+ {
+  "id": "epicteto-12",
+  "day": "06-26",
+  "text": "Algunas cosas dependen de nosotros y otras no.",
+  "author": "Epicteto",
+  "work": "Enquiridión, 1",
+  "original": false,
+  "themes": [
+   "calma",
+   "sentido"
+  ]
+ },
+ {
+  "id": "baruch-spinoza-3",
+  "day": "06-27",
+  "text": "He procurado con ahínco no reírme de las acciones humanas, ni lamentarlas, ni detestarlas, sino comprenderlas.",
+  "author": "Baruch Spinoza",
+  "work": "Tratado político, I, 4",
+  "original": false,
+  "themes": [
+   "calma",
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "marco-aurelio-14",
+  "day": "06-28",
+  "text": "Los hombres buscan retiros en el campo, en la playa, en las montañas. Pero en cualquier momento puedes retirarte dentro de ti mismo.",
+  "author": "Marco Aurelio",
+  "work": "Meditaciones, IV, 3",
+  "original": false,
+  "themes": [
+   "calma",
+   "descanso"
+  ]
+ },
+ {
+  "id": "buda-6",
+  "day": "06-29",
+  "text": "Vence la ira con la ausencia de ira; vence el mal con el bien.",
+  "author": "Buda",
+  "work": "Dhammapada, 223",
+  "original": false,
+  "themes": [
+   "calma"
+  ]
+ },
+ {
+  "id": "juvenal-1",
+  "day": "06-30",
+  "text": "Pide una mente sana en un cuerpo sano.",
+  "author": "Juvenal",
+  "work": "Sátiras, X, 356",
+  "original": false,
+  "themes": [
+   "descanso",
+   "calma"
+  ]
+ },
+ {
+  "id": "fray-luis-de-leon-1",
+  "day": "07-01",
+  "text": "¡Qué descansada vida la del que huye del mundanal ruido!",
+  "author": "Fray Luis de León",
+  "work": "Oda a la vida retirada",
+  "original": true,
+  "themes": [
+   "descanso",
+   "calma"
+  ]
+ },
+ {
+  "id": "blaise-pascal-2",
+  "day": "07-02",
+  "text": "Toda la desgracia de los hombres viene de una sola cosa: no saber quedarse tranquilos en una habitación.",
+  "author": "Blaise Pascal",
+  "work": "Pensamientos, 139",
+  "original": false,
+  "themes": [
+   "calma",
+   "descanso"
+  ]
+ },
+ {
+  "id": "michel-de-montaigne-6",
+  "day": "07-03",
+  "text": "Hay que reservarse una trastienda propia, enteramente libre, donde establecer nuestra verdadera libertad y nuestro principal retiro.",
+  "author": "Michel de Montaigne",
+  "work": "Ensayos, I, 39",
+  "original": false,
+  "themes": [
+   "descanso",
+   "calma"
+  ]
+ },
+ {
+  "id": "jean-de-la-bruyere-1",
+  "day": "07-04",
+  "text": "Hay que reírse antes de ser felices, por miedo a morir sin haber reído.",
+  "author": "Jean de La Bruyère",
+  "work": "Los caracteres, 1688",
+  "original": false,
+  "themes": [
+   "presente",
+   "descanso"
+  ]
+ },
+ {
+  "id": "michel-de-montaigne-7",
+  "day": "07-05",
+  "text": "Cuando bailo, bailo; cuando duermo, duermo.",
+  "author": "Michel de Montaigne",
+  "work": "Ensayos, III, 13",
+  "original": false,
+  "themes": [
+   "presente",
+   "descanso"
+  ]
+ },
+ {
+  "id": "seneca-14",
+  "day": "07-06",
+  "text": "Hay que darle algún descanso al espíritu: descansado, se levantará mejor y más agudo.",
+  "author": "Séneca",
+  "work": "Sobre la tranquilidad del ánimo, 17",
+  "original": false,
+  "themes": [
+   "descanso"
+  ]
+ },
+ {
+  "id": "ciceron-4",
+  "day": "07-07",
+  "text": "Si tienes un jardín y una biblioteca, no te faltará nada.",
+  "author": "Cicerón",
+  "work": "Cartas a los familiares, IX, 4",
+  "original": false,
+  "themes": [
+   "estudio",
+   "descanso"
+  ]
+ },
+ {
+  "id": "john-keats-1",
+  "day": "07-08",
+  "text": "Una cosa bella es un gozo para siempre.",
+  "author": "John Keats",
+  "work": "Endymion, 1818",
+  "original": false,
+  "themes": [
+   "sentido",
+   "descanso"
+  ]
+ },
+ {
+  "id": "friedrich-nietzsche-4",
+  "day": "07-09",
+  "text": "Sin música, la vida sería un error.",
+  "author": "Friedrich Nietzsche",
+  "work": "Crepúsculo de los ídolos, «Máximas y flechas», 33",
+  "original": false,
+  "themes": [
+   "descanso",
+   "sentido"
+  ]
+ },
+ {
+  "id": "montesquieu-1",
+  "day": "07-10",
+  "text": "Nunca he tenido una pena que una hora de lectura no me haya quitado.",
+  "author": "Montesquieu",
+  "work": "Pensamientos",
+  "original": false,
+  "themes": [
+   "estudio",
+   "descanso"
+  ]
+ },
+ {
+  "id": "jorge-luis-borges-1",
+  "day": "07-11",
+  "text": "Yo, que siempre imaginé el Paraíso bajo la especie de una biblioteca.",
+  "author": "Jorge Luis Borges",
+  "work": "«Poema de los dones», en El hacedor, 1960",
+  "original": true,
+  "themes": [
+   "estudio",
+   "descanso"
+  ]
+ },
+ {
+  "id": "virginia-woolf-1",
+  "day": "07-12",
+  "text": "No se puede pensar bien, amar bien, dormir bien, si no se ha cenado bien.",
+  "author": "Virginia Woolf",
+  "work": "Un cuarto propio, cap. 1",
+  "original": false,
+  "themes": [
+   "descanso",
+   "estudio"
+  ]
+ },
+ {
+  "id": "francisco-de-quevedo-1",
+  "day": "07-13",
+  "text": "Vivo en conversación con los difuntos y escucho con mis ojos a los muertos.",
+  "author": "Francisco de Quevedo",
+  "work": "Soneto «Retirado en la paz de estos desiertos»",
+  "original": true,
+  "themes": [
+   "estudio",
+   "descanso"
+  ]
+ },
+ {
+  "id": "marco-aurelio-15",
+  "day": "07-14",
+  "text": "Si cumples la tarea presente siguiendo la recta razón, con diligencia, con energía, con calma, sin que nada accesorio te distraiga, serás feliz.",
+  "author": "Marco Aurelio",
+  "work": "Meditaciones, III, 12",
+  "original": false,
+  "themes": [
+   "presente",
+   "calma"
+  ]
+ },
+ {
+  "id": "michel-de-montaigne-8",
+  "day": "07-15",
+  "text": "La señal más clara de la sabiduría es una alegría constante.",
+  "author": "Michel de Montaigne",
+  "work": "Ensayos, I, 26",
+  "original": false,
+  "themes": [
+   "calma",
+   "sentido"
+  ]
+ },
+ {
+  "id": "marco-aurelio-16",
+  "day": "07-16",
+  "text": "Quita la opinión «me han hecho daño» y el daño queda quitado. Quita el «me han hecho daño» y el daño desaparece.",
+  "author": "Marco Aurelio",
+  "work": "Meditaciones, IV, 7",
+  "original": false,
+  "themes": [
+   "calma"
+  ]
+ },
+ {
+  "id": "rabindranath-tagore-1",
+  "day": "07-17",
+  "text": "Si lloras por haber perdido el sol, las lágrimas no te dejarán ver las estrellas.",
+  "author": "Rabindranath Tagore",
+  "work": "Pájaros perdidos, 1916",
+  "original": false,
+  "themes": [
+   "calma",
+   "coraje"
+  ]
+ },
+ {
+  "id": "buda-7",
+  "day": "07-18",
+  "text": "La mente es la precursora de todos los estados; la mente es lo principal, todo está hecho por la mente.",
+  "author": "Buda",
+  "work": "Dhammapada, 1",
+  "original": false,
+  "themes": [
+   "sentido",
+   "calma"
+  ]
+ },
+ {
+  "id": "marco-aurelio-17",
+  "day": "07-19",
+  "text": "Si algo externo te causa pena, no es eso lo que te perturba, sino tu juicio sobre ello; y está en tu poder borrarlo ahora mismo.",
+  "author": "Marco Aurelio",
+  "work": "Meditaciones, VIII, 47",
+  "original": false,
+  "themes": [
+   "calma"
+  ]
+ },
+ {
+  "id": "henry-david-thoreau-3",
+  "day": "07-20",
+  "text": "Un hombre es rico en proporción al número de cosas que puede dejar en paz.",
+  "author": "Henry David Thoreau",
+  "work": "Walden, cap. 1",
+  "original": false,
+  "themes": [
+   "calma",
+   "sentido"
+  ]
+ },
+ {
+  "id": "epicteto-13",
+  "day": "07-21",
+  "text": "Nunca digas de nada «lo he perdido», sino «lo he devuelto».",
+  "author": "Epicteto",
+  "work": "Enquiridión, 11",
+  "original": false,
+  "themes": [
+   "calma"
+  ]
+ },
+ {
+  "id": "aristoteles-4",
+  "day": "07-22",
+  "text": "Enojarse es fácil. Lo difícil es enojarse con la persona adecuada, en la medida adecuada, en el momento adecuado, con el fin adecuado y de la manera adecuada.",
+  "author": "Aristóteles",
+  "work": "Ética a Nicómaco, II, 9",
+  "original": false,
+  "themes": [
+   "calma"
+  ]
+ },
+ {
+  "id": "horacio-2",
+  "day": "07-23",
+  "text": "Acuérdate de conservar la mente serena en los momentos difíciles.",
+  "author": "Horacio",
+  "work": "Odas, II, 3",
+  "original": false,
+  "themes": [
+   "calma"
+  ]
+ },
+ {
+  "id": "buda-8",
+  "day": "07-24",
+  "text": "Uno mismo es su propio refugio.",
+  "author": "Buda",
+  "work": "Dhammapada, 160",
+  "original": false,
+  "themes": [
+   "sentido",
+   "calma"
+  ]
+ },
+ {
+  "id": "seneca-15",
+  "day": "07-25",
+  "text": "No es pobre quien tiene poco, sino quien desea más.",
+  "author": "Séneca",
+  "work": "Cartas a Lucilio, 2, 6",
+  "original": false,
+  "themes": [
+   "calma",
+   "sentido"
+  ]
+ },
+ {
+  "id": "horacio-3",
+  "day": "07-26",
+  "text": "Aprovecha el día, y confía lo menos posible en el mañana.",
+  "author": "Horacio",
+  "work": "Odas, I, 11",
+  "original": false,
+  "themes": [
+   "presente",
+   "tiempo"
+  ]
+ },
+ {
+  "id": "seneca-16",
+  "day": "07-27",
+  "text": "Cada día debe ordenarse como si cerrara y completara nuestra vida.",
+  "author": "Séneca",
+  "work": "Cartas a Lucilio, 12, 8",
+  "original": false,
+  "themes": [
+   "presente",
+   "tiempo"
+  ]
+ },
+ {
+  "id": "marco-aurelio-18",
+  "day": "07-28",
+  "text": "Haz cada acto de tu vida como si fuera el último.",
+  "author": "Marco Aurelio",
+  "work": "Meditaciones, II, 5",
+  "original": false,
+  "themes": [
+   "presente"
+  ]
+ },
+ {
+  "id": "william-blake-1",
+  "day": "07-29",
+  "text": "Ver un mundo en un grano de arena, y un cielo en una flor silvestre.",
+  "author": "William Blake",
+  "work": "Presagios de inocencia",
+  "original": false,
+  "themes": [
+   "presente",
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "michel-de-montaigne-9",
+  "day": "07-30",
+  "text": "Es una perfección absoluta, y casi divina, saber disfrutar lealmente de nuestro ser.",
+  "author": "Michel de Montaigne",
+  "work": "Ensayos, III, 13",
+  "original": false,
+  "themes": [
+   "presente",
+   "sentido"
+  ]
+ },
+ {
+  "id": "pedro-calderon-de-la-bar-1",
+  "day": "07-31",
+  "text": "¿Qué es la vida? Un frenesí. ¿Qué es la vida? Una ilusión, una sombra, una ficción; que toda la vida es sueño, y los sueños, sueños son.",
+  "author": "Pedro Calderón de la Barca",
+  "work": "La vida es sueño, II",
+  "original": true,
+  "themes": [
+   "sentido",
+   "presente"
+  ]
+ },
+ {
+  "id": "william-shakespeare-3",
+  "day": "08-01",
+  "text": "Estamos hechos de la misma materia que los sueños.",
+  "author": "William Shakespeare",
+  "work": "La tempestad, IV, 1",
+  "original": false,
+  "themes": [
+   "sentido",
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "novalis-1",
+  "day": "08-02",
+  "text": "La filosofía es, en verdad, nostalgia: el impulso de estar en casa en todas partes.",
+  "author": "Novalis",
+  "work": "Fragmentos",
+  "original": false,
+  "themes": [
+   "sentido",
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "voltaire-3",
+  "day": "08-03",
+  "text": "La duda no es una condición agradable, pero la certeza es absurda.",
+  "author": "Voltaire",
+  "work": "Carta a Federico de Prusia, 28 de noviembre de 1770",
+  "original": false,
+  "themes": [
+   "humildad",
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "william-shakespeare-4",
+  "day": "08-04",
+  "text": "Hay más cosas en el cielo y en la tierra, Horacio, de las que sueña tu filosofía.",
+  "author": "William Shakespeare",
+  "work": "Hamlet, I, 5",
+  "original": false,
+  "themes": [
+   "curiosidad",
+   "humildad"
+  ]
+ },
+ {
+  "id": "albert-einstein-1",
+  "day": "08-05",
+  "text": "No tengo ningún talento especial. Solo soy apasionadamente curioso.",
+  "author": "Albert Einstein",
+  "work": "Carta a Carl Seelig, 11 de marzo de 1952",
+  "original": false,
+  "themes": [
+   "curiosidad",
+   "humildad"
+  ]
+ },
+ {
+  "id": "michael-faraday-1",
+  "day": "08-06",
+  "text": "Nada es demasiado maravilloso para ser verdad, si es coherente con las leyes de la naturaleza.",
+  "author": "Michael Faraday",
+  "work": "Diario, 1849",
+  "original": false,
+  "themes": [
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "albert-einstein-2",
+  "day": "08-07",
+  "text": "Lo importante es no dejar de hacerse preguntas. La curiosidad tiene su propia razón de existir.",
+  "author": "Albert Einstein",
+  "work": "Entrevista en la revista Life, 2 de mayo de 1955",
+  "original": false,
+  "themes": [
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "michel-de-montaigne-10",
+  "day": "08-08",
+  "text": "¿Qué sé yo?",
+  "author": "Michel de Montaigne",
+  "work": "Ensayos, II, 12",
+  "original": false,
+  "themes": [
+   "humildad",
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "platon-6",
+  "day": "08-09",
+  "text": "El asombro es el comienzo de la filosofía.",
+  "author": "Platón",
+  "work": "Teeteto, 155d",
+  "original": false,
+  "themes": [
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "friedrich-nietzsche-5",
+  "day": "08-10",
+  "text": "Hay que tener todavía caos dentro de sí para poder dar a luz una estrella danzante.",
+  "author": "Friedrich Nietzsche",
+  "work": "Así habló Zaratustra, Prólogo, 5",
+  "original": false,
+  "themes": [
+   "curiosidad",
+   "sentido"
+  ]
+ },
+ {
+  "id": "platon-7",
+  "day": "08-11",
+  "text": "No creo saber lo que no sé.",
+  "author": "Platón",
+  "work": "Apología de Sócrates, 21d",
+  "original": false,
+  "themes": [
+   "humildad",
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "gotthold-ephraim-lessing-1",
+  "day": "08-12",
+  "text": "Si Dios tuviera en su mano derecha toda la verdad, y en la izquierda el único y siempre vivo afán de buscarla, aunque con el riesgo de errar eternamente, y me dijera «elige», me inclinaría ante su izquierda.",
+  "author": "Gotthold Ephraim Lessing",
+  "work": "Una réplica, 1778",
+  "original": false,
+  "themes": [
+   "curiosidad",
+   "humildad"
+  ]
+ },
+ {
+  "id": "francis-bacon-1",
+  "day": "08-13",
+  "text": "Si un hombre empieza con certezas, acabará en dudas; pero si se contenta con empezar con dudas, acabará en certezas.",
+  "author": "Francis Bacon",
+  "work": "Del avance del conocimiento, I",
+  "original": false,
+  "themes": [
+   "humildad",
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "aristoteles-5",
+  "day": "08-14",
+  "text": "Quien se admira y duda reconoce su ignorancia.",
+  "author": "Aristóteles",
+  "work": "Metafísica, I, 2",
+  "original": false,
+  "themes": [
+   "curiosidad",
+   "humildad"
+  ]
+ },
+ {
+  "id": "heraclito-1",
+  "day": "08-15",
+  "text": "Me investigué a mí mismo.",
+  "author": "Heráclito",
+  "work": "Fragmento B101 (Diels-Kranz)",
+  "original": false,
+  "themes": [
+   "sentido",
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "marcel-proust-1",
+  "day": "08-16",
+  "text": "El verdadero viaje de descubrimiento no consiste en buscar nuevos paisajes, sino en tener nuevos ojos.",
+  "author": "Marcel Proust",
+  "work": "La prisionera, 1923",
+  "original": false,
+  "themes": [
+   "curiosidad",
+   "presente"
+  ]
+ },
+ {
+  "id": "henry-david-thoreau-4",
+  "day": "08-17",
+  "text": "La cuestión no es qué miras, sino qué ves.",
+  "author": "Henry David Thoreau",
+  "work": "Diario, 5 de agosto de 1851",
+  "original": false,
+  "themes": [
+   "curiosidad",
+   "presente"
+  ]
+ },
+ {
+  "id": "mencio-1",
+  "day": "08-18",
+  "text": "El gran hombre es el que no pierde su corazón de niño.",
+  "author": "Mencio",
+  "work": "Mencio, 4B, 12",
+  "original": false,
+  "themes": [
+   "curiosidad",
+   "sentido"
+  ]
+ },
+ {
+  "id": "arthur-schopenhauer-1",
+  "day": "08-19",
+  "text": "El talento da en un blanco que otros no pueden alcanzar; el genio da en un blanco que otros ni siquiera ven.",
+  "author": "Arthur Schopenhauer",
+  "work": "El mundo como voluntad y representación, II, 31",
+  "original": false,
+  "themes": [
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "antonio-machado-2",
+  "day": "08-20",
+  "text": "El ojo que ves no es ojo porque tú lo veas; es ojo porque te ve.",
+  "author": "Antonio Machado",
+  "work": "Proverbios y cantares",
+  "original": true,
+  "themes": [
+   "curiosidad",
+   "sentido"
+  ]
+ },
+ {
+  "id": "ralph-waldo-emerson-3",
+  "day": "08-21",
+  "text": "Una consecuencia necia es el duende de las mentes pequeñas.",
+  "author": "Ralph Waldo Emerson",
+  "work": "Confianza en uno mismo, 1841",
+  "original": false,
+  "themes": [
+   "libertad",
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "antonio-machado-3",
+  "day": "08-22",
+  "text": "¿Tu verdad? No, la Verdad, y ven conmigo a buscarla. La tuya, guárdatela.",
+  "author": "Antonio Machado",
+  "work": "Proverbios y cantares",
+  "original": true,
+  "themes": [
+   "humildad",
+   "curiosidad"
+  ]
+ },
+ {
+  "id": "lao-tse-9",
+  "day": "08-23",
+  "text": "Saber que no se sabe es lo más alto; creer que se sabe lo que no se sabe es una enfermedad.",
+  "author": "Lao Tsé",
+  "work": "Tao Te Ching, 71",
+  "original": false,
+  "themes": [
+   "humildad",
+   "estudio"
+  ]
+ },
+ {
+  "id": "epicteto-14",
+  "day": "08-24",
+  "text": "Si quieres progresar, acepta que te tomen por necio o ignorante en lo que no depende de ti.",
+  "author": "Epicteto",
+  "work": "Enquiridión, 13",
+  "original": false,
+  "themes": [
+   "humildad",
+   "estudio"
+  ]
+ },
+ {
+  "id": "confucio-6",
+  "day": "08-25",
+  "text": "Saber lo que se sabe y saber lo que no se sabe: eso es saber.",
+  "author": "Confucio",
+  "work": "Analectas, 2, 17",
+  "original": false,
+  "themes": [
+   "humildad",
+   "estudio"
+  ]
+ },
+ {
+  "id": "paulo-freire-1",
+  "day": "08-26",
+  "text": "Nadie educa a nadie, nadie se educa a sí mismo: los hombres se educan entre sí, mediatizados por el mundo.",
+  "author": "Paulo Freire",
+  "work": "Pedagogía del oprimido, 1970, cap. 2",
+  "original": true,
+  "themes": [
+   "estudio",
+   "amistad"
+  ]
+ },
+ {
+  "id": "confucio-7",
+  "day": "08-27",
+  "text": "Repasar lo antiguo para conocer lo nuevo: así se puede ser maestro.",
+  "author": "Confucio",
+  "work": "Analectas, 2, 11",
+  "original": false,
+  "themes": [
+   "estudio"
+  ]
+ },
+ {
+  "id": "hipocrates-1",
+  "day": "08-28",
+  "text": "La vida es breve, el arte largo, la ocasión fugaz, la experiencia engañosa, el juicio difícil.",
+  "author": "Hipócrates",
+  "work": "Aforismos, I, 1",
+  "original": false,
+  "themes": [
+   "tiempo",
+   "estudio"
+  ]
+ },
+ {
+  "id": "confucio-8",
+  "day": "08-29",
+  "text": "A los quince años puse mi corazón en el estudio; a los treinta me mantuve firme; a los cuarenta ya no tuve dudas.",
+  "author": "Confucio",
+  "work": "Analectas, 2, 4",
+  "original": false,
+  "themes": [
+   "estudio",
+   "paciencia"
+  ]
+ },
+ {
+  "id": "nicolas-boileau-1",
+  "day": "08-30",
+  "text": "Lo que bien se concibe, claro se enuncia.",
+  "author": "Nicolas Boileau",
+  "work": "El arte poética, 1674",
+  "original": false,
+  "themes": [
+   "estudio"
+  ]
+ },
+ {
+  "id": "confucio-9",
+  "day": "08-31",
+  "text": "Aprender sin pensar es inútil; pensar sin aprender es peligroso.",
+  "author": "Confucio",
+  "work": "Analectas, 2, 15",
+  "original": false,
+  "themes": [
+   "estudio"
+  ]
+ },
+ {
+  "id": "buda-9",
+  "day": "09-01",
+  "text": "No mires los defectos ni las faltas de los demás, sino lo que tú has hecho y lo que has dejado de hacer.",
+  "author": "Buda",
+  "work": "Dhammapada, 50",
+  "original": false,
+  "themes": [
+   "humildad",
+   "esfuerzo"
+  ]
+ },
+ {
+  "id": "seneca-17",
+  "day": "09-02",
+  "text": "Como es la vida de los hombres, así es su discurso.",
+  "author": "Séneca",
+  "work": "Cartas a Lucilio, 114, 1",
+  "original": false,
+  "themes": [
+   "esfuerzo",
+   "sentido"
+  ]
+ },
+ {
+  "id": "confucio-10",
+  "day": "09-03",
+  "text": "No te preocupes por no tener un puesto; preocúpate por merecerlo.",
+  "author": "Confucio",
+  "work": "Analectas, 4, 14",
+  "original": false,
+  "themes": [
+   "esfuerzo",
+   "humildad"
+  ]
+ },
+ {
+  "id": "miguel-de-cervantes-3",
+  "day": "09-04",
+  "text": "Cada uno es hijo de sus obras.",
+  "author": "Miguel de Cervantes",
+  "work": "Don Quijote de la Mancha, I, 47",
+  "original": true,
+  "themes": [
+   "esfuerzo",
+   "sentido"
+  ]
+ },
+ {
+  "id": "epicteto-15",
+  "day": "09-05",
+  "text": "¿Cuánto tiempo más esperarás para exigirte lo mejor?",
+  "author": "Epicteto",
+  "work": "Enquiridión, 51",
+  "original": false,
+  "themes": [
+   "tiempo",
+   "esfuerzo"
+  ]
+ },
+ {
+  "id": "william-shakespeare-5",
+  "day": "09-06",
+  "text": "La culpa, querido Bruto, no está en nuestras estrellas, sino en nosotros mismos.",
+  "author": "William Shakespeare",
+  "work": "Julio César, I, 2",
+  "original": false,
+  "themes": [
+   "esfuerzo",
+   "sentido"
+  ]
+ },
+ {
+  "id": "pedro-calderon-de-la-bar-2",
+  "day": "09-07",
+  "text": "Obrar bien es lo que importa: si fuera verdad, por serlo; si no, por ganar amigos para cuando despertemos.",
+  "author": "Pedro Calderón de la Barca",
+  "work": "La vida es sueño, III",
+  "original": true,
+  "themes": [
+   "esfuerzo",
+   "sentido"
+  ]
+ },
+ {
+  "id": "confucio-11",
+  "day": "09-08",
+  "text": "Cuando veas a alguien mejor que tú, procura igualarlo; cuando veas a alguien peor, examínate a ti mismo.",
+  "author": "Confucio",
+  "work": "Analectas, 4, 17",
+  "original": false,
+  "themes": [
+   "humildad",
+   "esfuerzo"
+  ]
+ },
+ {
+  "id": "buda-10",
+  "day": "09-09",
+  "text": "Los que riegan conducen el agua, los flecheros enderezan la flecha, los carpinteros tallan la madera; los sabios se dominan a sí mismos.",
+  "author": "Buda",
+  "work": "Dhammapada, 80",
+  "original": false,
+  "themes": [
+   "esfuerzo",
+   "sentido"
+  ]
+ },
+ {
+  "id": "jose-ortega-y-gasset-1",
+  "day": "09-10",
+  "text": "La vida es quehacer.",
+  "author": "José Ortega y Gasset",
+  "work": "Obras completas (ed. 1983), VI, 33",
+  "original": true,
+  "themes": [
+   "esfuerzo",
+   "sentido"
+  ]
+ },
+ {
+  "id": "epicteto-16",
+  "day": "09-11",
+  "text": "El hombre vulgar nunca espera beneficio ni daño de sí mismo, sino de lo externo. El que progresa lo espera todo de sí.",
+  "author": "Epicteto",
+  "work": "Enquiridión, 48",
+  "original": false,
+  "themes": [
+   "sentido",
+   "esfuerzo"
+  ]
+ },
+ {
+  "id": "jose-ortega-y-gasset-2",
+  "day": "09-12",
+  "text": "Yo soy yo y mi circunstancia, y si no la salvo a ella no me salvo yo.",
+  "author": "José Ortega y Gasset",
+  "work": "Meditaciones del Quijote, 1914",
+  "original": true,
+  "themes": [
+   "sentido",
+   "esfuerzo"
+  ]
+ },
+ {
+  "id": "miguel-de-cervantes-4",
+  "day": "09-13",
+  "text": "La sangre se hereda, y la virtud se aquista; y la virtud vale por sí sola lo que la sangre no vale.",
+  "author": "Miguel de Cervantes",
+  "work": "Don Quijote de la Mancha, II, 42",
+  "original": true,
+  "themes": [
+   "esfuerzo",
+   "humildad"
+  ]
+ },
+ {
+  "id": "antonio-machado-4",
+  "day": "09-14",
+  "text": "Despacito y buena letra: el hacer las cosas bien importa más que el hacerlas.",
+  "author": "Antonio Machado",
+  "work": "Proverbios y cantares, XXIV (Campos de Castilla)",
+  "original": true,
+  "themes": [
+   "esfuerzo",
+   "paciencia"
+  ]
+ },
+ {
+  "id": "marco-aurelio-19",
+  "day": "09-15",
+  "text": "Deja ya de discutir sobre cómo debe ser un hombre bueno. Sé uno.",
+  "author": "Marco Aurelio",
+  "work": "Meditaciones, X, 16",
+  "original": false,
+  "themes": [
+   "esfuerzo",
+   "sentido"
+  ]
+ },
+ {
+  "id": "miguel-de-cervantes-5",
+  "day": "09-16",
+  "text": "Cada uno es artífice de su ventura.",
+  "author": "Miguel de Cervantes",
+  "work": "Don Quijote de la Mancha, II, 66",
+  "original": true,
+  "themes": [
+   "esfuerzo",
+   "libertad"
+  ]
+ },
+ {
+  "id": "seneca-18",
+  "day": "09-17",
+  "text": "La filosofía enseña a obrar, no a hablar.",
+  "author": "Séneca",
+  "work": "Cartas a Lucilio, 20, 2",
+  "original": false,
+  "themes": [
+   "esfuerzo"
+  ]
+ },
+ {
+  "id": "miguel-de-cervantes-6",
+  "day": "09-18",
+  "text": "No es un hombre más que otro si no hace más que otro.",
+  "author": "Miguel de Cervantes",
+  "work": "Don Quijote de la Mancha, I, 18",
+  "original": true,
+  "themes": [
+   "esfuerzo",
+   "humildad"
+  ]
+ },
+ {
+  "id": "confucio-12",
+  "day": "09-19",
+  "text": "La persona noble se avergüenza de que sus palabras superen a sus actos.",
+  "author": "Confucio",
+  "work": "Analectas, 14, 27",
+  "original": false,
+  "themes": [
+   "esfuerzo"
+  ]
+ },
+ {
+  "id": "georg-christoph-lichtenb-2",
+  "day": "09-20",
+  "text": "Un libro es un espejo: si un mono se asoma, no puede ver reflejado a un apóstol.",
+  "author": "Georg Christoph Lichtenberg",
+  "work": "Cuadernos de notas (Sudelbücher)",
+  "original": false,
+  "themes": [
+   "estudio",
+   "humildad"
+  ]
+ },
+ {
+  "id": "confucio-13",
+  "day": "09-21",
+  "text": "Donde hay educación, no hay distinción de clases.",
+  "author": "Confucio",
+  "work": "Analectas, 15, 39",
+  "original": false,
+  "themes": [
+   "estudio",
+   "amistad"
+  ]
+ },
+ {
+  "id": "domingo-faustino-sarmien-1",
+  "day": "09-22",
+  "text": "A los hombres se degüella; a las ideas, no.",
+  "author": "Domingo Faustino Sarmiento",
+  "work": "Facundo, 1845 (epígrafe «On ne tue point les idées») y Recuerdos de provincia",
+  "original": true,
+  "themes": [
+   "estudio",
+   "libertad"
+  ]
+ },
+ {
+  "id": "leonardo-da-vinci-1",
+  "day": "09-23",
+  "text": "Quien poco piensa, mucho se equivoca.",
+  "author": "Leonardo da Vinci",
+  "work": "Códice H, f. 119",
+  "original": false,
+  "themes": [
+   "estudio",
+   "error"
+  ]
+ },
+ {
+  "id": "ben-zoma-1",
+  "day": "09-24",
+  "text": "¿Quién es sabio? El que aprende de todos.",
+  "author": "Ben Zomá",
+  "work": "Pirké Avot, 4, 1",
+  "original": false,
+  "themes": [
+   "humildad",
+   "estudio"
+  ]
+ },
+ {
+  "id": "isaac-newton-1",
+  "day": "09-25",
+  "text": "Si he visto más lejos, es porque estaba sobre los hombros de gigantes.",
+  "author": "Isaac Newton",
+  "work": "Carta a Robert Hooke, 5 de febrero de 1676",
+  "original": false,
+  "themes": [
+   "humildad",
+   "estudio"
+  ]
+ },
+ {
+  "id": "francis-bacon-2",
+  "day": "09-26",
+  "text": "A la naturaleza solo se la vence obedeciéndola.",
+  "author": "Francis Bacon",
+  "work": "Novum Organum, I, 3",
+  "original": false,
+  "themes": [
+   "estudio",
+   "humildad"
+  ]
+ },
+ {
+  "id": "jose-marti-1",
+  "day": "09-27",
+  "text": "Ser bueno es el único modo de ser dichoso. Ser culto es el único modo de ser libre.",
+  "author": "José Martí",
+  "work": "Maestros ambulantes, 1884",
+  "original": true,
+  "themes": [
+   "estudio",
+   "libertad"
+  ]
+ },
+ {
+  "id": "platon-8",
+  "day": "09-28",
+  "text": "Una vida sin examen no merece ser vivida.",
+  "author": "Platón",
+  "work": "Apología de Sócrates, 38a",
+  "original": false,
+  "themes": [
+   "sentido",
+   "estudio"
+  ]
+ },
+ {
+  "id": "seneca-19",
+  "day": "09-29",
+  "text": "Mientras enseñamos, aprendemos.",
+  "author": "Séneca",
+  "work": "Cartas a Lucilio, 7, 8",
+  "original": false,
+  "themes": [
+   "estudio"
+  ]
+ },
+ {
+  "id": "francis-bacon-3",
+  "day": "09-30",
+  "text": "La lectura hace al hombre completo; la conversación, ágil; la escritura, exacto.",
+  "author": "Francis Bacon",
+  "work": "De los estudios, 1625",
+  "original": false,
+  "themes": [
+   "estudio"
+  ]
+ },
+ {
+  "id": "aristoteles-6",
+  "day": "10-01",
+  "text": "Una golondrina no hace verano, ni un solo día: así tampoco un solo día hace feliz a nadie.",
+  "author": "Aristóteles",
+  "work": "Ética a Nicómaco, I, 7",
+  "original": false,
+  "themes": [
+   "constancia",
+   "paciencia"
+  ]
+ },
+ {
+  "id": "rabindranath-tagore-2",
+  "day": "10-02",
+  "text": "La fe es el pájaro que siente la luz cuando el alba todavía está oscura.",
+  "author": "Rabindranath Tagore",
+  "work": "Pájaros perdidos, 1916",
+  "original": false,
+  "themes": [
+   "coraje",
+   "paciencia"
+  ]
+ },
+ {
+  "id": "marco-aurelio-20",
+  "day": "10-03",
+  "text": "Cava dentro de ti. Dentro está la fuente del bien, y brotará siempre si siempre cavas.",
+  "author": "Marco Aurelio",
+  "work": "Meditaciones, VII, 59",
+  "original": false,
+  "themes": [
+   "sentido",
+   "constancia"
+  ]
+ },
+ {
+  "id": "miguel-de-cervantes-7",
+  "day": "10-04",
+  "text": "Donde una puerta se cierra, otra se abre.",
+  "author": "Miguel de Cervantes",
+  "work": "Don Quijote de la Mancha, I, 21",
+  "original": true,
+  "themes": [
+   "coraje",
+   "paciencia"
+  ]
+ },
+ {
+  "id": "leon-tolstoi-1",
+  "day": "10-05",
+  "text": "Los dos guerreros más poderosos son la paciencia y el tiempo.",
+  "author": "León Tolstói",
+  "work": "Guerra y paz",
+  "original": false,
+  "themes": [
+   "paciencia",
+   "tiempo"
+  ]
+ },
+ {
+  "id": "jean-de-la-fontaine-1",
+  "day": "10-06",
+  "text": "La paciencia y el paso del tiempo pueden más que la fuerza y la rabia.",
+  "author": "Jean de La Fontaine",
+  "work": "Fábulas, II, 11 «El león y la rata»",
+  "original": false,
+  "themes": [
+   "paciencia",
+   "tiempo"
+  ]
+ },
+ {
+  "id": "henry-david-thoreau-5",
+  "day": "10-07",
+  "text": "Si un hombre no mantiene el paso con sus compañeros, tal vez sea porque oye otro tambor.",
+  "author": "Henry David Thoreau",
+  "work": "Walden, Conclusión",
+  "original": false,
+  "themes": [
+   "libertad",
+   "paciencia"
+  ]
+ },
+ {
+  "id": "robert-louis-stevenson-1",
+  "day": "10-08",
+  "text": "Viajar con esperanza es mejor que llegar.",
+  "author": "Robert Louis Stevenson",
+  "work": "Virginibus puerisque, 1881",
+  "original": false,
+  "themes": [
+   "paciencia",
+   "presente"
+  ]
+ },
+ {
+  "id": "miguel-de-cervantes-8",
+  "day": "10-09",
+  "text": "Paciencia y barajar.",
+  "author": "Miguel de Cervantes",
+  "work": "Don Quijote de la Mancha, II, 23",
+  "original": true,
+  "themes": [
+   "paciencia"
+  ]
+ },
+ {
+  "id": "luis-de-camoes-1",
+  "day": "10-10",
+  "text": "Cambian los tiempos, cambian las voluntades.",
+  "author": "Luís de Camões",
+  "work": "Sonetos",
+  "original": false,
+  "themes": [
+   "tiempo",
+   "paciencia"
+  ]
+ },
+ {
+  "id": "s-ren-kierkegaard-2",
+  "day": "10-11",
+  "text": "La vida solo puede comprenderse hacia atrás, pero hay que vivirla hacia adelante.",
+  "author": "Søren Kierkegaard",
+  "work": "Diarios, 1843",
+  "original": false,
+  "themes": [
+   "tiempo",
+   "paciencia"
+  ]
+ },
+ {
+  "id": "antonio-machado-5",
+  "day": "10-12",
+  "text": "Hoy es siempre todavía.",
+  "author": "Antonio Machado",
+  "work": "Proverbios y cantares, VIII (Campos de Castilla)",
+  "original": true,
+  "themes": [
+   "presente",
+   "paciencia"
+  ]
+ },
+ {
+  "id": "emily-dickinson-3",
+  "day": "10-13",
+  "text": "Di toda la verdad, pero dila de soslayo.",
+  "author": "Emily Dickinson",
+  "work": "Poema 1263",
+  "original": false,
+  "themes": [
+   "sentido",
+   "paciencia"
+  ]
+ },
+ {
+  "id": "marco-aurelio-21",
+  "day": "10-14",
+  "text": "Todo me conviene, oh Mundo, lo que a ti te conviene a su tiempo. Nada es para mí temprano ni tarde si es oportuno para ti.",
+  "author": "Marco Aurelio",
+  "work": "Meditaciones, IV, 23",
+  "original": false,
+  "themes": [
+   "paciencia",
+   "tiempo"
+  ]
+ },
+ {
+  "id": "seneca-20",
+  "day": "10-15",
+  "text": "Nadie me parece más desdichado que quien nunca ha tenido una adversidad: no se le ha permitido ponerse a prueba.",
+  "author": "Séneca",
+  "work": "Sobre la providencia, 3",
+  "original": false,
+  "themes": [
+   "coraje",
+   "error"
+  ]
+ },
+ {
+  "id": "fernando-pessoa-2",
+  "day": "10-16",
+  "text": "Todo vale la pena si el alma no es pequeña.",
+  "author": "Fernando Pessoa",
+  "work": "Mensagem, «Mar portugués»",
+  "original": false,
+  "themes": [
+   "coraje",
+   "sentido"
+  ]
+ },
+ {
+  "id": "blaise-pascal-3",
+  "day": "10-17",
+  "text": "El hombre es solo una caña, la más débil de la naturaleza; pero es una caña pensante.",
+  "author": "Blaise Pascal",
+  "work": "Pensamientos, 347",
+  "original": false,
+  "themes": [
+   "sentido",
+   "coraje"
+  ]
+ },
+ {
+  "id": "seneca-21",
+  "day": "10-18",
+  "text": "No es porque las cosas sean difíciles que no nos atrevemos: es porque no nos atrevemos que son difíciles.",
+  "author": "Séneca",
+  "work": "Cartas a Lucilio, 104, 26",
+  "original": false,
+  "themes": [
+   "coraje"
+  ]
+ },
+ {
+  "id": "epicteto-17",
+  "day": "10-19",
+  "text": "Cuando hagas algo que has decidido hacer, no temas que te vean haciéndolo.",
+  "author": "Epicteto",
+  "work": "Enquiridión, 35",
+  "original": false,
+  "themes": [
+   "coraje"
+  ]
+ },
+ {
+  "id": "virgilio-2",
+  "day": "10-20",
+  "text": "La fortuna ayuda a los audaces.",
+  "author": "Virgilio",
+  "work": "Eneida, X, 284",
+  "original": false,
+  "themes": [
+   "coraje"
+  ]
+ },
+ {
+  "id": "franz-kafka-2",
+  "day": "10-21",
+  "text": "Un libro debe ser el hacha que rompa el mar helado que llevamos dentro.",
+  "author": "Franz Kafka",
+  "work": "Carta a Oskar Pollak, 27 de enero de 1904",
+  "original": false,
+  "themes": [
+   "estudio",
+   "coraje"
+  ]
+ },
+ {
+  "id": "ralph-waldo-emerson-4",
+  "day": "10-22",
+  "text": "Ser grande es ser malentendido.",
+  "author": "Ralph Waldo Emerson",
+  "work": "Confianza en uno mismo, 1841",
+  "original": false,
+  "themes": [
+   "coraje",
+   "humildad"
+  ]
+ },
+ {
+  "id": "miguel-de-cervantes-9",
+  "day": "10-23",
+  "text": "La libertad, Sancho, es uno de los más preciosos dones que a los hombres dieron los cielos.",
+  "author": "Miguel de Cervantes",
+  "work": "Don Quijote de la Mancha, II, 58",
+  "original": true,
+  "themes": [
+   "libertad"
+  ]
+ },
+ {
+  "id": "michel-de-montaigne-11",
+  "day": "10-24",
+  "text": "No pinto el ser, pinto el tránsito.",
+  "author": "Michel de Montaigne",
+  "work": "Ensayos, III, 2",
+  "original": false,
+  "themes": [
+   "tiempo",
+   "sentido"
+  ]
+ },
+ {
+  "id": "miguel-de-cervantes-10",
+  "day": "10-25",
+  "text": "Procura conocerte a ti mismo, que es el más difícil conocimiento que puede imaginarse.",
+  "author": "Miguel de Cervantes",
+  "work": "Don Quijote de la Mancha, II, 42",
+  "original": true,
+  "themes": [
+   "sentido",
+   "humildad"
+  ]
+ },
+ {
+  "id": "alexander-pope-2",
+  "day": "10-26",
+  "text": "Errar es humano; perdonar, divino.",
+  "author": "Alexander Pope",
+  "work": "Ensayo sobre la crítica, 1711",
+  "original": false,
+  "themes": [
+   "error",
+   "amistad"
+  ]
+ },
+ {
+  "id": "seneca-22",
+  "day": "10-27",
+  "text": "Hay que vivir para el otro, si se quiere vivir para uno mismo.",
+  "author": "Séneca",
+  "work": "Cartas a Lucilio, 48, 2",
+  "original": false,
+  "themes": [
+   "amistad"
+  ]
+ },
+ {
+  "id": "confucio-14",
+  "day": "10-28",
+  "text": "Reciprocidad: no hagas a los demás lo que no quieres que te hagan a ti.",
+  "author": "Confucio",
+  "work": "Analectas, 15, 24",
+  "original": false,
+  "themes": [
+   "amistad"
+  ]
+ },
+ {
+  "id": "oscar-wilde-2",
+  "day": "10-29",
+  "text": "La experiencia es el nombre que los hombres dan a sus errores.",
+  "author": "Oscar Wilde",
+  "work": "El retrato de Dorian Gray, cap. 4",
+  "original": false,
+  "themes": [
+   "error",
+   "humildad"
+  ]
+ },
+ {
+  "id": "benjamin-franklin-2",
+  "day": "10-30",
+  "text": "El tiempo perdido nunca se recupera.",
+  "author": "Benjamin Franklin",
+  "work": "Almanaque del pobre Richard, 1758 («El camino a la riqueza»)",
+  "original": false,
+  "themes": [
+   "tiempo"
+  ]
+ },
+ {
+  "id": "tales-de-mileto-1",
+  "day": "10-31",
+  "text": "Lo más difícil es conocerse a sí mismo; lo más fácil, dar consejos a los demás.",
+  "author": "Tales de Mileto",
+  "work": "Citado por Diógenes Laercio, I, 36",
+  "original": false,
+  "themes": [
+   "humildad",
+   "sentido"
+  ]
+ },
+ {
+  "id": "luc-de-clapiers-marques--1",
+  "day": "11-01",
+  "text": "Los grandes pensamientos vienen del corazón.",
+  "author": "Luc de Clapiers, marqués de Vauvenargues",
+  "work": "Reflexiones y máximas, 127",
+  "original": false,
+  "themes": [
+   "sentido"
+  ]
+ },
+ {
+  "id": "friedrich-nietzsche-6",
+  "day": "11-02",
+  "text": "Lo que se hace por amor está siempre más allá del bien y del mal.",
+  "author": "Friedrich Nietzsche",
+  "work": "Más allá del bien y del mal, 153",
+  "original": false,
+  "themes": [
+   "amistad",
+   "sentido"
+  ]
+ },
+ {
+  "id": "platon-9",
+  "day": "11-03",
+  "text": "Lo que importa no es vivir, sino vivir bien.",
+  "author": "Platón",
+  "work": "Critón, 48b",
+  "original": false,
+  "themes": [
+   "sentido"
+  ]
+ },
+ {
+  "id": "fiodor-dostoyevski-1",
+  "day": "11-04",
+  "text": "El secreto de la existencia humana no está solo en vivir, sino en saber para qué se vive.",
+  "author": "Fiódor Dostoyevski",
+  "work": "Los hermanos Karamázov",
+  "original": false,
+  "themes": [
+   "sentido"
+  ]
+ },
+ {
+  "id": "jose-hernandez-1",
+  "day": "11-05",
+  "text": "Los hermanos sean unidos, porque esa es la ley primera; tengan unión verdadera en cualquier tiempo que sea, porque si entre ellos pelean los devoran los de afuera.",
+  "author": "José Hernández",
+  "work": "Martín Fierro, La vuelta, XXXII",
+  "original": true,
+  "themes": [
+   "amistad"
+  ]
+ },
+ {
+  "id": "epicteto-18",
+  "day": "11-06",
+  "text": "Recuerda que eres actor de un drama tal como lo quiere el autor: si breve, breve; si largo, largo. Lo tuyo es representar bien el papel que te dieron.",
+  "author": "Epicteto",
+  "work": "Enquiridión, 17",
+  "original": false,
+  "themes": [
+   "sentido"
+  ]
+ },
+ {
+  "id": "marco-aurelio-22",
+  "day": "11-07",
+  "text": "Lo que no le sirve al enjambre tampoco le sirve a la abeja.",
+  "author": "Marco Aurelio",
+  "work": "Meditaciones, VI, 54",
+  "original": false,
+  "themes": [
+   "amistad"
+  ]
+ },
+ {
+  "id": "gabriel-garcia-marquez-1",
+  "day": "11-08",
+  "text": "La vida no es la que uno vivió, sino la que uno recuerda y cómo la recuerda para contarla.",
+  "author": "Gabriel García Márquez",
+  "work": "Vivir para contarla, 2002 (epígrafe)",
+  "original": true,
+  "themes": [
+   "tiempo",
+   "sentido"
+  ]
+ },
+ {
+  "id": "julio-cortazar-1",
+  "day": "11-09",
+  "text": "Andábamos sin buscarnos, pero sabiendo que andábamos para encontrarnos.",
+  "author": "Julio Cortázar",
+  "work": "Rayuela, cap. 7, 1963",
+  "original": true,
+  "themes": [
+   "amistad",
+   "sentido"
+  ]
+ },
+ {
+  "id": "antoine-de-saint-exupery-1",
+  "day": "11-10",
+  "text": "Es el tiempo que has perdido con tu rosa lo que hace que tu rosa sea tan importante.",
+  "author": "Antoine de Saint-Exupéry",
+  "work": "El principito, cap. 21",
+  "original": false,
+  "themes": [
+   "amistad",
+   "tiempo"
+  ]
+ },
+ {
+  "id": "jose-marti-2",
+  "day": "11-11",
+  "text": "Cultivo una rosa blanca en julio como en enero, para el amigo sincero que me da su mano franca.",
+  "author": "José Martí",
+  "work": "Versos sencillos, IX, 1891",
+  "original": true,
+  "themes": [
+   "amistad"
+  ]
+ },
+ {
+  "id": "epicuro-3",
+  "day": "11-12",
+  "text": "De todo lo que la sabiduría procura para la felicidad de la vida entera, lo más grande con mucho es la posesión de la amistad.",
+  "author": "Epicuro",
+  "work": "Máximas capitales, XXVII",
+  "original": false,
+  "themes": [
+   "amistad"
+  ]
+ },
+ {
+  "id": "antoine-de-saint-exupery-2",
+  "day": "11-13",
+  "text": "Solo se ve bien con el corazón; lo esencial es invisible a los ojos.",
+  "author": "Antoine de Saint-Exupéry",
+  "work": "El principito, cap. 21",
+  "original": false,
+  "themes": [
+   "sentido",
+   "amistad"
+  ]
+ },
+ {
+  "id": "seneca-23",
+  "day": "11-14",
+  "text": "Créeme: la verdadera alegría es cosa seria.",
+  "author": "Séneca",
+  "work": "Cartas a Lucilio, 23, 4",
+  "original": false,
+  "themes": [
+   "sentido"
+  ]
+ },
+ {
+  "id": "ciceron-5",
+  "day": "11-15",
+  "text": "No hemos nacido solo para nosotros.",
+  "author": "Cicerón",
+  "work": "Sobre los deberes, I, 22",
+  "original": false,
+  "themes": [
+   "amistad",
+   "sentido"
+  ]
+ },
+ {
+  "id": "walt-whitman-2",
+  "day": "11-16",
+  "text": "¿Me contradigo? Muy bien, me contradigo. Soy amplio, contengo multitudes.",
+  "author": "Walt Whitman",
+  "work": "Canto a mí mismo, 51",
+  "original": false,
+  "themes": [
+   "libertad",
+   "humildad"
+  ]
+ },
+ {
+  "id": "lao-tse-10",
+  "day": "11-17",
+  "text": "Conocer a los demás es sabiduría; conocerse a uno mismo es iluminación.",
+  "author": "Lao Tsé",
+  "work": "Tao Te Ching, 33",
+  "original": false,
+  "themes": [
+   "sentido",
+   "humildad"
+  ]
+ },
+ {
+  "id": "marco-aurelio-23",
+  "day": "11-18",
+  "text": "Me asombra que cada uno se quiera a sí mismo más que a los demás, y sin embargo dé menos valor a su propia opinión sobre sí que a la que tienen los otros.",
+  "author": "Marco Aurelio",
+  "work": "Meditaciones, XII, 4",
+  "original": false,
+  "themes": [
+   "humildad",
+   "sentido"
+  ]
+ },
+ {
+  "id": "jorge-luis-borges-2",
+  "day": "11-19",
+  "text": "El tiempo es la sustancia de que estoy hecho. El tiempo es un río que me arrebata, pero yo soy el río.",
+  "author": "Jorge Luis Borges",
+  "work": "«Nueva refutación del tiempo», en Otras inquisiciones, 1952",
+  "original": true,
+  "themes": [
+   "tiempo",
+   "sentido"
+  ]
+ },
+ {
+  "id": "simone-weil-1",
+  "day": "11-20",
+  "text": "La atención es la forma más rara y más pura de generosidad.",
+  "author": "Simone Weil",
+  "work": "Carta a Joë Bousquet, 13 de abril de 1942",
+  "original": false,
+  "themes": [
+   "amistad",
+   "presente"
+  ]
+ },
+ {
+  "id": "miguel-de-cervantes-11",
+  "day": "11-21",
+  "text": "La verdad adelgaza, y no quiebra, y siempre anda sobre la mentira, como el aceite sobre el agua.",
+  "author": "Miguel de Cervantes",
+  "work": "Don Quijote de la Mancha, II, 10",
+  "original": true,
+  "themes": [
+   "sentido"
+  ]
+ },
+ {
+  "id": "heraclito-2",
+  "day": "11-22",
+  "text": "Los confines del alma no los hallarías aunque recorrieras todos los caminos: tan profundo es su sentido.",
+  "author": "Heráclito",
+  "work": "Fragmento B45 (Diels-Kranz)",
+  "original": false,
+  "themes": [
+   "sentido"
+  ]
+ },
+ {
+  "id": "jorge-luis-borges-3",
+  "day": "11-23",
+  "text": "Que otros se jacten de las páginas que han escrito; a mí me enorgullecen las que he leído.",
+  "author": "Jorge Luis Borges",
+  "work": "«Un lector», en El elogio de la sombra, 1969",
+  "original": true,
+  "themes": [
+   "estudio",
+   "humildad"
+  ]
+ },
+ {
+  "id": "terencio-1",
+  "day": "11-24",
+  "text": "Soy hombre: nada humano me es ajeno.",
+  "author": "Terencio",
+  "work": "El atormentador de sí mismo, 77",
+  "original": false,
+  "themes": [
+   "amistad",
+   "sentido"
+  ]
+ },
+ {
+  "id": "zenon-de-citio-1",
+  "day": "11-25",
+  "text": "Tenemos dos oídos y una sola boca para oír más y hablar menos.",
+  "author": "Zenón de Citio",
+  "work": "Citado por Diógenes Laercio, VII, 23",
+  "original": false,
+  "themes": [
+   "estudio",
+   "humildad"
+  ]
+ },
+ {
+  "id": "joseph-joubert-1",
+  "day": "11-26",
+  "text": "Enseñar es aprender dos veces.",
+  "author": "Joseph Joubert",
+  "work": "Pensamientos",
+  "original": false,
+  "themes": [
+   "estudio"
+  ]
+ },
+ {
+  "id": "henry-david-thoreau-6",
+  "day": "11-27",
+  "text": "Fui a los bosques porque quería vivir deliberadamente.",
+  "author": "Henry David Thoreau",
+  "work": "Walden, cap. 2",
+  "original": false,
+  "themes": [
+   "sentido",
+   "presente"
+  ]
+ },
+ {
+  "id": "francis-bacon-4",
+  "day": "11-28",
+  "text": "Algunos libros hay que probarlos, otros tragarlos, y unos pocos masticarlos y digerirlos.",
+  "author": "Francis Bacon",
+  "work": "De los estudios, 1625",
+  "original": false,
+  "themes": [
+   "estudio"
+  ]
+ },
+ {
+  "id": "miguel-de-cervantes-12",
+  "day": "11-29",
+  "text": "Es de bien nacidos el ser agradecidos.",
+  "author": "Miguel de Cervantes",
+  "work": "Don Quijote de la Mancha, II, 58",
+  "original": true,
+  "themes": [
+   "amistad"
+  ]
+ },
+ {
+  "id": "seneca-24",
+  "day": "11-30",
+  "text": "No tenemos poco tiempo: es que perdemos mucho.",
+  "author": "Séneca",
+  "work": "Sobre la brevedad de la vida, 1",
+  "original": false,
+  "themes": [
+   "tiempo"
+  ]
+ },
+ {
+  "id": "antonio-machado-6",
+  "day": "12-01",
+  "text": "Todo pasa y todo queda, pero lo nuestro es pasar, pasar haciendo caminos, caminos sobre el mar.",
+  "author": "Antonio Machado",
+  "work": "Proverbios y cantares, XLIV (Campos de Castilla)",
+  "original": true,
+  "themes": [
+   "tiempo",
+   "sentido"
+  ]
+ },
+ {
+  "id": "seneca-25",
+  "day": "12-02",
+  "text": "Lo que importa no es cuánto se vive, sino cuán bien.",
+  "author": "Séneca",
+  "work": "Cartas a Lucilio, 77, 20",
+  "original": false,
+  "themes": [
+   "sentido",
+   "tiempo"
+  ]
+ },
+ {
+  "id": "michel-de-montaigne-12",
+  "day": "12-03",
+  "text": "Hay que prestarse a los demás, y entregarse solo a uno mismo.",
+  "author": "Michel de Montaigne",
+  "work": "Ensayos, III, 10",
+  "original": false,
+  "themes": [
+   "amistad",
+   "sentido"
+  ]
+ },
+ {
+  "id": "jean-jacques-rousseau-1",
+  "day": "12-04",
+  "text": "Vivir es el oficio que quiero enseñarle.",
+  "author": "Jean-Jacques Rousseau",
+  "work": "Emilio, 1762, libro I",
+  "original": false,
+  "themes": [
+   "estudio",
+   "sentido"
+  ]
+ },
+ {
+  "id": "michel-de-montaigne-13",
+  "day": "12-05",
+  "text": "No he hecho mi libro más de lo que mi libro me ha hecho a mí.",
+  "author": "Michel de Montaigne",
+  "work": "Ensayos, II, 18",
+  "original": false,
+  "themes": [
+   "estudio",
+   "sentido"
+  ]
+ },
+ {
+  "id": "blaise-pascal-4",
+  "day": "12-06",
+  "text": "El corazón tiene razones que la razón no conoce.",
+  "author": "Blaise Pascal",
+  "work": "Pensamientos, 277",
+  "original": false,
+  "themes": [
+   "sentido"
+  ]
+ },
+ {
+  "id": "sun-tzu-1",
+  "day": "12-07",
+  "text": "Quien se conoce a sí mismo y conoce al otro no correrá peligro en cien batallas.",
+  "author": "Sun Tzu",
+  "work": "El arte de la guerra, III",
+  "original": false,
+  "themes": [
+   "sentido",
+   "estudio"
+  ]
+ },
+ {
+  "id": "marco-aurelio-24",
+  "day": "12-08",
+  "text": "Si no es correcto, no lo hagas; si no es verdad, no lo digas.",
+  "author": "Marco Aurelio",
+  "work": "Meditaciones, XII, 17",
+  "original": false,
+  "themes": [
+   "sentido"
+  ]
+ },
+ {
+  "id": "blaise-pascal-5",
+  "day": "12-09",
+  "text": "Escribo esta carta más larga de lo habitual porque no tuve tiempo de hacerla más corta.",
+  "author": "Blaise Pascal",
+  "work": "Cartas provinciales, XVI",
+  "original": false,
+  "themes": [
+   "estudio",
+   "tiempo"
+  ]
+ },
+ {
+  "id": "marco-aurelio-25",
+  "day": "12-10",
+  "text": "No malgastes el resto de tu vida en pensamientos sobre los demás, cuando no los refieres a algún fin de utilidad común.",
+  "author": "Marco Aurelio",
+  "work": "Meditaciones, III, 4",
+  "original": false,
+  "themes": [
+   "tiempo",
+   "presente"
+  ]
+ },
+ {
+  "id": "heraclito-3",
+  "day": "12-11",
+  "text": "No se puede entrar dos veces en el mismo río: otras aguas fluyen siempre sobre ti.",
+  "author": "Heráclito",
+  "work": "Fragmento B91 (Diels-Kranz)",
+  "original": false,
+  "themes": [
+   "tiempo",
+   "presente"
+  ]
+ },
+ {
+  "id": "seneca-26",
+  "day": "12-12",
+  "text": "Si sabes usarla, la vida es larga.",
+  "author": "Séneca",
+  "work": "Sobre la brevedad de la vida, 2",
+  "original": false,
+  "themes": [
+   "tiempo"
+  ]
+ },
+ {
+  "id": "zhuangzi-3",
+  "day": "12-13",
+  "text": "Nuestra vida tiene límites, pero el saber no los tiene.",
+  "author": "Zhuangzi",
+  "work": "Zhuangzi, 3",
+  "original": false,
+  "themes": [
+   "estudio",
+   "tiempo"
+  ]
+ },
+ {
+  "id": "marco-aurelio-26",
+  "day": "12-14",
+  "text": "Nacimos para colaborar, como los pies, las manos, los párpados, las dos hileras de dientes.",
+  "author": "Marco Aurelio",
+  "work": "Meditaciones, II, 1",
+  "original": false,
+  "themes": [
+   "amistad"
+  ]
+ },
+ {
+  "id": "antonio-machado-7",
+  "day": "12-15",
+  "text": "Poned atención: un corazón solitario no es un corazón.",
+  "author": "Antonio Machado",
+  "work": "Proverbios y cantares",
+  "original": true,
+  "themes": [
+   "amistad"
+  ]
+ },
+ {
+  "id": "ralph-waldo-emerson-5",
+  "day": "12-16",
+  "text": "El único modo de tener un amigo es serlo.",
+  "author": "Ralph Waldo Emerson",
+  "work": "Amistad, 1841",
+  "original": false,
+  "themes": [
+   "amistad"
+  ]
+ },
+ {
+  "id": "aristoteles-7",
+  "day": "12-17",
+  "text": "El amigo es otro yo.",
+  "author": "Aristóteles",
+  "work": "Ética a Nicómaco, IX, 4",
+  "original": false,
+  "themes": [
+   "amistad"
+  ]
+ },
+ {
+  "id": "jan-amos-comenio-1",
+  "day": "12-18",
+  "text": "Enseñar todo a todos.",
+  "author": "Jan Amos Comenio",
+  "work": "Didáctica magna, 1657",
+  "original": false,
+  "themes": [
+   "estudio",
+   "amistad"
+  ]
+ },
+ {
+  "id": "seneca-27",
+  "day": "12-19",
+  "text": "Ningún bien es grato de poseer sin un compañero.",
+  "author": "Séneca",
+  "work": "Cartas a Lucilio, 6, 4",
+  "original": false,
+  "themes": [
+   "amistad",
+   "estudio"
+  ]
+ },
+ {
+  "id": "confucio-15",
+  "day": "12-20",
+  "text": "No te aflija que los demás no te conozcan; aflígete de no conocerlos tú.",
+  "author": "Confucio",
+  "work": "Analectas, 1, 16",
+  "original": false,
+  "themes": [
+   "humildad",
+   "amistad"
+  ]
+ },
+ {
+  "id": "aristoteles-8",
+  "day": "12-21",
+  "text": "El ser humano es, por naturaleza, un animal social.",
+  "author": "Aristóteles",
+  "work": "Política, I, 2",
+  "original": false,
+  "themes": [
+   "amistad"
+  ]
+ },
+ {
+  "id": "john-donne-1",
+  "day": "12-22",
+  "text": "Ningún hombre es una isla, completo en sí mismo.",
+  "author": "John Donne",
+  "work": "Meditación XVII, 1624",
+  "original": false,
+  "themes": [
+   "amistad"
+  ]
+ },
+ {
+  "id": "leonardo-da-vinci-2",
+  "day": "12-23",
+  "text": "La sabiduría es hija de la experiencia.",
+  "author": "Leonardo da Vinci",
+  "work": "Códice Forster III",
+  "original": false,
+  "themes": [
+   "estudio",
+   "error"
+  ]
+ },
+ {
+  "id": "francis-bacon-5",
+  "day": "12-24",
+  "text": "El conocimiento mismo es poder.",
+  "author": "Francis Bacon",
+  "work": "Meditaciones sagradas, 1597",
+  "original": false,
+  "themes": [
+   "estudio"
+  ]
+ },
+ {
+  "id": "arthur-schopenhauer-2",
+  "day": "12-25",
+  "text": "Leer es pensar con la cabeza de otro en lugar de con la propia.",
+  "author": "Arthur Schopenhauer",
+  "work": "Parerga y Paralipómena, «Sobre la lectura y los libros»",
+  "original": false,
+  "themes": [
+   "estudio"
+  ]
+ },
+ {
+  "id": "epicteto-19",
+  "day": "12-26",
+  "text": "«Soy más rico que tú, luego soy mejor que tú»: esas razones no se siguen. Tú no eres tu riqueza ni tu estilo.",
+  "author": "Epicteto",
+  "work": "Enquiridión, 44",
+  "original": false,
+  "themes": [
+   "humildad"
+  ]
+ },
+ {
+  "id": "bernardo-de-chartres-1",
+  "day": "12-27",
+  "text": "Somos como enanos a hombros de gigantes: vemos más y más lejos, no por la agudeza de nuestra vista, sino porque su altura nos eleva.",
+  "author": "Bernardo de Chartres",
+  "work": "Citado por Juan de Salisbury, Metalogicón, III, 4",
+  "original": false,
+  "themes": [
+   "humildad",
+   "estudio"
+  ]
+ },
+ {
+  "id": "maimonides-1",
+  "day": "12-28",
+  "text": "Acepta la verdad, venga de quien venga.",
+  "author": "Maimónides",
+  "work": "Ocho capítulos, Introducción",
+  "original": false,
+  "themes": [
+   "humildad",
+   "estudio"
+  ]
+ },
+ {
+  "id": "aristoteles-9",
+  "day": "12-29",
+  "text": "Es propio de una persona educada buscar la exactitud en cada tema solo hasta donde la naturaleza del asunto lo admite.",
+  "author": "Aristóteles",
+  "work": "Ética a Nicómaco, I, 3",
+  "original": false,
+  "themes": [
+   "estudio",
+   "humildad"
+  ]
+ },
+ {
+  "id": "miguel-de-cervantes-13",
+  "day": "12-30",
+  "text": "La pluma es la lengua del alma.",
+  "author": "Miguel de Cervantes",
+  "work": "Don Quijote de la Mancha, II, 16",
+  "original": true,
+  "themes": [
+   "estudio"
+  ]
+ },
+ {
+  "id": "eclesiastes-1",
+  "day": "12-31",
+  "text": "Todo tiene su momento, y cada cosa debajo del cielo tiene su tiempo.",
+  "author": "Eclesiastés",
+  "work": "Eclesiastés, 3, 1",
+  "original": false,
+  "themes": [
+   "paciencia",
+   "tiempo"
+  ]
+ },
+ {
+  "id": "miguel-de-cervantes-14",
+  "day": null,
+  "text": "Nadie diga: de esta agua no beberé.",
+  "author": "Miguel de Cervantes",
+  "work": "Don Quijote de la Mancha, I, 23",
+  "original": true,
+  "themes": [
+   "humildad"
+  ]
+ },
+ {
+  "id": "john-dewey-1",
+  "day": null,
+  "text": "La educación es un proceso de vida, y no una preparación para la vida futura.",
+  "author": "John Dewey",
+  "work": "Mi credo pedagógico, 1897",
+  "original": false,
+  "themes": [
+   "estudio",
+   "presente"
+  ]
+ }
+]

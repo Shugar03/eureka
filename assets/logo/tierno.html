@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Logo Tierno</title>
+<style>
+  body { margin:0; background:#08090a; color:#f7f8f8; font:14px/1.5 Inter, "Segoe UI", system-ui, sans-serif; }
+  main { max-width:1100px; margin:0 auto; padding:40px 16px; }
+  h1 { font-size:26px; letter-spacing:-.02em; margin:0 0 4px; } h2 { font-size:15px; margin:0; }
+  .sub, .card p { color:#8a8f98; margin:0; font-size:13px; } .sub { margin-bottom:24px; font-size:14px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
+  .card { background:#0f1011; border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:20px; display:flex; flex-direction:column; gap:12px; }
+  .stage { display:grid; place-items:center; height:220px; border-radius:10px; background:#08090a; border:1px solid rgba(255,255,255,.08); }
+  .row { display:flex; gap:16px; align-items:end; flex-wrap:wrap; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- Front-facing cartoon head: big round ears, big eyes, short curled trunk. -->
+    <g id="face" stroke="#828cf0" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="22" cy="46" r="19" fill="#141a3a" />
+      <circle cx="78" cy="46" r="19" fill="#141a3a" />
+      <circle cx="24" cy="47" r="10" fill="#f6a6c8" fill-opacity=".35" stroke="none" />
+      <circle cx="76" cy="47" r="10" fill="#f6a6c8" fill-opacity=".35" stroke="none" />
+      <circle cx="50" cy="50" r="27" fill="#0f1011" />
+      <circle cx="40" cy="46" r="4.5" fill="#f7f8f8" stroke="none" />
+      <circle cx="60" cy="46" r="4.5" fill="#f7f8f8" stroke="none" />
+      <circle cx="41.5" cy="44.5" r="1.5" fill="#0f1011" stroke="none" />
+      <circle cx="61.5" cy="44.5" r="1.5" fill="#0f1011" stroke="none" />
+      <ellipse cx="34" cy="57" rx="4" ry="2.5" fill="#f6a6c8" fill-opacity=".6" stroke="none" />
+      <ellipse cx="66" cy="57" rx="4" ry="2.5" fill="#f6a6c8" fill-opacity=".6" stroke="none" />
+      <path d="M46 56C45 68 48 76 56 77C61 77 62 71 58 70" fill="none" />
+    </g>
+  </defs>
+</svg>
+
+<main>
+  <h1>Elefante tierno</h1>
+  <p class="sub">Menos líneas, más ternura: cara de frente, orejas redondas grandes, ojos brillantes, cachetes rosados y una trompita enrulada.</p>
+
+  <div class="grid">
+    <section class="card">
+      <div class="stage"><svg width="170" height="170" viewBox="0 0 100 100"><use href="#face" /></svg></div>
+      <h2>A · Carita</h2>
+      <p>Solo la cara. Simple, se reconoce hasta en 16 px.</p>
+    </section>
+
+    <section class="card">
+      <div class="stage">
+        <svg width="170" height="170" viewBox="0 0 100 100">
+          <use href="#face" />
+          <!-- tiny lightbulb held by the trunk -->
+          <circle cx="66" cy="72" r="7" fill="#f2c94c" />
+          <path d="M63 80h6M64 83h4" stroke="#f2c94c" stroke-width="2.2" stroke-linecap="round" />
+          <path d="M66 60v-3M75 66l2-2M57 66l-2-2" stroke="#f2c94c" stroke-width="2" stroke-linecap="round" />
+        </svg>
+      </div>
+      <h2>B · Con idea</h2>
+      <p>La trompita sostiene una lamparita encendida: aprender, entender.</p>
+    </section>
+
+    <section class="card">
+      <div class="stage">
+        <svg width="150" height="150" viewBox="0 0 100 100">
+          <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7b83eb" /><stop offset="1" stop-color="#a35ee0" /></linearGradient></defs>
+          <rect width="100" height="100" rx="24" fill="url(#bg)" />
+          <g transform="translate(6 6) scale(.88)">
+            <g stroke="#fff" stroke-width="4" stroke-linecap="round">
+              <circle cx="22" cy="46" r="19" fill="#c9cdf7" />
+              <circle cx="78" cy="46" r="19" fill="#c9cdf7" />
+              <circle cx="24" cy="47" r="10" fill="#f6a6c8" stroke="none" />
+              <circle cx="76" cy="47" r="10" fill="#f6a6c8" stroke="none" />
+              <circle cx="50" cy="50" r="27" fill="#eef0ff" />
+              <path d="M46 56C45 68 48 76 56 77C61 77 62 71 58 70" fill="none" stroke="#5e6ad2" />
+            </g>
+            <circle cx="40" cy="46" r="4.5" fill="#1d1f4a" /><circle cx="60" cy="46" r="4.5" fill="#1d1f4a" />
+            <circle cx="41.5" cy="44.5" r="1.5" fill="#fff" /><circle cx="61.5" cy="44.5" r="1.5" fill="#fff" />
+            <ellipse cx="34" cy="57" rx="4" ry="2.5" fill="#f6a6c8" /><ellipse cx="66" cy="57" rx="4" ry="2.5" fill="#f6a6c8" />
+          </g>
+        </svg>
+      </div>
+      <h2>C · Ícono relleno</h2>
+      <p>Colores llenos sobre el gradiente de la app. Más "sticker", para el ícono del escritorio.</p>
+    </section>
+  </div>
+
+  <h1 style="margin-top:36px;font-size:20px">Tamaños</h1>
+  <div class="card">
+    <div class="row">
+      <svg width="96" height="96" viewBox="0 0 100 100"><use href="#face" /></svg>
+      <svg width="48" height="48" viewBox="0 0 100 100"><use href="#face" /></svg>
+      <svg width="24" height="24" viewBox="0 0 100 100"><use href="#face" /></svg>
+      <svg width="16" height="16" viewBox="0 0 100 100"><use href="#face" /></svg>
+    </div>
+  </div>
+</main>
+</body>
+</html>

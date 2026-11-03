@@ -1,0 +1,522 @@
+# Especificación — Eureka (Fase 1)
+
+> SDD, paso 1 de 3: **qué** tiene que hacer el sistema y cómo sabemos que lo hace.
+> Paso 2: [design.md](design.md) (cómo). Paso 3: [tasks.md](tasks.md) (en qué orden).
+> Cada criterio de aceptación (AC) tiene un escenario BDD en [`features/`](../features) y un test e2e que lo nombra.
+
+## 1. Propósito
+
+Una app de escritorio personal que usa agentes de IA para **enseñar a entender**, no a memorizar. Primero mide lo que el aprendiz ya sabe, después arma un plan de dependencias hasta su objetivo y recién entonces enseña, un paso por vez, en el borde de lo que ya entiende.
+
+El usuario trae sus propios modelos y API keys: la app no tiene servidor ni suscripción.
+
+## 2. Alcance
+
+| Fase | Contenido | Estado |
+|---|---|---|
+| **1 — Núcleo** | Medir → Planificar → Enseñar, proveedores y modelos por rol, prompts editables, historial | ✅ |
+| **2 — Grafo de conocimiento** | Extraer proposiciones y cadenas al cerrar sesiones, importar notas, vista de grafo, el profesor lo usa al planificar | ✅ |
+| **3 — Práctica** | Problemas variados generados desde ideas del grafo, pistas graduales, corrección del razonamiento | ✅ |
+| **4 — Investigación y visuales** | Diagramas, demos interactivas aisladas, investigación web con fuentes | ✅ |
+
+Fuera de alcance en Fase 1: modelos locales (decisión del usuario: solo APIs), dictado, medidor de costos, sincronización entre equipos.
+
+## 3. Glosario
+
+- **Sesión**: una conversación con un objetivo ("qué es una derivada"). Tiene fase, diagnóstico, plan y mensajes.
+- **Fase**: `probe` (Medir) → `plan` (Planificar) → `teach` (Enseñar) → `done` (Listo).
+- **Hallazgo (finding)**: lo que el diagnóstico sabe de un prerrequisito: `solid`, `partial`, `missing` o `misconception`.
+- **Plan**: un DAG de nodos (ideas). Cada nodo depende de otros y tiene estado: `known`, `pending`, `current`, `understood` o `repair`.
+- **Pregunta**: el agente pregunta con la herramienta `ask_question` (`probe`, `predict` o `check`). El aprendiz responde con texto, **confianza 1–5** y, si quiere, su **razonamiento**.
+- **Rol**: qué modelo usa cada parte del agente: `teacher` (planifica y enseña), `prober` (mide) y `extractor` (arma el grafo). Si `prober` o `extractor` están vacíos, usan el modelo del teacher.
+- **Proposición**: una afirmación atómica que el aprendiz entendió ("la derivada es la pendiente de la tangente"). Es un nodo del grafo.
+- **Cadena**: un paso de razonamiento: unas premisas (proposiciones) que llevan a una conclusión (otra proposición). Las cadenas son lo que se guarda; las aristas del grafo se derivan de ellas.
+- **Fuente**: de dónde salió una proposición: una sesión o unas notas importadas.
+- **Práctica**: un conjunto de problemas generados a partir de ideas del grafo elegidas por el aprendiz. Cada problema tiene un enunciado, las ideas que ejercita, hasta 3 pistas graduales y una solución. La práctica **fortalece**, no evalúa: sus resultados quedan en la práctica y nunca se escriben en el grafo.
+
+## 4. Requisitos funcionales y criterios de aceptación
+
+### Sesión de aprendizaje
+
+- **AC-01** — Al crear una sesión con un objetivo no vacío, la sesión arranca en la fase **Medir** y el agente, sin que el aprendiz haga nada más, muestra una pregunta de **Diagnóstico**.
+- **AC-02** — Una pregunta pendiente solo se puede responder con respuesta (texto u opción) **y** confianza. El razonamiento es opcional. La respuesta enviada queda visible bajo la pregunta, con su confianza y su razonamiento.
+- **AC-03** — Cada respuesta del diagnóstico puede generar un hallazgo. Los hallazgos se ven en el panel lateral con su nivel. Un concepto tiene un solo hallazgo: el más reciente reemplaza al anterior.
+- **AC-04** — Al terminar el diagnóstico, el plan aparece como **árbol de dependencias**, con los fundamentos arriba y el objetivo abajo. Los prerrequisitos sólidos se ven como "ya lo sabés". El plan rechaza dependencias inexistentes y ciclos.
+- **AC-05** — En la fase Enseñar, cada nodo sigue el ciclo **predecir → explicar → verificar**. Solo un nodo está "ahora" (`current`) a la vez. Un nodo verificado pasa a "entendido".
+- **AC-06** — Si la verificación falla, el nodo pasa a "a reparar" y el agente vuelve a preguntar **antes** de avanzar a nodos que dependen de él.
+- **AC-07** — Cuando el objetivo queda entendido, la sesión pasa a **Listo** con un resumen de la cadena de razonamiento completa.
+- **AC-13** — Cuando no hay una pregunta pendiente, el aprendiz puede escribir un mensaje libre (duda o comentario) y el agente responde.
+
+### Historial
+
+- **AC-08** — Las sesiones se guardan en disco y se listan en el inicio con su fase y su progreso (`n/m pasos`), de la más reciente a la más vieja. Reabrir una sesión conserva todo, incluida la pregunta pendiente. Borrar una sesión pide confirmación.
+
+### Ajustes
+
+- **AC-09** — En Ajustes se configuran los proveedores (nombre, id y URL base de una API compatible con OpenAI) y sus API keys, y para cada rol se eligen proveedor y modelo. Hay un botón que pide la lista de modelos al proveedor. Una key guardada **nunca** vuelve a la interfaz: solo se informa que existe, y se puede quitar.
+- **AC-10** — Si el profesor no tiene modelo o key, el inicio avisa y ofrece ir a Ajustes.
+- **AC-11** — Los errores del proveedor o de la configuración se muestran en la sesión, con **Reintentar** cuando corresponde y **Abrir ajustes** si el error es de configuración.
+- **AC-12** — Los prompts de sistema (base y uno por fase) se pueden ver, editar y restaurar al original. El cambio se usa desde el próximo mensaje.
+
+### Apariencia y navegación
+
+- **AC-14** — La interfaz arranca en **modo oscuro**, aunque el sistema operativo esté en claro. Desde la barra lateral (o con Ctrl K) se elige Oscuro, Claro o Sistema, y la elección se recuerda al reabrir la app.
+- **AC-15** — **Ctrl K** abre una paleta de comandos: filtra al escribir, se navega con flechas, Enter ejecuta y Escape o un clic afuera la cierran. Hacer clic adentro no le saca el foco al buscador. Incluye acciones, temas y sesiones por nombre, y avisa "Sin resultados".
+- **AC-16** — Las sesiones son independientes: cada una conserva su fase, su diagnóstico, su plan y su pregunta pendiente. La barra lateral las lista y marca la actual.
+
+### Grafo de conocimiento (Fase 2)
+
+- **AC-17** — Cuando una sesión llega a **Listo**, la app extrae automáticamente sus **proposiciones** y **cadenas** con el rol `extractor` y las guarda en el grafo. La sesión muestra cuántas ideas y cadenas aportó, y un botón para volver a extraer. Volver a extraer **reemplaza** el aporte de esa sesión, no lo duplica.
+- **AC-18** — Dos proposiciones con el mismo texto normalizado (sin importar mayúsculas, acentos, puntuación ni espacios) son **un solo nodo** con varias fuentes.
+- **AC-19** — La pantalla **Grafo** muestra las proposiciones como nodos y las aristas premisa → conclusión derivadas de las cadenas. Se puede filtrar por texto. Al elegir un nodo se ven su texto, sus fuentes (las sesiones se abren con un clic) y las cadenas en las que participa. Sin datos, explica cómo se llena.
+- **AC-20** — Al medir y al planificar, el profesor recibe en su bloque de estado hasta 12 proposiciones del grafo relacionadas con el objetivo (por palabras significativas compartidas), con la instrucción de no reenseñarlas y de marcarlas como `known` si el diagnóstico lo confirma.
+- **AC-21** — Desde la pantalla Grafo se pueden **importar notas**: un título y un texto pegado. El extractor las convierte en proposiciones y cadenas con la fuente "notas: <título>".
+
+### Práctica (Fase 3)
+
+- **AC-22** — Desde la pantalla **Práctica** (o desde una idea del grafo) se crea una práctica eligiendo ideas del grafo (con filtro) y una cantidad de problemas (3, 5 u 8). Sin ideas en el grafo, la pantalla explica cómo conseguirlas.
+- **AC-23** — El rol `practice` genera problemas **variados** que requieren las ideas elegidas **sin nombrarlas**. Cada problema ejercita al menos una de esas ideas y trae hasta 3 pistas, de la más sutil a la más directa, y una solución.
+- **AC-24** — Los problemas se resuelven de a uno. **Pedir pista** muestra la siguiente (n/3). La respuesta lleva texto, confianza y, si se quiere, el razonamiento.
+- **AC-25** — Un corrector devuelve un veredicto (`correct`, `partial` o `incorrect`) y una devolución sobre el **razonamiento**, que tiene en cuenta las pistas usadas. Después se puede ver la solución, reintentar o pasar al siguiente problema.
+- **AC-26** — Al terminar se ve un resumen: los veredictos de cada problema, las pistas usadas y las ideas que conviene repasar. Las prácticas quedan guardadas y listadas con su progreso, y se pueden retomar o borrar.
+
+### Investigación y visuales (Fase 4)
+
+- **AC-27** — El profesor puede mostrar un **diagrama** (Mermaid) dentro de la conversación con `show_diagram`. Si el diagrama no es válido, se muestra su código con un aviso, sin romper el chat.
+- **AC-28** — El profesor puede mostrar una **demo interactiva** (HTML + JS) con `show_demo`. Corre en un iframe aislado: `sandbox="allow-scripts"` sin `allow-same-origin`, y con una CSP que bloquea toda red. No puede leer la app, sus datos ni internet.
+- **AC-29** — El profesor puede **investigar** con `research`. La app busca en la web con el proveedor configurado, el rol `researcher` resume lo encontrado y la conversación muestra una tarjeta con la pregunta, el resumen y las **fuentes** como enlaces. El profesor recibe el resumen con las fuentes para usarlo.
+- **AC-30** — Sin búsqueda configurada, `research` le avisa al profesor que no está disponible, y la sesión sigue normalmente.
+- **AC-31** — En Ajustes se configura la búsqueda web: la URL base de una API compatible con Tavily y su API key, guardada en `auth.json` igual que las demás.
+
+### Preparación de exámenes y certificaciones (Fase 5)
+
+- **AC-32** — En la pantalla **Exámenes** se crea un examen con un nombre (por ejemplo "AWS Solutions Architect Associate") y el texto de su **guía oficial** pegado (o cargado desde un `.txt`/`.md`). El rol `extractor` la convierte con `set_syllabus` en **dominios** con su **peso** (%) y **temas** con sus **objetivos**. Los pesos se normalizan para sumar 100; si faltan, se reparten por igual.
+- **AC-33** — La **ruta de estudio** muestra los dominios ordenados por peso, cada tema con su estado (sin empezar, en curso con su progreso, estudiado) y la **preparación** estimada del examen y de cada dominio.
+- **AC-34** — **Estudiar** un tema abre una sesión normal (medir → planificar → enseñar) vinculada al examen. El profesor ve el examen, el dominio, su peso y los objetivos oficiales, y su plan tiene que cubrirlos. Volver a estudiar el tema retoma la misma sesión.
+- **AC-35** — Un **simulacro** genera preguntas de opción múltiple al estilo del examen (rol `practice`, herramienta `set_exam_questions`), repartidas entre los dominios según su peso. Se responden todas y se entregan.
+- **AC-36** — La corrección del simulacro es **determinista**, sin modelo. Muestra el puntaje total y por dominio, la respuesta correcta y la explicación de cada pregunta, y recomienda los temas del dominio más flojo. Los simulacros quedan guardados con su resultado.
+- **AC-37** — La guía también se puede cargar desde un **PDF**: su texto se extrae **en la computadora** con pdf.js (el archivo no se sube a ningún lado) y llena el campo de la guía para revisarla. Un PDF sin texto (escaneado) muestra un error que lo explica.
+- **AC-38** — **Buscar la guía en la web** por el nombre del examen: la app busca con la API de búsqueda configurada, pidiendo el texto completo de las páginas, y el rol `researcher` compila el temario oficial con `submit_exam_guide`. La guía llena el campo junto con sus **fuentes** como enlaces, para revisarla antes de armar la ruta. Sin búsqueda configurada, o si no se encuentra la guía, se explica y lo ya escrito no se toca.
+- **AC-39** — Un simulacro puede ser **con tiempo**, como el examen real: se eligen los minutos (sugerido: 1,5 por pregunta; entre 1 y 600). El reloj corre desde que aparecen las preguntas, avisa con 5 y con 1 minuto restantes y, al llegar a cero, **entrega solo** con lo respondido. Se puede navegar por número de pregunta y **marcar preguntas para revisar**. Las respuestas sin entregar se conservan al salir y volver. El resultado muestra el tiempo usado.
+- **AC-40** — **Repaso de falladas**: las preguntas incorrectas o en blanco de cada simulacro entran a una lista de repaso del examen (sin repetir el mismo enunciado). En el repaso se responden de a una, con la corrección y la explicación al instante; una pregunta **sale de la lista al acertarla 2 veces seguidas**, y un error reinicia su cuenta. Primero aparecen las menos dominadas y las más viejas. Desde una pregunta fallada se puede ir a estudiar su tema.
+- **AC-41** — Preguntas de **respuesta múltiple** como en los exámenes reales: si una pregunta tiene varias correctas, muestra "Elegí N" con casillas y no deja marcar más de N. Se corrige **todo o nada**: cuenta solo si se eligen todas las correctas y ninguna otra. Los exámenes guardados con el formato anterior (una sola respuesta) se siguen leyendo.
+- **AC-42** — **Meta del examen**: nota para aprobar (% aproximado, porque muchos exámenes usan puntaje escalado), fecha del examen y horas de estudio por semana, validadas al guardar. Con fecha se ve la **cuenta regresiva** en días del calendario local. Un **gráfico de evolución** muestra el % de cada simulacro contra la línea de aprobación, con tooltip y vista de tabla. **¿Estoy listo?** compara el promedio de los últimos 3 simulacros con la nota: *listo* con 5 puntos de margen y el último aprobado, *cerca* a 10 puntos o menos, si no *todavía no*; nombra los dominios por debajo de la nota.
+- **AC-43** — **Simulacro dirigido**: además de "Todo el examen", se puede generar solo de *mi dominio más flojo* (según el último simulacro completo), de los *temas de lo que fallé* (los de la lista de repaso) o de *dominios elegidos*. Las preguntas fuera de ese foco se descartan. El simulacro queda rotulado "Dirigido: …" y **no cuenta** para la evolución ni para "¿Estoy listo?".
+- **AC-44** — **Hoja de repaso final**: el profesor escribe una hoja de una o dos páginas con una sección por dominio (de mayor a menor peso), lo que el aprendiz viene fallando, lo que ya entendió según su grafo y una sección de trampas frecuentes. Se guarda con el examen, se puede regenerar, descargar como `.md` e imprimir o guardar como PDF.
+- **AC-45** — **"¿Por qué no la B?"**: en una pregunta corregida (de un simulacro o del repaso), **Preguntar al profesor** abre un hilo corto, precargado con la opción que el aprendiz eligió mal. El profesor recibe la pregunta, las opciones con letra, la clave, la elección y la explicación; responde qué tendría que cambiar en el escenario para que esa opción fuera la correcta.
+- **AC-46** — **Verificación y reporte**: al generar un simulacro, un segundo modelo responde las preguntas **a ciegas** (sin la clave). Las que no coinciden se **descartan** (la clave nunca se cambia) y el simulacro avisa cuántas. Si la verificación falla, el simulacro sigue sin verificar. **Esta pregunta está mal** marca una pregunta con un motivo: deja de contar en el puntaje (se recalcula) y sale del repaso.
+
+### Herramientas de estudio, parte 2 (Fase 8)
+
+- **AC-56** — **Hoy**: el inicio muestra en una tarjeta lo del día: clases y bloques de estudio de hoy, tarjetas para repasar (y el mazo con más), y por cada examen o materia con fecha o con falladas: cuántos días faltan y qué tema toca hoy según su plan, con botón para estudiarlo. Un botón arranca el pomodoro. Si no hay nada, no aparece.
+- **AC-57** — **Lo fallado se vuelve tarjeta**: al entregar un simulacro, cada pregunta fallada o en blanco (no reportada) entra al mazo "Falladas: <examen>" con el enunciado y las opciones al frente y la respuesta y la explicación al dorso, sin repetir. En la consola, un error explicado por el profesor se guarda con **Guardar como tarjeta** en "Errores de <lenguaje>".
+- **AC-58** — **Revisar mi código**: el profesor revisa el código como un senior (hallazgos por línea, ordenados por importancia, con etiqueta: Bug, Idiomático, Legibilidad, Errores, Rendimiento o Seguridad, y el porqué) y propone un ejercicio. Se puede indicar qué se quiere mejorar.
+- **AC-59** — **Exportar la agenda (.ics)**: las clases y bloques se exportan como eventos semanales que se repiten hasta la fecha del examen (o 20 semanas), y las fechas de examen como eventos de día completo con aviso el día anterior. Sirve para Google Calendar, Outlook o el teléfono.
+- **AC-60** — **Respaldo y Anki**: Ajustes crea un .zip con todos los datos de aprendizaje en Descargas (nunca `auth.json` ni las carpetas temporales) y restaura uno, validando cada archivo y guardando antes una copia de lo actual. Las tarjetas se importan y exportan en el formato **"Notas en texto plano"** de Anki (separador, HTML y columnas de tipo de nota/mazo).
+- **AC-61** — **Rutas de programación**: con lenguaje, nivel de partida y objetivo, se arma una ruta por módulos (rol `extractor`, `set_syllabus`). Cada tema tiene **Estudiar** (sesión guiada en la que el profesor enseña con `show_code`) y **Ejercicio** (la consola abre un ejercicio del tema); los ejercicios aprobados se cuentan en el tema.
+- **AC-62** — **Recordatorios**: avisos de Windows y dentro de la app, unos minutos antes de cada clase o bloque (15 por defecto), cuenta regresiva de exámenes a 7, 3, 1 y 0 días (desde las 9:00) y tarjetas del día a la hora elegida. Cada aviso sale una sola vez por día. Se configuran o apagan en Ajustes.
+- **AC-63** — **Fotos y PDF escaneados**: una foto (PNG, JPG, WebP) o un PDF sin texto se lee con el modelo del Profesor (que tiene que aceptar imágenes): las páginas se renderizan como imágenes (hasta 6), se achican y se transcriben en Markdown. Sirve para la guía de un examen o materia y para los apuntes de las tarjetas.
+- **AC-64** — **Proyectos de varios archivos**: en la consola, el modo **Proyecto** permite crear desde una plantilla por lenguaje o pedir un **proyecto guiado** con pruebas que fallan (TDD). Hay lista de archivos (agregar y quitar, rutas seguras) y **Ejecutar** / **Probar** con las herramientas del lenguaje: `cargo run`/`cargo test`, `python -m unittest`, `node --test`.
+- **AC-65** — **Idiomas: listening y speaking**: listening de un nivel MCER (A2 a C1) leído con las voces del sistema, con velocidad, repeticiones y preguntas, y la transcripción visible después de corregir. Speaking con consignas por nivel: se graba o se sube un audio, se transcribe con el rol **Voz** (`/audio/transcriptions`, por ejemplo Whisper) y el profesor devuelve nivel estimado, gramática, vocabulario, fluidez (palabras por minuto), pronunciación inferida y una versión mejorada que se puede escuchar. Sin modelo de voz, se explica cómo configurarlo.
+- **AC-66** — **Memoria del aprendiz**: al extraer una sesión se guardan también sus confusiones (reparadas o no) y cómo aprende mejor; las prácticas incorrectas suman confusiones. Mientras mide y planifica, el profesor recibe las preferencias y las confusiones abiertas relacionadas con el objetivo. Ajustes muestra **Lo que la app sabe de vos**, con **Olvidar** por ítem y **Olvidar todo**. Borrar una sesión también saca sus ideas del grafo.
+- **AC-67** — **Olvidar una fuente**: en el detalle de una idea del grafo, cada fuente tiene **Olvidar esta fuente** (pide confirmar). Sus ideas salen del grafo; el registro conserva la historia.
+- **AC-68** — **Guardar lo aprendido antes de terminar**: con al menos un nodo entendido, la sesión ofrece **Guardar lo aprendido hasta acá**. Una sesión terminada que siguió (4 mensajes o más después de la última extracción) se vuelve a guardar sola, reemplazando su aporte.
+- **AC-69** — **Biblioteca: agregar un documento**: en **Biblioteca**, **Agregar PDF o texto** acepta .pdf, .txt y .md. El documento se convierte a Markdown **en esta PC**, sin API ni modelo:
+  - pdf.js lee el texto con su tamaño de letra y su posición;
+  - se quitan los encabezados y pies repetidos y los números de página;
+  - se unen las palabras cortadas con guion;
+  - los títulos salen de los marcadores del PDF o, si no tiene, del tamaño de letra.
+
+  Se divide en secciones con su página y se indexa. Mientras lee, muestra el avance por página. Al terminar dice cuántas secciones, cuánto tardó, que gastó **0 tokens del modelo** y a cuántos tokens equivale el texto. Las páginas escaneadas se avisan, y un PDF sin texto no entra. Una copia en Markdown con frontmatter queda en `library/` (se puede abrir con Obsidian) y entra en el respaldo.
+- **AC-70** — **Biblioteca: leer y buscar**: cada documento muestra su índice y un lector por sección, con marcas de página. **Buscar en la biblioteca** usa BM25 local sobre todas las obras y lleva a la sección elegida. Cada resultado muestra libro, sección, página y un fragmento.
+- **AC-71** — **Biblioteca: estudiar y quitar**: **Estudiar esta sección** abre una sesión con esa sección como objetivo. **Pasar al grafo** extrae sus ideas, y es lo único que usa el modelo. **Quitar de la biblioteca** pide confirmar.
+- **AC-72** — **El profesor consulta la bibliografía**:
+  - Si hay biblioteca, el estado se la lista al profesor. Tiene `library_search`, que devuelve hasta 4 fragmentos numerados `[L1]…` con libro, sección, página y qué palabras coinciden (o «coincidencia débil»), y `library_read`, que trae la sección completa.
+  - El prompt le pide buscar ahí **antes** que en la web y citar con esos números.
+  - En el chat, `[Ln]` se muestra como «Libro, «sección», p. N». Un número que la biblioteca nunca devolvió se muestra como **[cita no verificada]**.
+  - La web se sigue citando [1], [2], así se distingue su bibliografía de internet.
+
+### Accesibilidad
+
+Ajustes para estudiar más cómodo, que cualquiera puede activar. Son elecciones funcionales («textos cortos», «leeme en voz alta»), nunca un diagnóstico: la app no pregunta ni guarda condiciones de salud.
+
+- **AC-73** — **Ajustes de accesibilidad**: la pestaña **Ajustes → Accesibilidad** (también desde la paleta de comandos) guarda cada cambio al instante en `settings.json`, separado de los modelos, así guardar los modelos no los borra. Los de pantalla se aplican en el momento:
+  - **Tamaño del texto**: Normal, Grande (×1,15) o Muy grande (×1,3), sobre toda la app, que sigue ocupando la ventana entera.
+  - **Más espacio entre letras, palabras y líneas**, con renglones más cortos (por encima de los mínimos de WCAG 1.4.12).
+  - **Sin animaciones**. La app también las quita si el sistema pide movimiento reducido.
+  La pestaña tiene una vista previa con **Escuchar**.
+- **AC-74** — **Leeme en voz alta**: agrega **Escuchar** a cada mensaje del profesor, a la pregunta pendiente (con sus opciones) y a la sección abierta de un libro. Lee con las voces del sistema, a la velocidad elegida (0,6× a 1,4×). Lo leído no incluye marcas de Markdown, citas ni código, y las fórmulas simples se dicen en palabras («x al cuadrado»). Mientras lee, muestra el texto con la **palabra actual marcada**, si la voz lo informa; si no, igual lee. **Detener lectura** corta.
+- **AC-75** — **El profesor se adapta**: el estado le pasa al profesor, en todas las fases, los ajustes que cambian cómo escribe:
+  - **Lectura fácil**: frases cortas, palabras comunes, términos explicados. Mismo contenido y misma exigencia.
+  - **Lenguaje literal y sin sorpresas**: sin ironías ni metáforas, y anuncia cada paso.
+  - **Pasos cortos con meta visible**: «3 preguntas y listo», cuánto falta, pausas.
+  - Si escucha en voz alta, escribe para el oído. Si dicta, no le corrige la ortografía.
+  Lo mismo llega a todo lo que el aprendiz lee fuera de las sesiones: problemas y correcciones de práctica, preguntas, dudas y hoja de repaso de exámenes, tarjetas, listening y su devolución de speaking, y ejercicios, proyectos y ayuda de código. Las llamadas internas (grafo, resúmenes, temario, guías, verificación) no lo reciben. Va en el mensaje, no en el prompt del sistema, que queda estable.
+  El prompt base aclara que estos ajustes no son «estilos de aprendizaje» y que no hay que preguntar por diagnósticos. El extractor tiene prohibido anotar datos de salud en el perfil del aprendiz.
+- **AC-76** — **Responder dictando**: agrega **Dictar** en la respuesta a la pregunta y en el mensaje al profesor. Graba, transcribe con el modelo de **Voz** y suma el texto a lo escrito. Sin modelo de Voz, el botón queda desactivado y dice dónde configurarlo.
+- **AC-77** — **OpenCode Go como proveedor**: viene en la lista por defecto (`https://opencode.ai/inference/go/v1`, compatible con OpenAI) y **se agrega una sola vez a las instalaciones que ya existían** (los proveedores que la persona quitó a propósito no vuelven). Cada pedido lleva `x-opencode-session`, estable por sesión (sin esa cabecera, Go lo rechaza), y la app se identifica como `Eureka/<versión>`.
+
+### Mi espacio (diseño personalizable)
+
+La app es un espacio tranquilo y propio: vidrio esmerilado sobre un fondo elegido, tipografía **Outfit** (Medium en títulos, Regular en el texto, Light solo en textos grandes), esquinas casi rectas y la barra lateral pegada al borde izquierdo, a todo el alto. Todo se guarda **solo en esta computadora** (`localStorage`).
+
+- **AC-78** — **Fondo de pantalla**: **Ajustes → Mi espacio** ofrece fondos dibujados en código (Lago al amanecer, Lago nocturno, Bosque entre la niebla, Atardecer, Océano en calma, Dunas de lavanda), **Automático** (según el tema), **Sin imagen** y **Usar una imagen mía** (se achica a pantalla y se guarda; no sale de la PC). En el inicio el fondo se ve entero arriba y se funde hacia abajo; en las demás pantallas es un velo suave y desenfocado, para leer cómodo.
+- **AC-79** — **Color de acento desde el fondo**: cada fondo sugiere sus colores. En una imagen propia se leen sus **colores predominantes** (grises, negros y blancos se ignoran) y se nombran en español: «Este fondo se ve sobre todo rojo». El más presente se usa de entrada y al cambiar de fondo el acento lo acompaña («Tomar el color del fondo»). El tono se suaviza (poca saturación) y se ajusta para que **el texto sobre el acento y el acento como texto superen 4,5:1** en cualquier color.
+- **AC-80** — **Otro color a mano**: se puede elegir cualquiera de los sugeridos o **cualquier color** con el selector. Si se elige uno propio, queda aunque se cambie de fondo; volver a marcar «Tomar el color del fondo» lo suelta.
+- **AC-81** — **Es tuyo**: el **nombre** (opcional) saluda en el inicio según la hora («Buenas tardes, Ana»), con una frase tranquila del día y sugerencias; la tarjeta **Mi espacio** de la barra lateral abre esta pestaña. Fondo, acento, nombre y tema se recuerdan al reabrir. La pestaña tiene vista previa, y avisa si el equipo no deja guardar.
+
+### Acompañamiento
+
+Un modo aparte para hablar, anotar cómo se está y conocerse un poco mejor, **sin enseñar nada**. No es terapia ni la reemplaza; el diseño y sus límites están en [acompanamiento.md](acompanamiento.md).
+
+- **AC-82** — **Charla de escucha**: la pantalla **Acompañamiento** (barra lateral y paleta) abre una conversación con su propio prompt (`companion`): escucha activa, refleja lo que se dijo, una pregunta abierta por vez, no aconseja si no se lo piden, no diagnostica ni se presenta como terapeuta ni como amigo, mensajes cortos. No tiene herramientas ni fases: no planifica, no mide, no explica. Antes de usarlo, un **aviso** dice qué es, que **no es terapia ni para emergencias**, que **los mensajes viajan al proveedor del modelo** (lo nombra) y que el profesor no lee nada de esto. Si el envío falla, no se guarda nada y el mensaje queda en la caja. Sigue los ajustes de accesibilidad (Escuchar, Dictar, lectura fácil…).
+- **AC-83** — **Diario**: **check-in** de diez segundos (ánimo de 1 a 5, emociones, nota opcional) y **entradas**. Al terminar una charla, **Guardar esta charla en mi diario** pide al modelo un borrador en primera persona (título, texto, ánimo, emociones, qué ayudó); la persona lo **revisa, edita o descarta**, y **nunca se guarda sin su OK**. También se escribe a mano, se edita y se borra (con confirmación). Se muestra por día, lo más nuevo primero. No se anotan datos de salud ni nombres de terceros.
+- **AC-84** — **Señales de riesgo**: un detector local lee cada mensaje **antes** de llamar al modelo y, si hay señales de que la persona podría hacerse daño (cuidando las frases hechas: «me quiero morir de vergüenza» no cuenta), responde **la propia app** —sin depender del modelo ni de la red— con una pregunta directa y cálida. El modelo también puede levantar la bandera (`[[RIESGO]]`, que nunca se muestra). Con riesgo aparecen las **líneas de ayuda** durante toda la conversación y el modelo recibe una nota para seguir con ese cuidado. Una charla nueva empieza limpia.
+- **AC-85** — **PIN**: se puede poner un PIN (4 a 12 caracteres) al diario. Se guarda con sal y hash, nunca en claro. Con PIN, el diario se **bloquea al salir de la pantalla**, y bloqueado no se puede leer, escribir ni exportar. Cambiarlo o quitarlo pide el actual. El PIN evita que alguien que use la PC vea el diario; **no cifra los archivos** (se dice en pantalla).
+- **AC-86** — **Los datos son de la persona**: **Descargar todo mi diario** (JSON), **Borrar todo** (con confirmación) y, si se olvidó el PIN, **Olvidé mi PIN → borrar todo** (nunca queda atrapado). Las **líneas de ayuda** son editables (vienen cargadas las de Argentina; se avisa que hay que verificarlas o cambiarlas por las del país de la persona).
+- **AC-87** — **Herramientas**: **respiración guiada** (inhalar 4, sostener 4, exhalar 6, con un círculo que acompaña; sin animación si están desactivadas) y **5-4-3-2-1** paso a paso. Funcionan sin conexión ni modelo y no guardan nada.
+- **AC-88** — **Separado del estudio**: lo que se dice acá **no lo lee el profesor**, no entra en el perfil del aprendiz ni en el grafo, y **no va en las copias de seguridad**. Vive en su propia carpeta (`companion/`).
+- **AC-93** — **Registro de pensamientos**: en **Herramientas**, cinco preguntas de a una (qué pasó, qué pensaste, cuánto te pegó —emoción y fuerza de 0 a 100—, qué apoya y qué no encaja con el pensamiento, y otra mirada), con la opción de volver a medir la intensidad al final. Hace falta solo lo que pasó y lo que se pensó. No usa el modelo ni la red: **lo escribe la persona** y la app solo da el orden (el modelo nunca propone un registro). Se guarda en el diario como entrada de tipo «pensamiento» con un texto legible y la intensidad antes → después. Se puede cancelar en cualquier paso sin guardar nada.
+- **AC-94** — **Rueda de emociones**: seis familias (alegría, calma, tristeza, enojo, miedo, agobio) y, dentro de cada una, la palabra que mejor queda; se pueden elegir varias. Está en **Herramientas** (se guarda como check-in con un ánimo) y dentro del **check-in** («No encuentro la palabra»). No usa el modelo.
+- **AC-95** — **Lo que noté**: en el **Diario**, patrones de lo que la persona anotó, calculados **en su computadora** (no se envían a ningún lado): semana contra semana, días de la semana y momentos del día que se destacan, la emoción que acompaña los momentos bajos o la más nombrada, lo que dijo que le ayuda y el efecto de volver a mirar un pensamiento. Solo se dicen con datos suficientes (al menos 8 anotaciones con ánimo; si faltan, dice cuántas) y con diferencias claras. Son **descriptivos, nunca causales ni clínicos** («no son un diagnóstico ni explican por qué»), con los números a la vista y hasta 6 a la vez.
+- **AC-96** — **La persona manda sobre lo que se nota**: cada observación se contesta con **«Me suena»** o **«No es así»**. Lo confirmado queda arriba como «Lo que ya confirmé», lo descartado se esconde (y se puede volver a mostrar) y cualquier respuesta se puede retirar. Las respuestas se guardan en el diario (con PIN, bloqueadas; entran en la descarga y se borran con «Borrar todo»). Nada de esto lo ve el profesor ni se envía al modelo.
+
+### Chat agéntico, bienvenida y sonidos
+
+La app se usa como un chat (ChatGPT, Claude, Gemini): se escribe lo que se quiere y **el asistente decide con sus herramientas qué hacer**, en vez de seguir un flujo fijo.
+
+- **AC-89** — **Charla libre**: lo que se escribe en el inicio abre una **conversación sin objetivo** (fase `chat`), no una sesión de aprendizaje. Un saludo es solo una charla, y una pregunta suelta se contesta sin armar un método. Si la persona dice que quiere **aprender o entender algo** (uno o varios temas), el asistente llama a **`begin_learning`** con el objetivo, los temas y un **título corto** para la lista (si no lo trae, se recorta el objetivo en un límite de palabra; el objetivo guardado nunca se corta a mitad de palabra ni de tema), y la **misma conversación** pasa a medir lo que sabe, planificar y enseñar. En la fase de charla el asistente tiene `begin_learning`, `recall`, `library_search`/`library_read`, `research`, `show_diagram`, `show_demo`, `show_code`, `make_cards` y `propose_action`; las del método (`ask_question`, `set_plan`…) esperan a que empiece. `begin_learning` falla si ya hay un método en curso, y `set_phase` no vuelve a la charla. Las sesiones que se crean con un objetivo (desde la biblioteca, un examen, una ruta) siguen empezando directo en Medir.
+- **AC-90** — **Botones que ofrece el asistente**: con **`propose_action`** ofrece un botón para abrir una pantalla (biblioteca, práctica, exámenes, tarjetas, agenda, código, idiomas, grafo, acompañamiento), **empezar un pomodoro** (5 a 90 min) o **activar los recordatorios** de pararse y de tomar agua (10 a 240 min). **No pasa nada hasta que la persona lo toca**; la tarjeta dice qué va a hacer, y el asistente tiene prohibido decir que algo ya está hecho. La acción se valida igual en el backend y en la pantalla: una inválida nunca llega a ser un botón.
+- **AC-91** — **Inicio como chat**: el inicio es una caja de mensaje grande (Enter envía, Mayús+Enter salta de línea, dictado si está activado) con atajos y sugerencias que también abren una charla. En una charla sin objetivo no se muestra el panel de plan y diagnóstico; aparece cuando empieza el método. El saludo cambia con la hora y el nombre.
+- **AC-92** — **Bienvenida y perfil**: la primera vez, un asistente por pasos pide **nombre y apellido**, **dónde y qué estudia**, **edad**, **cómo prefiere que le hablen** (él, ella, elle —lenguaje neutro—, como sea, o con sus palabras), **el tema y el fondo**, y si quiere recordatorios de pararse y tomar agua y sonidos. **Todo es opcional** y se puede omitir entero; puede volver a verse desde **Mi espacio**, donde también se edita todo el perfil. Lo que se cuenta se guarda en la PC y, **solo el nombre y apellido, el trato, lo que estudia y la edad se le pasan al modelo en cada turno** (también en Acompañamiento) para que hable como se pidió; el paso lo dice en pantalla. El extractor nunca lo guarda en el perfil de aprendizaje.
+- **AC-120** — **Preparar un examen hablando**: si la persona cuenta que quiere rendir un examen, una certificación o una materia, el asistente **no arranca a medirla**: primero ubica lo que el examen necesita (cuál es exactamente, para cuándo, si tiene la guía o el programa) y ofrece una **tarjeta** (`propose_exam`) con nombre, tipo, fecha, horas por semana, nota para aprobar y guía. La tarjeta no crea nada hasta **«Crear mi preparación»**; si no hay guía, la **busca en la web** (o la persona la pega) y arma lo mismo que la pantalla Exámenes: dominios, temas y plan con fecha, y muestra **la ruta de estudio** con **Abrir mi ruta de estudio**. Si ya existe una preparación con ese nombre, dice «Ya tenés una preparación con este nombre» y la abre en vez de duplicarla. La propuesta se valida igual en el backend y en la pantalla.
+- **AC-121** — **Escribir libremente con una pregunta pendiente**: el cuadro de mensaje del chat **siempre está disponible**, también cuando el asistente hizo una pregunta del diagnóstico («Respondé la pregunta de arriba o escribí lo que quieras…»). Lo que se escribe ahí cuenta como la respuesta (sin confianza), se ve como burbuja de la persona, y la pregunta queda marcada «Respondiste escribiendo en el chat». El asistente sabe que fue un mensaje libre: puede ser la respuesta, una duda, un pedido o un cambio de tema, y **no repite la pregunta** si no la respondió.
+- **AC-122** — **El asistente maneja la app**: con **`ui_command`** ejecuta, cuando la persona lo pide con sus palabras, el **pomodoro** (empezar de N minutos, pausar, retomar, saltar, reiniciar), el **tema**, el **fondo**, el **color de acento**, el **sonido** del pomodoro y su tic-tac, los **recordatorios** de pararse y tomar agua (0 los apaga) y los **ajustes de accesibilidad**. El backend valida cada comando y la pantalla lo ejecuta **una vez, cuando ocurre** (nunca al recargar una conversación vieja); en el chat queda una línea («Pausó el pomodoro») y si el comando era inválido no se muestra como hecho. Está disponible en todas las fases. Lo que el asistente **sugiere** por su cuenta va como botón (AC-90), no se ejecuta.
+- **AC-123** — **El asistente ve la app**: en cada turno el estado trae **«La app ahora»** (pomodoro corriendo o en pausa y cuánto queda, tema, fondo, acento, sonido, recordatorios, accesibilidad), en pocas líneas; y **`app_status`** lee cómo viene la persona: exámenes con fecha y días que faltan, tarjetas para hoy, minutos de estudio de hoy y de la semana, sesiones recientes y libros. Solo lee.
+- **AC-124** — **Principio de paridad**: toda función de la app debe poder pedirse por chat, y una función nueva no está terminada sin su puerta de entrada al asistente (o una razón escrita). [agente-paridad.md](agente-paridad.md) lista cada función, cómo se expone y qué falta. Las claves de los proveedores **nunca** pasan por el chat.
+- **AC-97** — **Sonidos del pomodoro**: un **tic-tac** (alternando agudo y grave) en los últimos 10 segundos de cada bloque y una **campanita** al terminar el foco, sintetizados (sin archivos). En los ajustes del pomodoro se apaga **Sonido** (todo) o solo el **Tic-tac**, hay **Probar sonido**, y la elección se recuerda.
+- **AC-98** — **Recordatorios de pararse y de tomar agua**: en **Ajustes → Recordatorios**, «Avisarme que me pare cada N min» (por defecto 25, lo que dura un pomodoro) y «Avisarme que tome agua cada N min» (por defecto 60), de 10 a 240. Vienen apagados; la bienvenida y el asistente pueden activarlos. Cada uno cuenta desde su propio reloj (cambiar los minutos no dispara una ráfaga), **un descanso del pomodoro cuenta como pararse**, y el aviso sale dentro de la app y como notificación de Windows, con un sonido suave si el sonido está activo.
+
+### Mi cursada (vida académica)
+
+Tu cursada dentro de Eureka: períodos, materias con sus horarios, y las fechas que no te podés olvidar. Se arma a mano, pegando el horario o contándoselo al asistente. Lo que el asistente propone **nunca se guarda solo**.
+
+- **AC-99** — **Períodos, materias y semana**: la pantalla **Mi cursada** (barra lateral, paleta de comandos, o un botón que ofrece el asistente) se ordena por **período**: cuatrimestre, trimestre, semestre, anual u otro, con fechas opcionales. Hay uno **activo** y se cambia, se edita y se borra con confirmación (borrar un período borra sus materias y fechas). Cada **materia** tiene nombre, código, profesor/a, aula habitual, notas, color y **horarios semanales** (día, desde, hasta, aula, teoría/práctica); un horario que termina antes de empezar se rechaza **junto al campo**, y el backend lo vuelve a validar. La **semana** se dibuja como grilla horaria con un bloque de color por clase (sábado y domingo solo si hay clases) y suma las horas de clase por semana.
+- **AC-100** — **Fechas importantes**: parcial, recuperatorio, final, TP, entrega u otro, con título, materia (opcional), fecha, hora (opcional), notas y **nota obtenida**. Se listan por día con cuenta regresiva («En 3 días»); las que pasaron sin marcar se destacan; **marcar como hecha** las pasa a «Hechas»; cada materia muestra su próxima fecha. Borrar una materia **no borra sus fechas**: quedan sin materia.
+- **AC-101** — **Cargarla sin tipear**: **Pegar mi horario** lo lee con el modelo (rol de práctica) y muestra **qué entendió** —materias, horarios y fechas— antes de guardar; avisa que el texto viaja al modelo. Lo mismo ocurre cuando la persona le cuenta o pega su horario al **asistente** en el chat (`propose_timetable`): aparece una tarjeta con **«Guardar en Mi cursada»**. **Nada se guarda hasta confirmar.** Una propuesta inválida (hora que termina antes de empezar, fecha que no existe, vacía) vuelve al modelo con el motivo y nunca llega a ser un botón. Importar dos veces **no duplica**: las materias con el mismo nombre (sin importar mayúsculas ni tildes) se actualizan y suman horarios; las fechas ya cargadas se saltean; el aviso dice qué hizo. Un texto sin horarios no inventa nada.
+- **AC-102** — **El asistente conoce tu cursada**: en cada paso el estado le trae la **fecha de hoy** (para resolver «el jueves» o «el 12/11»), el período activo, las materias con profesor, aula y horarios, las clases de hoy y las fechas de los próximos 30 días. Sin nada cargado, en la charla le indica cómo ayudar a cargarla; en una sesión de aprendizaje no suma nada. **Estudiar esta materia** abre un chat con esa materia para que el asistente decida cómo empezar.
+- **AC-103** — **Agenda y recordatorios**: la **Agenda** muestra las clases del período activo en «Hoy» y «Semana» (sumando sus horas) y sus fechas en «Próximas fechas», junto a las materias y los exámenes. Los **recordatorios** avisan antes de cada clase —con el aula— y 7, 3 y 1 día y el mismo día antes de cada fecha pendiente (respetando «Cuenta regresiva de exámenes»). Una fecha hecha o de otro período no avisa.
+
+### Programación (Fase 7)
+
+- **AC-53** — **Consola de código**: la pantalla **Código** tiene un editor (CodeMirror) para Python, JavaScript, TypeScript y Rust, una entrada (stdin) y **Ejecutar** (o Ctrl+Enter). El código corre con los intérpretes **instalados en la PC** (Python por `py`/`python`, Node, `rustc`), detectados al abrir y listados en Ajustes; si falta uno, se explica cómo instalarlo y no se puede ejecutar. La salida muestra stdout, stderr, el código de salida y el tiempo; las **líneas** que señala el error se marcan en el editor. Rust que no compila muestra los errores de `rustc`. En TypeScript, además, se **revisan los tipos** en el navegador (Node solo quita los tipos).
+- **AC-54** — **Explicar este error**: después de ejecutar, se le puede preguntar al profesor por el error o por el código. Recibe el código con números de línea y la salida, y explica qué dice el error, dónde está la causa y por qué, con una pista para arreglarlo. En las sesiones, el profesor puede mostrar código con `show_code` (ejemplos o ejercicios con consigna) y el aprendiz lo abre en la consola con **Abrir en la consola**.
+- **AC-55** — **Ejercicios**: con un tema y un nivel (básico, medio, avanzado), el rol `practice` escribe un ejercicio con `set_code_exercise`: consigna, código inicial, **pruebas ocultas**, hasta 3 pistas y la solución. **Probar** ejecuta el código del aprendiz con las pruebas al final: pasa si termina sin error.
+
+### Herramientas de estudio (Fase 6)
+
+- **AC-47** — **Tarjetas de memoria**: en la pantalla **Tarjetas** se crean mazos vacíos (tarjetas escritas a mano: frente y dorso, editables y borrables) o **generados** por el rol `practice` con `set_cards` a partir de un **examen** (temario y lo que se viene fallando; también con "Crear tarjetas" desde el examen), de **ideas del grafo** o de **apuntes pegados**. Una idea por tarjeta, sin frentes repetidos, hasta 40.
+- **AC-48** — **Repetición espaciada** (SM-2, como Anki): "Estudiar" muestra primero los repasos vencidos y después hasta 20 nuevas por día. Se ve el frente, **Mostrar respuesta** (o Espacio) muestra el dorso, y se califica con **Otra vez / Difícil / Bien / Fácil** (o 1–4); cada botón dice cuándo vuelve. "Otra vez" la manda al final de la sesión. Las fechas son días del calendario local.
+- **AC-49** — **Pomodoro y tiempo de estudio**: un pomodoro en la barra lateral, en todas las pantallas (foco 25, descanso 5, largo 15 cada 4 bloques; todo configurable). Se puede empezar, pausar, saltar y reiniciar; sobrevive al cambio de pantalla y a recargar. Al terminar un bloque de foco suena un aviso, se anota el tiempo en `study_log.jsonl` con **lo que se estaba estudiando** (la sesión, el examen o el mazo en pantalla) y arranca el descanso. El inicio muestra el **tiempo de estudio** de hoy, de los últimos 7 días (barras) y por tema.
+- **AC-50** — **Materias**: al crear, se elige "Examen o certificación" o "Materia". Una materia toma el **programa** de la cursada (pegado, PDF o búsqueda) y lo convierte en unidades y temas, con la misma ruta de estudio, sesiones, simulacros, tarjetas y hoja de repaso; su fecha es la del parcial o final.
+- **AC-51** — **Horario y Agenda**: cada examen o materia tiene un horario semanal de **clases** y bloques de **estudio** (día, desde, hasta, lugar), validado (HH:MM, fin después del inicio, hasta 40). La pantalla **Agenda** muestra lo de **hoy**, las **próximas fechas** (con cuántos días faltan) y la **semana** completa de todas las materias, con las horas de clase y de estudio planificado. Sin nada cargado, explica qué cargar.
+- **AC-52** — **Plan con fecha**: con fecha de examen, el plan reparte los temas pendientes (los dominios más pesados y más flojos primero) en las semanas que faltan, parejo, y deja la **última semana** para simulacros con tiempo, repaso de falladas y hoja de repaso. Dice **qué estudiar hoy** (con botón para estudiarlo) y, con meta de horas, cuánto se estudió esta semana para ese examen (pomodoros del examen y de sus sesiones) contra la meta.
+
+## 5. Requisitos no funcionales
+
+| ID | Requisito |
+|---|---|
+| NF-01 | **Privacidad**: todo (sesiones, ajustes, keys) vive en archivos locales en la carpeta de datos de la app. Las keys van en `auth.json`, separadas de `settings.json`. |
+| NF-02 | **Costo acotado**: un turno hace como máximo 12 llamadas al modelo (`MAX_STEPS`). El aprendiz puede detener al agente en cualquier momento. |
+| NF-03 | **Proveedores intercambiables**: cualquier endpoint `/chat/completions` compatible con OpenAI y con *tool calling* (OpenAI, Anthropic, Gemini, DeepSeek, OpenRouter…). |
+| NF-04 | **Streaming** del texto del agente y texto UTF-8 correcto aunque un carácter multibyte quede partido entre dos paquetes de red. |
+| NF-05 | **Robustez frente al modelo**: argumentos inválidos, herramientas desconocidas o una segunda pregunta en el mismo turno se devuelven como resultado de herramienta, nunca rompen la sesión. |
+| NF-06 | **Accesibilidad**: los controles tienen nombres accesibles (los e2e los usan como contrato). |
+| NF-07 | **Idioma**: interfaz y prompts en español; el agente responde en el idioma del aprendiz. |
+| NF-08 | **WCAG 2.1 AA** en todas las pantallas y en los dos temas: contraste ≥ 4.5:1, nombres accesibles que incluyen el texto visible, patrón ARIA de combobox en la paleta. |
+| NF-09 | **Layout estable**: la sesión siempre entra en la ventana (encabezado, fases, pregunta y composer a la vista) aunque la conversación sea larga; solo se desplaza el transcript. |
+| NF-10 | **Estabilidad visual**: las pantallas clave coinciden con sus capturas de referencia (≤ 1% de píxeles). |
+| NF-11 | **Extracción robusta**: lo que devuelve el extractor se valida. Se descartan las cadenas que citan proposiciones inexistentes o se citan a sí mismas, los textos vacíos o repetidos, y lo que pase de 60 proposiciones o 40 cadenas. Si falla, se muestra el error con Reintentar y el grafo queda como estaba. |
+| NF-13 | **Práctica robusta**: se valida lo que devuelve el generador (entre 1 y 10 problemas, enunciado no vacío, al menos una idea elegida por problema, a lo sumo 3 pistas) y también el veredicto del corrector. Si falla, se muestra el error con Reintentar y no se pierde lo ya respondido. |
+| NF-14 | **Contenido generado aislado**: las demos no tienen acceso a la red (CSP `default-src 'none'`), ni al origen de la app (sin `allow-same-origin`), ni pueden navegar la ventana. Límites: HTML de hasta 100 KB y Mermaid de hasta 20 KB. Los enlaces de las fuentes se abren afuera de la app. |
+| NF-15 | **Temario y simulacros validados**: el temario y las preguntas generadas se validan antes de guardarse: dominios y temas con nombre, a lo sumo 12 dominios y 20 temas por dominio, preguntas con enunciado, entre 2 y 6 opciones distintas, una respuesta válida y un dominio existente. Si no queda nada válido, se informa el error y no se guarda nada. |
+| NF-16 | **Ejecución de código acotada**: solo se ejecuta código cuando el aprendiz toca *Ejecutar* o *Probar*; ninguna herramienta del agente puede ejecutar. Cada ejecución usa una carpeta propia dentro de los datos de la app que se borra al terminar, tiene un límite de 10 s (90 s para compilar Rust), corta la salida a 64 KB, no abre ventanas de consola y rechaza código de más de 200 KB. |
+| NF-17 | **Contexto gestionado**: lo que se manda al modelo es una proyección del historial (que no se modifica): demos, diagramas y código viejos se compactan, la investigación vieja se resume, y si la estimación supera el 60 % del presupuesto se dejan el mensaje inicial y los mensajes recientes, cortando solo en bordes seguros. El system prompt solo cambia con la fase; el estado va al final, en un mensaje `<estado_app>`. Las llamadas después de una pregunta en el mismo lote se ignoran y la investigación tiene un tope de 2 por turno. |
+| NF-18 | **Herramientas del profesor con reglas**: cada fase ve solo sus herramientas (medir: preguntar, registrar, `recall`, investigar, cambiar de fase; planificar suma plan, nodos y diagramas; enseñar y cerrar, todas). `set_phase` exige lo que la fase siguiente necesita (un hallazgo para planificar, un plan para enseñar, el objetivo entendido para cerrar). `recall` consulta el grafo (ranking con IDF), las confusiones del perfil y los fallos de examen. Las ideas del grafo se buscan con el objetivo más los títulos del plan. |
+| NF-19 | **Llamadas forzadas con un reintento**: si el modelo no usa la herramienta pedida se reintenta con `tool_choice: required`; si el resultado no pasa la validación, el modelo ve su llamada y el error concreto y tiene **una** oportunidad de corregirlo (sílabos, preguntas, tarjetas, ejercicios, proyectos, listening, hoja de repaso, práctica, extracción). |
+| NF-20 | **Resumen acumulado**: cuando la ventana deja afuera mensajes de una sesión larga, el extractor los resume (junto con el resumen anterior) cada 6 mensajes nuevos que salen; el profesor lo recibe en el estado como «Lo que pasó antes en esta sesión». Si el resumen falla, el turno sigue. |
+| NF-21 | **Contexto según el modelo**: en Ajustes, el profesor y el que mide tienen **Contexto del modelo** (miles de tokens; vacío = 64). La ventana del historial usa el 60 % de ese tamaño. Los prompts explican `recall`, las reglas de cambio de fase y el resumen «Lo que pasó antes». |
+| NF-22 | **Biblioteca medida** ([metricas-biblioteca.md](metricas-biblioteca.md), `npm run bench:library`). Con un libro inventado de 28 páginas, el benchmark mide la conversión, la indexación, los tokens del modelo al indexar (deben ser 0), los tokens por consulta y la recuperación (sección en el top 4, MRR, respuesta dentro de lo enviado, página) en tres juegos de preguntas. Umbrales: palabras clave ≥ 90 %, como pregunta el alumno ≥ 75 %, paráfrasis ≥ 80 % en el top 4, y lo que el libro no responde llega marcado como débil. En el chat, cada búsqueda muestra los tokens que agregó. |
+| NF-12 | **Grafo como registro**: `graph/extractions.jsonl` es *append-only*, con una línea por extracción. El grafo se reconstruye plegando la última extracción de cada fuente; nunca se reescribe el historial. |
+
+## 6. Trazabilidad
+
+`D-xx` = escenario de [`escritorio.feature`](../features/escritorio.feature), que corre sobre la app real con el proveedor falso.
+
+| AC / NF | Escenario BDD | e2e web (backend simulado) | e2e app real | Unitarios / integración |
+|---|---|---|---|---|
+| AC-01 | `aprender`, `bordes` | `aprender › AC-01`, `bordes › AC-01` | D-01 | `prompts::system_prompt_follows_phase`, `session::new_session…` |
+| AC-02 | `aprender`, `bordes` | `aprender › AC-02` (x2), `bordes › AC-02` | D-02 | `QuestionCard.test`, `tools::answer_becomes_tool_result…`, `agent::question_pauses_turn…` |
+| AC-03 | `aprender` | `aprender › AC-02 AC-03` | D-03 | `tools::finding_replaces…` |
+| AC-04 | `aprender` | `aprender › AC-04` | D-02 | `tools::plan_rejects_*`, `planLayout.test`, `teacherScript.test` |
+| AC-05 | `aprender` | `aprender › AC-05…` | D-02 | `tools::only_one_current_node`, `agent::phase_change_switches…` |
+| AC-06 | `aprender` | `aprender › AC-05 AC-06 AC-07` | D-02 | `teacherScript.test › repairs…` |
+| AC-07 | `aprender` | `aprender › AC-05 AC-06 AC-07` | D-02 | `teacherScript.test › finishes…` |
+| AC-08 | `sesiones`, `bordes` | `sesiones` (x3), `bordes › AC-08` | D-03, D-10 | `session::save_load_list_delete…`, `App.test › deletes…` |
+| AC-09 | `ajustes`, `bordes` | `ajustes › AC-09` (x2), `bordes › AC-09` (x2) | D-08 | `settings::keys_are_trimmed…`, `Settings.test`, `contract_tests` |
+| AC-10 | `ajustes`, `bordes` | `ajustes › AC-10`, `bordes › AC-09 AC-10` | — | `agent::missing_key_fails…` |
+| AC-11 | `ajustes` | `ajustes › AC-11` | D-04, D-05 | `agent::provider_http_errors…`, `agent::sse_error_mid_stream…` |
+| AC-12 | `ajustes`, `bordes` | `ajustes › AC-12`, `bordes › AC-12` | D-09 | `prompts::override_wins…`, `Settings.test › Prompts` |
+| AC-13 | `aprender`, `bordes` | `aprender › AC-13`, `bordes › AC-13` | D-02 | `tools::free_text…` |
+| AC-14 | `apariencia` | `apariencia` (x2), `bordes › AC-15 AC-14` | — | `theme.test`, `Sidebar.test` |
+| AC-15 | `bordes` | `bordes › AC-15` (x4) | — | `CommandMenu.test` (x7), `App.test › palette` |
+| AC-16 | `bordes` | `bordes › AC-16` | — | `Sidebar.test` |
+| AC-17 | `grafo` | `grafo › AC-17` (x2) | D-11 | `graph::latest_extraction…`, `extract::transcript…`, `agent::extraction_forces_the_tool…` |
+| AC-18 | `grafo` | `grafo › AC-18 AC-21` | — | `graph::normalize…`, `graph::fold_merges…`, `graphView.test` |
+| AC-19 | `grafo` | `grafo › AC-19` (x3) | D-12 | `graphView.test` (filtro, layout, detalle) |
+| AC-20 | `grafo` | — | D-11 | `graph::relevant_ranks…`, `agent::probe_prompt_includes_related…`, `prompts::system_prompt_follows_phase` |
+| AC-21 | `grafo` | `grafo › AC-21` (x2) | D-12 | `contract (import_notes)` |
+| AC-22 | `practica` | `practica › AC-22` (x3) | D-14 | `practice::store_roundtrip…` |
+| AC-23 | `practica` | `practica › AC-23 AC-24` | D-14 | `practice::validate_keeps_only_valid…`, `practiceScript` |
+| AC-24 | `practica` | `practica › AC-23 AC-24` | D-14 | `agent::practice_full_cycle…` (pistas topeadas) |
+| AC-25 | `practica` | `practica › AC-25 AC-26` | D-14 | `practice::grade_input…`, `practice::parse_grade…` |
+| AC-26 | `practica` | `practica › AC-25 AC-26`, `practica › AC-26` | — | `practice::titles_and_summary`, `practice.test` |
+| AC-27 | `visuales` | `visuales › AC-27` | D-16 | `tools::diagrams_and_demos…`, `Visuals.test › Diagram` |
+| AC-28 | `visuales` | `visuales › AC-28 NF-14` | D-16 | `Visuals.test › DemoFrame` |
+| AC-29 | `visuales` | `visuales › AC-29` | D-16 | `research::*`, `agent::research_runs_inside_the_turn…` |
+| AC-30 | `visuales` | `visuales › AC-30` | — | `agent::research_without_search_key…` |
+| AC-31 | `visuales` | `visuales › AC-31` | D-16 | `settings::*` |
+| AC-32 | `examenes` | `examenes › AC-32` | — | `exam::validate_syllabus…`, `exam::weights…` |
+| AC-33 | `examenes` | `examenes › AC-33 AC-34` | — | `exam.test` (estado y preparación) |
+| AC-34 | `examenes` | `examenes › AC-33 AC-34` | — | `exam::study_link…`, `prompts::exam_block…` |
+| AC-35 | `examenes` | `examenes › AC-35 AC-36` | — | `exam::allocate…`, `exam::validate_questions…` |
+| AC-36 | `examenes` | `examenes › AC-35 AC-36` | — | `exam::grade…`, `exam.test` |
+| NF-15 | `examenes` | `examenes › NF-15` | — | `exam::validate_*` |
+| AC-37 | `examenes` | `examenes › AC-37` (PDF real) | — | `exam.test › guide import` |
+| AC-41 | `examenes` | `examenes › AC-41` | — | `exam::multi_select…`, `exam::old_single_answer…`, `exam.test › all or nothing` |
+| AC-42 | `examenes` | `examenes › AC-42` | — | `exam::goal_is_validated…`, `exam.test › goal` |
+| AC-43 | `examenes` | `examenes › AC-43` | — | `exam::focus_narrows…`, `exam::targeted_mocks…`, `exam.test › targeted` |
+| AC-44 | `examenes` | `examenes › AC-44` | — | `exam::cheat_sheet_input…` |
+| AC-45 | `examenes` | `examenes › AC-45` | — | `exam::the_teacher_sees_the_options…`, `llm` (sin `tools` vacío) |
+| AC-46 | `examenes` | `examenes › AC-46` | — | `exam::the_checker_answers_blind…`, `exam::a_reported_question…` |
+| AC-39 | `examenes` | `examenes › AC-39` (x2) | — | `exam::time_limit…`, `exam.test › timed` |
+| AC-40 | `examenes` | `examenes › AC-40` | — | `exam::failed_questions_join…`, `exam::review_needs_two…`, `exam.test › review` |
+| AC-38 | `examenes` | `examenes › AC-38` (x2) | — | `exam::guide_input…`, `exam::parse_guide…`, `agent::exam_guide_is_found_on_the_web…` |
+| AC-47 | `tarjetas` | `tarjetas › AC-47` (x2) | — | `cards::generated_cards…`, `cards::store_roundtrip`, `cards.test › scripted` |
+| AC-48 | `tarjetas` | `tarjetas › AC-48` | — | `cards::a_new_card…`, `cards::again_resets…`, `cards::hard_and_easy…`, `cards.test` |
+| AC-49 | `pomodoro` | `pomodoro › AC-49` | — | `study::*`, `pomodoro.test` |
+| AC-50 | `agenda` | `agenda › AC-50 AC-51` | — | `exam::schedule_is_validated…` (tipo por defecto) |
+| AC-51 | `agenda` | `agenda › AC-50 AC-51`, `agenda › AC-51` | — | `exam::schedule_is_validated…`, `plan.test › agenda` |
+| AC-52 | `agenda` | `agenda › AC-52` | — | `plan.test › study plan` |
+| AC-53 | `codigo` | `codigo › AC-53` (x2) | — | `runner::*` (intérpretes reales), `code.test` |
+| AC-54 | `codigo` | `codigo › AC-54` | — | `runner::explain_input…`, `tools::code_is_validated…`, `code.test › show_code` |
+| AC-55 | `codigo` | `codigo › AC-55` | — | `runner::exercises_are_validated`, `runner::an_exercise_passes…` |
+| NF-16 | `codigo` | `codigo › AC-53` (tiempo límite) | — | `runner::infinite_loops…`, `runner::runaway_output…`, `runner::python_reads_stdin…` (carpeta borrada) |
+| AC-56 | `hoy` | `hoy › AC-56` | — | `plan.test` |
+| AC-57 | `tarjetas` | `tarjetas › AC-57` | — | `cards::named_decks…`, `cards::a_failed_question_becomes_a_card` |
+| AC-58 | `codigo` | `codigo › AC-58` | — | `runner::review_input…` |
+| AC-59 | `agenda` | `agenda › AC-59` (descarga real) | — | `ics.test` |
+| AC-60 | `tarjetas` | `tarjetas › AC-60` | — | `backup::*`, `anki.test` |
+| AC-61 | `codigo` | `codigo › AC-61` | — | `exam::language_paths…`, `prompts::exam_block…` |
+| AC-62 | `agenda` | `agenda › AC-62` | — | `reminders.test` |
+| AC-63 | `examenes` | `examenes › AC-63` (foto y PDF escaneado) | — | `vision::*` |
+| AC-64 | `codigo` | `codigo › AC-64` | — | `project::*` (cargo, unittest y node --test reales) |
+| AC-65 | `idiomas` | `idiomas › AC-65` (x2) | — | `language::*`, `language.test` |
+| AC-66 | `perfil` | `perfil › AC-66` | — | `learner::*`, `agent::the_teacher_sees_the_learner_profile…`, `agent::the_extractor_also_records…`, `graph::forgetting_a_source…` |
+| AC-67 | `grafo` | `grafo › AC-67` | — | `graph::forgetting_a_source…` |
+| AC-68 | `grafo` | `grafo › AC-68` | — | — |
+| AC-69 | `biblioteca` | `biblioteca › AC-69` (2) | — | `bookText.test.ts`, `library::tests::*` |
+| AC-70 | `biblioteca` | `biblioteca › AC-70` | — | `library::tests::import_search_and_delete` |
+| AC-71 | `biblioteca` | `biblioteca › AC-71` | — | — |
+| AC-72 | — | — | — | `agent::the_teacher_searches_the_library…`, `transcript.test.ts › library citations` |
+| AC-78 | `mi-espacio` | `mi-espacio › AC-78` | — | `workspace.test.ts › wallpapers` |
+| AC-79 | `mi-espacio` | `mi-espacio › AC-79`, `a11y` (axe) | — | `workspace.test.ts › dominantColors`, `deriveAccent` |
+| AC-80 | `mi-espacio` | `mi-espacio › AC-80` | — | `workspace.test.ts › the accent in force` |
+| AC-81 | `mi-espacio` | `mi-espacio › AC-81` | — | `workspace.test.ts › storage`, `greeting and quote` |
+| AC-93 | `acompanamiento-v2` | `acompanamiento-v2 › AC-93` (2), `a11y` (axe) | — | `companion::a_thought_record_becomes…`, `companion::the_model_never_proposes…`, `CompanionV2.test.tsx › Registro de pensamientos` |
+| AC-94 | `acompanamiento-v2` | `acompanamiento-v2 › AC-94` (2) | — | `insights.test.ts › emotion wheel`, `CompanionV2.test.tsx › Rueda de emociones` |
+| AC-95 | `acompanamiento-v2` | `acompanamiento-v2 › AC-95` (2) | — | `insights.test.ts › computeInsights`, `CompanionV2.test.tsx › Lo que noté` |
+| AC-96 | `acompanamiento-v2` | `acompanamiento-v2 › AC-95` | — | `companion::what_the_person_says_about_a_noticed_pattern…` |
+| AC-140 | `panel` | `panel › AC-140` (2), `a11y` (axe) | — | `Home` (panel en el inicio) |
+| AC-141 | `panel` | `panel › AC-141` (2), `a11y` (axe) | — | `streak.test.ts`, `activity::records_by_day_and_kind…`, `activity::days_fold_in_the_log…`, `activity::keeps_about_three_years` |
+| AC-142 | `panel` | `panel › AC-140` | — | `dashboard.test.ts › today's classes`, `countdowns` |
+| AC-143 | `panel` | `panel › AC-140` | — | `dashboard.test.ts › grades` |
+| AC-146 | `clases` | `clases › AC-146` (2), `a11y` (axe) | — | `classes::a_class_grows_part_by_part…`, `classes::a_transcript_has_a_ceiling`, `listen.test.ts › quietPart` |
+| AC-147 | `clases` | `clases › AC-146` | — | `classes::notes_are_checked_and_cleaned`, `classes::a_very_long_class_keeps…`, `agent::a_recorded_class_becomes_notes…` |
+| AC-148 | `clases` | `clases › AC-146` | — | `listen.test.ts` |
+| AC-149 | `examenes` | — | — | `plan.test.ts › AC-149` |
+| AC-150 | `clases` | `ruta-materia › AC-150` | — | `academic::a_route_aims_at_the_course_next_exam…` |
+| AC-158 | `una-clave` | `una-clave` (3), `a11y` (axe) | — | `setup::*` (4), `agent::one_key_picks_a_model…`, `setup::real` (ignorado, con la key real) |
+| AC-159 | `una-clave` | `una-clave › AC-158 AC-159` | — | `agent::one_key_picks_a_model_checks_it_with_a_tool_and_keeps_the_voice`, `setup::the_context_is_what…` |
+| AC-160 | `chat-hace-todo` | `chat-hace-todo › AC-160` | — | `tools::ui_commands_are_validated…` |
+| AC-161 | `chat-hace-todo` | `chat-hace-todo › AC-161`, `a11y` (axe) | — | `tools::the_new_proposals_are_checked…`, `proposals.test.ts` |
+| AC-162 | `chat-hace-todo` | `chat-hace-todo › AC-162` | — | `tools::the_new_proposals_are_checked…`, `proposals.test.ts › matchIdeas` |
+| AC-163 | `chat-hace-todo` | `chat-hace-todo › AC-163` | — | `tools::the_new_proposals_are_checked…` |
+| AC-164 | `chat-hace-todo` | `chat-hace-todo › AC-161, AC-164` | — | `tools::the_new_proposals_are_checked…` |
+| AC-165 | `chat-hace-todo` | `chat-hace-todo › AC-165`, `a11y` (axe) | — | — |
+| AC-166 | `piensa-y-se-adapta` | `piensa-y-se-adapta › AC-166` | — | `tools::what_they_thought_while_reading_travels…` |
+| AC-167 | `piensa-y-se-adapta` | `piensa-y-se-adapta › AC-167`, `practica` (7) | — | `practice::the_next_problem_follows…`, `agent::practice_is_written_one_by_one…`, `practice.test.ts` |
+| AC-175 | `visuales` | `visuales › AC-28 AC-175` | — | `Visuals.test › DemoFrame invert` |
+| AC-174 | `mis-problemas` | `mis-problemas › AC-174` (x2) | — | `tools::the_new_proposals_are_checked…`, `agent::own_problems_are_read…` (documento que no está), `proposals.test.ts › AC-174` |
+| AC-173 | `mis-problemas` | `mis-problemas` (4), `a11y` (axe) | — | `practice::own_problems_are_cleaned…`, `practice::the_grader_knows…`, `agent::own_problems_are_read_reviewed_and_practiced` |
+| AC-170 | `grafo` | `grafo › AC-170` (x2), `a11y` (axe) | — | `graphView.test › AC-170` (profundidad, ciclos, enlaces, mensaje) |
+| AC-169 | `piensa-y-se-adapta` | `visuales › AC-29` (en curso → llega, el borrador queda), `visuales › AC-30` | — | `research::background_jobs…`, `agent::research_runs_in_the_background_and_arrives_once`, `agent::research_cut_by_closing_the_app_says_so` |
+| AC-171 | `codigo` | `codigo › AC-171` | — | `runner::{c,cpp,java,go,csharp}_…` y `runner::sql_runs_inside_eureka` (compiladores reales), `sql::*`, `tools::every_language_of_the_console…`, `code.test › the new languages` |
+| AC-172 | `codigo` | — | — | `project::{a_go_module,java_classes,c_sources,cpp_sources,a_csharp_project,sql_scripts}_…` (compiladores reales), `projects.test` |
+| AC-168 | `piensa-y-se-adapta` | `piensa-y-se-adapta › AC-168`, `a11y` (axe) | — | `practice::a_nudge_starts_from…`, `agent::practice_is_written_one_by_one…` |
+| AC-151 | `mi-cursada` | `mi-cursada › AC-151` | — | `vision::a_timetable_is_read_block_by_block…` |
+| AC-152 | `compartir` | `compartir › AC-152`, `a11y` (axe) | — | `anki::*` (7), `cards::an_imported_deck_is_new…`, `deckImport.test.ts` |
+| AC-153 | `compartir` | `compartir › AC-153` | — | `anki::an_exported_package_is_a_classic_collection…`, `anki::math_and_markup_travel…` |
+| AC-154 | `compartir` | `compartir › AC-154` (2), `a11y` (axe) | — | `share::*` (3) |
+| AC-155 | `carrera` | `carrera › AC-155`, `a11y` (axe) | — | `career::a_plan_is_checked…`, `career::reloading_the_plan_keeps…`, `career::the_store_keeps_one_career` |
+| AC-156 | `carrera` | `carrera › AC-156` | — | `career::what_can_be_taken…`, `career::a_regular_subject_waits…`, `career::edits_are_checked…`, `career.test.ts` |
+| AC-157 | `carrera` | — | — | `career::a_subject_in_mi_cursada…`, `agent::the_agent_knows_the_career…` |
+| AC-144 | `agenda` | `agenda › AC-59` | — | `ics.test.ts › adds Mi cursada` |
+| AC-145 | `feriados` | `feriados › AC-145`, `a11y` (axe) | — | `holidays.test.ts`, `dashboard.test.ts › days without classes`, `ics.test.ts › adds Mi cursada`, `academic::days_without_classes_are_checked…` |
+| AC-130 | `citas` | `citas › AC-130`, `a11y` (axe) | — | `quotes.test.ts › el banco de citas`, `quoteOfDay`, `Quotes.test.tsx › QuoteCard` |
+| AC-131 | `citas` | `citas › AC-131` | — | `quotes.test.ts › pickAnother`, `Quotes.test.tsx` |
+| AC-132 | `citas` | `citas › AC-132` | — | `quotes.test.ts › what the learner keeps`, `Quotes.test.tsx › QuotesSection` |
+| AC-133 | `citas` | `citas › AC-133`, `a11y` (axe) | — | `quotes.test.ts › splashEnabled` |
+| AC-82 | `acompanamiento` | `acompanamiento › AC-82` (2), `a11y` (axe) | — | `CompanionScreen.test.tsx`, `agent::the_companion_listens…`, `agent::a_failed_call_stores_nothing…` |
+| AC-83 | `acompanamiento` | `acompanamiento › AC-83` | — | `companion::entries_are_created_edited…`, `agent::the_model_drafts_a_diary_entry…`, `CompanionScreen.test.tsx › diario` |
+| AC-84 | `acompanamiento` | `acompanamiento › AC-84` | — | `companion::the_detector_catches…`, `agent::the_detector_answers_by_itself…`, `agent::the_model_can_raise_the_flag…` |
+| AC-85 | `acompanamiento` | `acompanamiento › AC-85` | — | `companion::the_pin_locks…`, `agent::a_locked_journal_refuses_to_talk` |
+| AC-86 | `acompanamiento` | `acompanamiento › AC-86` | — | `companion::erasing_deletes_everything…`, `companion::resources_default_to_argentina…` |
+| AC-87 | `acompanamiento` | `acompanamiento › AC-87` | — | `companion.test.ts › breathAt`, `CompanionScreen.test.tsx › herramientas` |
+| AC-88 | — | — | — | `agent::the_journal_never_reaches_the_teacher…` |
+| AC-89 | `chat` | `chat › AC-89` | — | `agent::a_chat_just_talks…`, `agent::the_agent_starts_the_method…`, `agent::the_methods_tools_are_refused…`, `App.test.tsx › chat first` |
+| AC-90 | `chat` | `chat › AC-90` | — | `agent::proposed_actions_are_validated…`, `ActionCard.test.tsx`, `transcript.test.ts › parseAction` |
+| AC-91 | `chat` | `chat › AC-89`, `a11y` (axe) | — | `App.test.tsx › chat first` |
+| AC-92 | `bienvenida` | `bienvenida › AC-92` (2), `a11y` (axe) | — | `settings::identity_is_cleaned…`, `agent::the_agent_knows_how…`, `Onboarding.test.tsx` |
+| AC-97 | `sonido-recordatorios` | `sonido-recordatorios › AC-97` | — | `sounds.test.ts` |
+| AC-99 | `mi-cursada` | `mi-cursada › AC-99` | — | `academic::tests::slots_are_validated…`, `AcademicScreen.test.tsx`, `academic.test.ts › the weekly grid` |
+| AC-100 | `mi-cursada` | `mi-cursada › AC-100` | — | `academic::tests::terms_courses_and_dates…`, `academic.test.ts › the dates that matter` |
+| AC-101 | `mi-cursada` | `mi-cursada › AC-101` (3) | — | `academic::tests::importing_a_proposal…`, `academic::tests::proposals_are_checked…`, `agent::pasting_a_timetable…`, `transcript.test.ts › timetable` |
+| AC-102 | — | — | — | `academic::tests::the_agent_knows_today…`, `agent::the_agent_knows_the_persons_courses…` |
+| AC-103 | `mi-cursada` | `mi-cursada › AC-103` (2) | — | `reminders.test.ts › Mi cursada`, `AgendaScreen.test.tsx` |
+| AC-98 | `sonido-recordatorios` | `sonido-recordatorios › AC-98` | — | `reminders.test.ts › healthDue` |
+| AC-120 | `chat` | `chat › AC-120` | — | `tools::an_exam_proposal_is_checked…`, `examChat.test.ts`, `ExamProposalCard.test.tsx`, `transcript.test.ts` |
+| AC-121 | `chat` | `chat › AC-121` | — | `tools::writing_in_the_chat_while_a_question_waits…`, `SessionView.test.tsx`, `transcript.test.ts` |
+| AC-122 | `chat` | `chat › AC-122` | — | `tools::ui_commands_are_validated…`, `agent::a_control_the_person_asked_for…`, `uiControl.test.ts`, `App.test.tsx › controls` |
+| AC-123 | — | — | — | `agent::the_agent_knows_what_is_on_screen…`, `uiControl.test.ts › describeUi` |
+| AC-124 | — | — | — | [agente-paridad.md](agente-paridad.md) |
+| AC-73 | `accesibilidad` | `accesibilidad › AC-73`, `a11y` (axe en la pestaña) | — | `settings::accessibility_is_clamped…`, `Settings.test.tsx › Accesibilidad`, `accessibility.test.ts › applyAccessibility` |
+| AC-74 | `accesibilidad` | `accesibilidad › AC-74` | — | `accessibility.test.ts › speechText`, `splitAtWord` |
+| AC-75 | `accesibilidad` | — | — | `settings::the_teacher_section…`, `agent::the_teachers_state_carries_the_accessibility…`, `agent::practice_exams_and_cards_get_the_accessibility…` |
+| AC-76 | `accesibilidad` | `accesibilidad › AC-76` | — | — |
+| AC-77 | — | — | — | `agent::every_request_names_its_conversation_for_opencode_go`, `settings::fresh_install…` |
+| NF-17 | — | — | — | `context::*`, `agent::calls_after_a_question…`, `agent::research_is_capped…`, `agent::probe_prompt_includes…` |
+| NF-18 | — | — | — | `tools::phase_changes_need…`, `tools::definitions_cover_every_tool`, `graph::rare_shared_words_rank_higher`, `agent::recall_answers…` |
+| NF-19 | — | — | — | `agent::forced_roles_get_one_retry…` |
+| NF-20 | — | — | — | `agent::long_sessions_keep_a_rolling_summary…` |
+| NF-21 | `ajustes` | `ajustes › NF-21` | — | `agent::the_history_window_uses_the_models_context_size` |
+| NF-22 | `biblioteca` | `biblioteca › NF-22` | — | `bookText.bench.test.ts`, `agent::editorial_benchmark`, `library::a_500_page_book…` |
+| NF-11 | `grafo` | `grafo › NF-11` | D-13 | `graph::validate_*`, `agent::failed_extraction_leaves…` |
+| NF-12 | `grafo` | `grafo › AC-17 NF-12` | D-11 | `graph::store_appends…` |
+| NF-13 | `practica` | `practica › NF-13` | D-15 | `agent::practice_full_cycle…` |
+| NF-14 | `visuales` | `visuales › AC-28 NF-14` (fetch bloqueado) | D-16 | `Visuals.test › DemoFrame`, `research::parses_hits…` |
+| NF-01 | `escritorio` | — | D-03, D-08 | `settings::keys_are_trimmed…`, `contract_tests` |
+| NF-02 | `escritorio` | — | D-06, D-07 | `agent::runaway_model…`, `agent::cancelled_turn…` |
+| NF-04 | `escritorio`, `caminos` | `caminos` (sin U+FFFD) | D-01 (chunks de 7 bytes) | `llm::reassembles_text_split…` |
+| NF-05 | — | — | — | `tools::second_question…`, `agent::invalid_tool_arguments…` |
+| NF-08 | `calidad` | `a11y` (x5, 19 pantallas) | — | — |
+| NF-09 | `caminos` | `caminos` (shell sin scroll) | `caminos` | — |
+| NF-10 | `calidad` | `visual` (x7, 12 capturas) | — | — |
+
+### Adjuntos y micrófono en el chat (AC-104, AC-105)
+
+- **AC-104** Mientras el agente responde, el chat muestra qué hace («Buscando en tu biblioteca…», «Investigando en la web…») en vez de solo tres puntos; las demos interactivas se pueden **Ampliar** a casi toda la ventana (Esc cierra, el estado de la demo se conserva).
+- **AC-105** El compositor del chat (inicio y sesión) tiene un **+** que adjunta PDF/TXT/MD (van a la biblioteca, 0 tokens, el agente los busca con `library_search`) y fotos de apuntes (se lee el texto con el modelo de visión y viaja en el mensaje), con chips para quitarlos antes de enviar; y un **micrófono** siempre visible que graba y transcribe con el rol Voz; sin modelo de Voz indica Ajustes → Modelos → Voz o Win + H.
+- **AC-106** La Voz puede correr **en esta PC**: en Ajustes → Modelos → Voz, «En esta PC (sin internet)» ofrece Whisper multilingüe (tiny 151 MB, base 290 MB) que se descarga una vez, mostrando el tamaño antes, con progreso, verificación sha256 y botón para borrarlo. Después el micrófono y el speaking transcriben sin internet ni API key (grabaciones de hasta 60 s). La UI convierte la grabación a WAV 16 kHz mono para todos los caminos.
+
+### Panel de hoy y racha amable (AC-140..AC-143)
+
+El inicio muestra, debajo de los atajos, el panel **Tu día**: cuatro tarjetas que se leen de un vistazo, armadas con lo que ya está en la app (Mi cursada, exámenes, tarjetas, práctica, pomodoro). No usa el modelo ni la red.
+
+- **AC-140** — **Tu día, de un vistazo**: el panel tiene **Racha**, **Clases de hoy**, **Lo que se viene** y **Notas**. Sin nada cargado, cada tarjeta invita a empezar (por ejemplo «Hoy puede ser el día uno», «Cargá tus materias y horarios», con **Ir a Mi cursada**). Reemplaza el bloque «01 Medir / 02 Planificar / 03 Enseñar»; el plan de hoy, «Hoy» y el tiempo de estudio siguen abajo.
+- **AC-141** — **Racha amable**: cuenta los días con estudio (una charla con el profesor, un bloque de foco terminado, una tarjeta repasada, un problema de práctica o un simulacro; el diario de Acompañamiento nunca cuenta). **Un día libre por semana** (lunes a domingo) no la corta; el segundo día sin estudio de la misma semana sí. Hoy, mientras no termina, nunca la corta. Muestra el número, la semana con un punto por día (hecho, día libre, sin estudio, hoy, por venir) y la mejor racha. Los mensajes nunca dicen que se perdió: al volver dice «Volviste. Lo que aprendiste sigue ahí.». Los días se guardan en `activity.json` (entra en la copia de seguridad) y, al leerlos, también se cuentan los rastros anteriores (bloques de foco, últimas revisiones de tarjetas, sesiones), así quien ya usaba Eureka no empieza de cero.
+- **AC-142** — **Clases y cuenta regresiva**: **Clases de hoy** lista las del período activo en orden, con color de la materia, horario, tipo y aula, y marca **Ahora** y **Sigue**; si hoy no hay, dice cuándo es la próxima («Mañana 08:00 · Análisis II»). **Lo que se viene** junta las fechas de Mi cursada sin hacer y las fechas de los exámenes en preparación, las 5 más cercanas, con los días que faltan (resaltadas si faltan 3 o menos); al tocar una se abre Mi cursada o ese examen.
+- **AC-143** — **Notas**: por materia del período activo, las notas cargadas en sus fechas (en orden) y el **promedio** con coma decimal («7,5») y una barra de 0 a 10.
+
+### Clases grabadas, escuchar y plan que se reajusta (AC-146..AC-150)
+
+Todo con la única key del modelo; la transcripción usa la Voz elegida («En esta PC» es Whisper local, sin costo ni internet) y la lectura en voz alta, la voz del sistema.
+
+- **AC-146** — **Grabar la clase**: en **Clases**, se elige la materia (opcional) y **Empezar a grabar**. Se graba en partes de menos de un minuto (el límite de Whisper local); cada parte se transcribe y se guarda mientras sigue la clase, con la cola de lo último que se dijo, el tiempo y las partes transcriptas. Si se cierra la app, se pierde como mucho la parte en curso. Una parte en silencio no corta la clase. **Terminar la clase** termina de transcribir lo que falta. Sin Voz elegida, la pantalla lo explica y lleva a Ajustes. Una clase cuenta para la racha. Las clases entran en el respaldo.
+- **AC-147** — **Apuntes de la clase**: **Armar apuntes** pide al modelo (herramienta forzada `class_notes`) apuntes en Markdown por tema, de 3 a 8 ideas clave, lo que quedó para repasar y las fechas que anunció el docente; solo con lo que está en la transcripción. Una clase muy larga se lee por el principio y el final. Desde los apuntes: **Hacer tarjetas** (un mazo nuevo con los apuntes), **Sumar al grafo**, **Charlar sobre esta clase**, **Rearmar apuntes**, y cada fecha anunciada con día se agrega a **Mi cursada** con un toque (en su materia).
+- **AC-148** — **Escuchar**: **Escuchar el repaso** lee la clase (ideas clave, apuntes, para repasar) y **Escuchar las tarjetas** lee un mazo como cuestionario: cada pregunta, una pausa para responder en la cabeza y la respuesta (hasta 20, primero las de hoy). Con la voz del sistema: gratis y en esta PC.
+- **AC-149** — **El plan se reajusta con cada simulacro**: los temas ya estudiados de un dominio que en el último simulacro quedó por debajo de la nota para aprobar (o del 70 % si no hay) vuelven al plan como **repaso**, después de los temas nuevos de ese dominio, con el motivo («50% en el último simulacro»). El plan dice «Reajustado con tu simulacro del …».
+- **AC-150** — **Materia con su ruta**: en Mi cursada, **Armar su ruta** abre Exámenes con la materia ya puesta (tipo Materia); al crearla queda vinculada. La fecha de la ruta es siempre el próximo parcial, recuperatorio o final sin hacer de esa materia: al marcarlo hecho (o al cargar otro), pasa sola al siguiente. La materia muestra «Ruta de estudio: … · apunta al …» y **Abrir su ruta**.
+
+### Compartir y traer de afuera (AC-151..AC-157)
+
+Todo con la única key del modelo. Las imágenes van al mismo modelo (deepseek-v4.1-flash las lee) y los archivos se leen en esta PC.
+
+- **AC-151** — **Horario desde una foto o un PDF**: en «Pegar mi horario», **Desde una foto o PDF** lee un PDF con texto directamente; una foto o un PDF escaneado los transcribe el modelo, con una línea por bloque de clase (día, hora de inicio a fin, materia, aula, docente) y una por fecha, nunca la grilla de corrido. La transcripción queda en el cuadro para revisarla y después se lee como un horario pegado (AC-101).
+- **AC-152** — **Importar un .apkg de Anki**: **Importar un mazo** acepta el paquete de Anki (`.apkg`, el moderno `collection.anki21b` con zstd o los clásicos `anki21`/`anki2`), el texto plano de Anki y los mazos compartidos (`.eureka`). Siempre muestra una vista previa: cuántas tarjetas, las primeras tres, el nombre editable y lo que quedó afuera y por qué (notas con solo imagen o sonido, vacías, repetidas o demasiado largas). De cada nota se toma el primer campo como frente y el resto como dorso; un cloze (`{{c1::…}}`) oculta cada hueco en el frente (`[…]` o su pista) y lo muestra en el dorso; las fórmulas de Anki (`\(…\)`, `\[…\]`) pasan a `$…$`. No se importan imágenes, sonidos ni el progreso de Anki: todas llegan como nuevas. Hasta 30 000 notas y 500 MB; importar crea siempre un mazo nuevo.
+- **AC-153** — **Exportar a Anki**: **Exportar a Anki (.apkg)** guarda en Descargas un paquete con el formato clásico (que importa cualquier versión de Anki), un tipo de nota «Eureka (básico)» con Frente y Dorso, y todas las tarjetas como nuevas: el progreso de Eureka no viaja. Las fórmulas `$…$` pasan a la notación de Anki. **Texto plano (.txt)** sigue disponible (AC-60).
+- **AC-154** — **Compartir un mazo**: **Compartir** guarda en Descargas un archivo `.eureka` (el nombre y las tarjetas, nunca el progreso) para mandar por WhatsApp o mail, sin servidor. Al recibirlo, se importa con **Importar un mazo** o con **doble clic** (el instalador asocia `.eureka` con Eureka; si Eureka ya está abierta, la segunda apertura le pasa el archivo a la ventana abierta). Lo que llega se revisa: formato y versión, hasta 5000 tarjetas y 20 MB, lados vacíos o demasiado largos afuera; la vista previa avisa que viene de otra persona y nada se importa sin confirmar. Cancelada, no se vuelve a ofrecer.
+- **AC-155** — **Mi carrera: cargar la malla**: en Mi cursada, la pestaña **Mi carrera** carga el plan de estudios pegado o desde una foto o PDF (como AC-151, transcripto materia por materia). El modelo lo lee con una herramienta forzada: correlativas que no son materias del plan, materias repetidas, años fuera de 1–8 o correlativas en círculo vuelven al modelo para que las corrija. Se ve por año con sus correlativas y se guarda recién al confirmar. Volver a cargarlo conserva lo marcado (estado, notas, aplazos) en las materias que siguen, por nombre o código.
+- **AC-156** — **Aprobadas, regulares y el promedio**: cada materia está **Por cursar**, **Cursando**, **Regular** o **Aprobada** (con su nota de 0 a 10) y puede tener aplazos. Correlativas: para **cursar** hay que tener regularizadas (o aprobadas) las de «para cursar»; para **rendir el final**, aprobadas las de «para rendir». Cada materia dice su próximo paso o qué le falta. El resumen muestra cuántas aprobadas (con barra), el **promedio** de las aprobadas y, si hubo aplazos, el promedio con aplazos; qué finales se pueden rendir y qué se puede cursar. Se puede editar cada materia (correlativas incluidas, sin círculos), agregar, borrar o borrar la carrera.
+- **AC-157** — **El asistente conoce la carrera**: el estado del agente suma «Su carrera»: aprobadas de total, promedio (y con aplazos), lo que está cursando (o tiene en Mi cursada), los finales que puede rendir y lo que puede cursar (hasta 8 de cada uno). Una materia del período activo de Mi cursada con el mismo nombre o código cuenta como «cursando».
+
+### Empezar con una sola key y el chat que hace todo (AC-158..AC-165)
+
+- **AC-158** — **Pegar la clave y listo**: sin modelo configurado, el inicio (y Ajustes → Conexión) muestra **Pegá tu clave y listo**. La clave se limpia (espacios, comillas, `Bearer `) y el servicio sale de su **formato**: `oc_` OpenCode Go, `sk-or-` OpenRouter, `sk-ant-` Anthropic, `AIza` Gemini, `sk-proj-`/`sk-svcacct-` OpenAI. La clave **solo se manda al servicio que corresponde**: si el formato sirve para más de uno (un `sk-` suelto es OpenAI o DeepSeek) o para ninguno, la persona elige el servicio y nada se prueba en los otros. Si el servicio rechaza la clave, se dice en palabras simples y se ofrece elegir otro.
+- **AC-159** — **El modelo para todo, elegido y probado**: se lista `/models` de ese servicio, se descartan los que no son de chat (embeddings, voz, imágenes) o que el servicio dice que no usan herramientas, y se elige uno (para OpenCode Go, el preferido de una lista vista en la lista real; si no, los livianos —flash, mini, haiku— y los más nuevos, sin previews). Se hace **una consulta real con una herramienta** para ver que conteste; si falla, se prueba el siguiente (hasta 3). El tamaño de contexto se guarda solo si el servicio lo informa (entre 8 mil y 1 millón de tokens); si no, se usa el valor seguro (64 mil) y se dice. Solo cambia el modelo del profesor: **la Voz y lo elegido en Avanzado se conservan**. Se muestra qué quedó, con otros modelos del mismo servicio para cambiar con un clic, y si no hay Voz, se sugiere «En esta PC».
+- **AC-160** — **Pomodoro y perfil por el chat**: `ui_command` suma `set_pomodoro` (foco 5–120, descanso 1–60, descanso largo 1–90, cada 2–8 focos) y `set_profile` (nombre, dónde y qué estudia, trato), con los mismos límites que sus pantallas; el chat muestra qué cambió.
+- **AC-161** — **Pedir un mazo**: `propose_deck` arma un mazo de 1 a 40 tarjetas cuando la persona lo pide; en la tarjeta del chat se puede cambiar el nombre, editar cada frente y dorso o sacar tarjetas, y se crea recién con **Crear el mazo**. Si ya existe uno con ese nombre, ofrece abrirlo. (`make_cards` sigue siendo lo que el profesor guarda mientras enseña, sin preguntar.)
+- **AC-162** — **Practicar desde el chat**: `propose_practice` nombra ideas; la tarjeta las busca en el grafo (por sus palabras) y las deja marcadas, se eligen cuántos problemas (3, 5 o 10) y **Generar una práctica nueva** la crea y la abre. Sin ideas así en el grafo, lo dice.
+- **AC-163** — **Un ejercicio de programación desde el chat**: `propose_code` (lenguaje, tema, nivel); en la tarjeta se cambian el tema y el nivel, y **Generar un ejercicio nuevo en Código** lo genera en la consola.
+- **AC-164** — **Abrir un examen o un mazo por su nombre**: `propose_action` suma `open_exam` (para un simulacro, la hoja de repaso o el repaso de falladas) y `open_deck`. El botón busca por nombre; si no existe (se borró o se renombró), lo dice y queda deshabilitado.
+- **AC-165** — **Corregir antes de confirmar**: la tarjeta de examen (**Corregir**: nombre, tipo, fecha, horas por semana, nota para aprobar) y la de horario (renombrar materias —sus fechas la siguen—, cambiar título y día de cada fecha, sacar materias —con sus fechas— o fechas) se editan antes de guardar. Lo editado se valida otra vez en el backend al guardar.
+
+### Pensar en voz alta y práctica que se adapta (AC-166..AC-170)
+
+> La idea: darle al profesor datos **continuos** de cómo piensa la persona, no solo si acertó.
+
+- **AC-166** — **Pensar mientras leo**: en la fase de enseñanza, debajo de la **última explicación** del profesor hay un campo opcional **Lo que voy pensando mientras leo**. Lo escrito no se manda solo (no responde la pregunta pendiente): viaja con lo próximo que se mande —la respuesta a la pregunta o un mensaje libre del chat— como «Mientras leía la explicación pensó: …», y el campo queda vacío. La respuesta lo muestra como «Mientras leías: …». El profesor atiende una duda o una conexión equivocada que aparezca ahí antes de seguir, aunque la respuesta esté bien.
+- **AC-167** — **La práctica se escribe de a uno y se adapta**: una práctica nueva de N problemas escribe solo el primero (nivel 1); cada siguiente se escribe al responder el anterior (mientras se lee la corrección) o al pasar a él. El nivel va de 1 a 4 —una idea en contexto conocido · una idea en contexto nuevo · dos ideas · varias ideas en contexto nuevo (con una sola idea, hasta 2)—: sube si el último salió **correcto** con a lo sumo una pista y confianza 3 o más, baja si salió **incorrecto** o usó 2 pistas o más, y si no queda igual. El generador recibe cómo le fue en cada problema (veredicto, pistas, confianza, lo que pensó) y en qué ideas apoyarse (las que salieron mal, después las menos practicadas); un enunciado repetido se rechaza y se pide otro. Pedirlo dos veces escribe uno solo. Cada problema muestra su nivel y «Problema n de N» cuenta los que faltan. Las prácticas de antes siguen como estaban.
+- **AC-168** — **Un empujón para lo que vengo pensando**: con algo escrito en la respuesta o en «Pensando en voz alta», **Necesito un empujón (n/3)** pide una pista hecha para ese punto del razonamiento (sin la respuesta, sin repetir una que ya vio). Si lo pensado ya resuelve el problema, lo dice («mandalo como respuesta») y no cuenta como pista. Los empujones se ven como «Empujón n» y cuentan como pistas usadas para el corrector. Sin nada escrito, el botón está deshabilitado; hasta 3 por problema.
+- **AC-169** — **Investigar en segundo plano**: cuando el profesor llama `research` con la búsqueda configurada, el turno **no espera**: recibe «Investigación en curso…» y sigue, y la tarjeta dice «Investigando en segundo plano… podés seguir». La búsqueda y el resumen corren aparte (a lo sumo 2 por sesión; la misma pregunta dos veces se rechaza). El resultado se escribe en la sesión **una sola vez**: si no hay un turno corriendo, enseguida; si hay uno, al empezar su próximo paso o al terminar. La pantalla lo trae sola (la tarjeta se completa sin perder lo que se está escribiendo) y el profesor lo recibe una vez como «Llegó una investigación», con el resumen y las fuentes, para usarlo y citarlo. Sin búsqueda configurada, falla en el acto como antes (AC-30). Si la app se cierra con una investigación en curso, al volver dice «se cortó» en vez de quedar esperando.
+- **AC-170** — **Un grafo para recorrer**: la pantalla Grafo abre **Por profundidad**: las ideas base (que no se deducen de otra) abajo y cada conclusión más arriba que sus premisas, ordenada debajo de ellas; cada idea dice «base» o «nivel n» (pasos de razonamiento debajo; un ciclo no se recorre para siempre). **Libre** vuelve a la disposición de antes, y la elección se recuerda en este equipo. Las flechas entre ideas que vienen de fuentes distintas se ven **punteadas** y la leyenda cuenta cuántas son. El detalle de una idea suma **Conecta con otras sesiones** (las sesiones de las ideas vecinas, o donde también apareció) y, en cada sesión de origen, **Ver dónde apareció**: abre la sesión y marca el mensaje que más palabras comparte con la idea (si ninguno se parece lo suficiente, lo dice en vez de marcar uno cualquiera).
+- **AC-173** — **Practicar mis propios problemas**: en Práctica, **Practicar mis problemas** (también con el grafo vacío) recibe los enunciados pegados o **desde un PDF o una foto** (un PDF con texto se lee en la PC; una foto o un PDF escaneado, con el modelo, que transcribe cada ejercicio con sus datos y la respuesta si la guía la trae; se avisa que hay que revisarlo). **Leer los ejercicios** separa uno por ejercicio (los incisos sueltos, con sus datos repetidos), con el enunciado de la persona, hasta 3 pistas, la solución —**la de la guía** si la trae, o una **escrita por Eureka**— y las ideas del grafo que necesita, si alguna. No se guarda nada hasta **Practicar (n)**: antes se corrige cada enunciado y se sacan los que no se quieren (hasta 20). La práctica se resuelve como cualquier otra (pensar en voz alta, empujones, corrección del razonamiento). Cuando la solución es de Eureka, se dice («verificala») y el corrector sabe que puede estar mal: si el razonamiento es válido y llega a otro resultado, revisa la referencia; **Creo que mi respuesta está bien** le pide revisarla de nuevo.
+- **AC-174** — **Mis problemas desde el chat**: cuando la persona trae sus ejercicios al chat (pegados, en una foto adjunta o en un PDF que adjuntó a la biblioteca) y quiere practicarlos, el asistente llama `propose_own_problems` con los enunciados tal como llegaron (`text`) o el título del documento (`book`), sin resolverlos. En el chat aparece la misma tarjeta de AC-173 con el texto cargado (o «Los ejercicios de «…», de tu biblioteca»); no se lee nada hasta **Leer los ejercicios**, así volver a abrir la charla no gasta modelo. Un documento que no está en la biblioteca se dice. Sin texto ni documento, la propuesta se rechaza.
+- **AC-175** — **Invertir los colores de una demo**: cada demo interactiva tiene **Invertir colores** (botón que queda presionado), para una demo muy clara con el tema oscuro o al revés. Es un filtro sobre el marco: el contenido y el aislamiento de la demo (NF-14) no cambian, y el estado de la demo se conserva. La elección se recuerda en este equipo para las próximas demos.
+
+### Cursada en el calendario y días sin clases (AC-144..AC-145)
+
+- **AC-144** — **Mi cursada en el calendario**: **Exportar a calendario (.ics)** de la Agenda también lleva el período activo de Mi cursada: cada horario de cada materia se repite cada semana desde hoy (o desde el inicio del período) hasta el fin del período (o 20 semanas si no tiene fin), con el aula; y las fechas sin hacer que vienen, con hora si la tienen o de día entero. Parciales, recuperatorios, finales, TPs y entregas traen un aviso el día anterior.
+- **AC-145** — **Feriados y días sin clases**: en Mi cursada, la tarjeta **Feriados y días sin clases** guarda días sueltos o rangos (desde, hasta opcional, motivo; como mucho 62 días seguidos) por período. **Sumar feriados nacionales** agrega los de Argentina que caen en el período, calculados con la Ley 27.399 para cualquier año (inamovibles, Carnaval y Viernes Santo desde la Pascua, y los trasladables corridos al lunes); los repetidos no se agregan dos veces. Los días puente turísticos se cargan a mano. Un día sin clases: el inicio dice «Hoy no hay clases: …» y la próxima clase los saltea; la Agenda no muestra las clases de Mi cursada de ese día; el `.ics` los excluye (`EXDATE`); el asistente sabe que hoy no hay clases y cuáles vienen en 30 días.
+
+### Citas (AC-130..AC-133)
+
+Un banco de citas de autores y filósofos que viene con la app (`src/data/quotes.json`), sin red ni modelo. Criterios y verificación en [citas.md](citas.md).
+
+- **AC-130** — **Una cita para cada día del año**: hay **366** (una por fecha, incluido el 29 de febrero) de más de 140 autores, y cada una dice **autor y obra** (libro, capítulo o carta). Las que no se escribieron en español llevan la marca «traducción libre». La del día es la misma todo el día y todos los años en esa fecha; el 1 de enero abre con «Un viaje de mil leguas empieza con un solo paso». Se ve en el panel del inicio.
+- **AC-131** — **Otra, favorita, no mostrar más**: **Otra cita** muestra una al azar que todavía no salió en la ronda (nunca la que está en pantalla ni una oculta); al agotarse el banco, empieza otra ronda. El corazón la guarda en **favoritas**. **No mostrar más** la saca para siempre, con **Deshacer**; si la oculta era la del día, se muestra la del día siguiente.
+- **AC-132** — **Las propias**: en **Mi espacio › Citas** se ven las favoritas (y se quitan), las ocultas (y se vuelven a mostrar) y se agregan **frases propias** (texto y, opcional, de quién), que se mezclan en «Otra cita» con la marca «una de las tuyas». Todo queda en esta computadora.
+- **AC-133** — **Bienvenida al abrir**: al abrir Eureka, una pantalla tranquila con la fecha, la cita del día, su autor y obra, y **Escuchar**. Se cierra con **Entrar** o Esc y no vuelve hasta la próxima vez que se abre la app. Nunca aparece encima de la bienvenida de primera vez. Se apaga en Mi espacio › Citas.
+
+### Sesiones y memoria (AC-107..AC-110)
+
+- **AC-107** Las sesiones se pueden **fijar** (arriba de todo), **renombrar**, **archivar** (salen de las listas pero siguen en la memoria; se ven en «Archivadas (n)» y se desarchivan) y **borrar**. Borrar conserva lo aprendido salvo que se marque «Olvidar también lo que aprendí en esta sesión» (saca sus ideas del grafo y sus confusiones/preferencias del perfil). Nada de esto cuenta como actividad.
+- **AC-108** Una sesión (charla o aprendizaje) que queda quieta 10 min con al menos 4 mensajes nuevos se consolida **en segundo plano**, aunque no esté abierta: un resumen (qué se vio, qué quedó pendiente, qué costó) y la extracción al grafo y al perfil. Usa el rol Extractor, solo procesa lo nuevo, espera si la sesión tiene un turno en curso, y si falla no reintenta esa sesión por 30 min. Sin modelo configurado no hace nada.
+- **AC-109** El agente ve las 3 últimas sesiones recordadas en charla, medición y plan («Sesiones anteriores (memoria)») y puede buscar otras con `recall` kind `sesiones`.
+- **AC-110** Una vez por día: las sesiones sin actividad por 30 días que no están fijadas se archivan, y las confusiones reparadas hace más de 90 días salen del perfil. Ajustes muestra «Lo que recuerda de tus sesiones», con «Olvidar» por sesión (no se reconstruye con los mismos mensajes).
+
+### Ajustes simples (AC-134)
+
+- **AC-134** — **Un servicio, una clave, un modelo**: Ajustes abre en **Conexión**, con tres pasos —el **servicio** (por su nombre), la **clave de acceso** (con una línea de dónde conseguirla) y el **modelo**— y un solo **Guardar**. El modelo **siempre se elige**, sea la persona técnica o no: se escribe o se toma de la lista que aparece apenas hay clave. Ese modelo se usa para **todo**; las tareas con otro modelo (diagnóstico, extractor, práctica, investigador) y la Voz quedan en **Avanzado**, vacías por defecto. Sin modelo, o sin clave, dice qué falta en palabras simples; los errores de conexión se explican («la clave no parece válida», «sin saldo o límite»). Proveedores, ID/URL, búsqueda web, consola de código, memoria, recordatorios y respaldo viven en **Avanzado**.
+
+
+### Modelo del estudiante (AC-111..AC-113)
+
+- **AC-111** Un **modelo del estudiante** calculado al vuelo (sin archivo propio) junta sesiones (terminadas, en curso, pasos reparados), prácticas (último veredicto por idea), confusiones (abiertas/reparadas), el último simulacro por dominio contra la nota de aprobación, mazos con olvidos, la memoria de las sesiones (le costó / pendiente), las fechas próximas (exámenes y Mi cursada), tarjetas de hoy y minutos de la semana. La señal más reciente decide el estado de un tema. El agente recibe «Lo que sabemos de vos» (≤10 líneas, primero lo relacionado con la sesión) **en todas las fases**, y la instrucción de nombrarlo con naturalidad sin inventar. Acertar en práctica marca reparada la confusión de esa idea.
+- **AC-112** «Tu plan de hoy» en el inicio: hasta 3 sugerencias con su razón, calculadas sin modelo (fecha cercana ≤7 días con lo que cuesta → tarjetas de hoy → pendiente de una sesión → la confusión abierta más vieja), cada una con un botón que lleva a su pantalla, a la sesión o a una charla nueva. En la charla, el agente recibe el plan para ofrecerlo con `propose_action` si la persona no trae tema. «Desde la última vez anoté lo de …» resume lo que la memoria anotó desde la última visita.
+- **AC-113** «Mi progreso» (barra lateral, paleta y `open_screen`): temas en Le cuesta / Quedó pendiente / Practicando / Ya lo domina con su evidencia, resumen (minutos, tarjetas, dominados, lo que se viene), «Repasarlo», «Retomar» y «Esto ya lo sé» (repara la confusión). Lo que la app sabe de vos y lo que recuerda de tus sesiones se mudaron acá desde Ajustes.
+
+### Diez lenguajes en la consola (AC-171..AC-172)
+
+- **AC-171** — **C, C++, Java, C#, Go y SQL** se suman a Python, JavaScript, TypeScript y Rust en la consola, en los ejercicios con pruebas, en las rutas de programación, en «Revisar mi código» y en lo que el agente muestra o propone (`show_code`, `propose_code`: la lista de lenguajes sale de un solo lugar, `Lang::ALL`). Cada uno corre con lo **instalado en la PC**, detectado al abrir: C y C++ con gcc o clang; Java con el JDK (`javac` presente; el archivo se ejecuta directo, con `-ea`); C# con el SDK de .NET (primero `DOTNET_ROOT`, después el `dotnet` del PATH, que puede no tener SDK; el proyecto apunta a la versión del SDK instalado, sin bajar nada); Go con `go` (sin red: `GOTOOLCHAIN=local`, `GOPROXY=off`). **SQL viene incluido**: SQLite dentro de Eureka, en memoria, un script por vez; las consultas salen como tabla (hasta 200 filas), el primer error dice **en qué línea** y `assert(condición, 'mensaje')` permite pruebas. Compilar tiene su propio tiempo límite (90 s) y ejecutar el suyo (10 s); un programa que no compila muestra los errores del compilador y marca su línea en el editor. Los acentos llegan bien en la entrada y la salida (C#: la consola se pone en UTF-8 sola). Las pruebas de un ejercicio se juntan con el código en el orden que pide cada lenguaje (Java y C#: las pruebas primero; el resto, al final) y las líneas marcadas se corrigen por ese corrimiento. Si falta un compilador, se dice cómo instalarlo (`winget` con el id verificado).
+- **AC-172** — **Proyectos de varios archivos en los seis lenguajes nuevos**, con plantilla y pruebas: Go con `go run .` y `go test` (crea `go.mod` si falta); Java con `javac` y una clase `Tests` con su `main`; C# con una clase `Tests` con su `static void Main` (el `.csproj` lo arma Eureka); C y C++ con los `test_*.c`/`test_*.cpp` compilados sin `main.c`; SQL con los `.sql` en orden (`main.sql` primero) y `tests.sql` al final. Las plantillas arrancan con una prueba de un caso borde que falla, para hacerla pasar.

@@ -1,0 +1,69 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Eureka",
+  "version": "0.1.0",
+  "identifier": "lat.eureka.app",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Eureka",
+        "width": 1400,
+        "height": 900
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis"
+    ],
+    "fileAssociations": [
+      {
+        "ext": [
+          "eureka"
+        ],
+        "name": "Mazo de Eureka",
+        "description": "Mazo de tarjetas compartido",
+        "role": "Viewer",
+        "mimeType": "application/x-eureka-deck"
+      }
+    ],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "createUpdaterArtifacts": true,
+    "publisher": "Eureka",
+    "shortDescription": "Aprender cualquier cosa, con tu propio profesor",
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": [
+          "Spanish",
+          "English"
+        ],
+        "displayLanguageSelector": false
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDUyRjFEMTRBMjRBRkEwMEMKUldRTW9LOGtTdEh4VXZwTGFFdTAzNy9LNmN4Vnk4TXhGM3Z6Nm5ZM00rUGtjTWVqYzlKa2xMUzEK",
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  }
+}

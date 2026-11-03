@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Logo de lado</title>
+<style>
+  body { margin:0; background:#08090a; color:#f7f8f8; font:14px/1.5 Inter, "Segoe UI", system-ui, sans-serif; }
+  main { max-width:1100px; margin:0 auto; padding:40px 16px; }
+  h1 { font-size:26px; letter-spacing:-.02em; margin:0 0 4px; } h2 { font-size:15px; margin:0; }
+  .sub, .card p { color:#8a8f98; margin:0; font-size:13px; } .sub { margin-bottom:24px; font-size:14px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:16px; }
+  .card { background:#0f1011; border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:20px; display:flex; flex-direction:column; gap:12px; }
+  .stage { display:grid; place-items:center; height:190px; border-radius:10px; background:#08090a; border:1px solid rgba(255,255,255,.08); }
+  .row { display:flex; gap:16px; align-items:end; flex-wrap:wrap; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="ink" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8b93f2" /><stop offset="1" stop-color="#a35ee0" /></linearGradient>
+    <!-- A: dome body + round ear + hooked trunk -->
+    <g id="dome">
+      <path d="M16 62A34 34 0 0 1 84 50V56C84 63 80 66 76 66" fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round" />
+      <path d="M16 62A34 34 0 0 1 82 48L74 62H16Z" fill="currentColor" />
+      <circle cx="54" cy="40" r="13" fill="#08090a" opacity=".35" />
+      <circle cx="69" cy="37" r="3.2" fill="#08090a" />
+    </g>
+  </defs>
+</svg>
+
+<main>
+  <h1>De lado · minimalista</h1>
+  <p class="sub">Perfil mirando a la derecha, reducido a formas básicas: un domo como cuerpo, un círculo como oreja y una curva como trompa.</p>
+
+  <div class="grid">
+    <section class="card">
+      <div class="stage">
+        <svg width="150" height="120" viewBox="0 0 100 80" style="color:#828cf0"><use href="#dome" /></svg>
+      </div>
+      <h2>A · Domo</h2>
+      <p>Silueta sólida: domo, oreja en tono más oscuro, ojo en punto. Tierna por lo redonda.</p>
+    </section>
+
+    <section class="card">
+      <div class="stage">
+        <svg width="150" height="120" viewBox="0 0 100 80" fill="none" stroke="url(#ink)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M16 66V58A34 34 0 0 1 80 40C88 50 88 64 80 70C76 72 73 69 75 66" />
+          <path d="M44 66V58M60 66V58" />
+          <path d="M48 32A11 11 0 1 0 60 52" />
+          <circle cx="69" cy="37" r="2.6" fill="#a35ee0" stroke="none" />
+        </svg>
+      </div>
+      <h2>B · Una línea</h2>
+      <p>Lo mismo en un trazo continuo con gradiente. Lo más abstracto que sigue siendo un elefante.</p>
+    </section>
+
+    <section class="card">
+      <div class="stage">
+        <svg width="150" height="120" viewBox="0 0 100 80">
+          <circle cx="40" cy="46" r="24" fill="#5e6ad2" />
+          <circle cx="66" cy="36" r="16" fill="#828cf0" />
+          <circle cx="58" cy="38" r="9" fill="#5e6ad2" />
+          <path d="M80 40C84 50 82 60 74 62" fill="none" stroke="#828cf0" stroke-width="7" stroke-linecap="round" />
+          <circle cx="70" cy="32" r="2.6" fill="#08090a" />
+          <rect x="24" y="62" width="10" height="10" rx="5" fill="#5e6ad2" />
+          <rect x="44" y="62" width="10" height="10" rx="5" fill="#5e6ad2" />
+        </svg>
+      </div>
+      <h2>C · Círculos</h2>
+      <p>Hecho solo de círculos y una curva, en dos tonos. El más "caricatura" de los cuatro.</p>
+    </section>
+
+    <section class="card">
+      <div class="stage">
+        <svg width="130" height="130" viewBox="0 0 100 100">
+          <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7b83eb" /><stop offset="1" stop-color="#a35ee0" /></linearGradient></defs>
+          <rect width="100" height="100" rx="24" fill="url(#bg)" />
+          <svg x="10" y="14" width="80" height="64" viewBox="0 0 100 80" style="color:#fff"><use href="#dome" /></svg>
+        </svg>
+      </div>
+      <h2>D · Ícono</h2>
+      <p>El domo en blanco sobre el gradiente de la app, para el ícono de escritorio.</p>
+    </section>
+  </div>
+
+  <h1 style="margin-top:36px;font-size:20px">Tamaños</h1>
+  <div class="card">
+    <div class="row" style="color:#828cf0">
+      <svg width="96" height="77" viewBox="0 0 100 80"><use href="#dome" /></svg>
+      <svg width="48" height="38" viewBox="0 0 100 80"><use href="#dome" /></svg>
+      <svg width="24" height="19" viewBox="0 0 100 80"><use href="#dome" /></svg>
+      <svg width="16" height="13" viewBox="0 0 100 80"><use href="#dome" /></svg>
+    </div>
+  </div>
+</main>
+</body>
+</html>

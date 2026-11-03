@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Logo Monolínea</title>
+<style>
+  :root { --bg:#08090a; --card:#0f1011; --border:rgba(255,255,255,.08); --text:#f7f8f8; --muted:#8a8f98; }
+  body { margin:0; background:var(--bg); color:var(--text); font:14px/1.5 Inter, "Segoe UI", system-ui, sans-serif; }
+  main { max-width:1100px; margin:0 auto; padding:40px 16px; }
+  h1 { font-size:26px; letter-spacing:-.02em; margin:0 0 4px; } h2 { font-size:15px; margin:0; }
+  .sub, .card p { color:var(--muted); margin:0; font-size:13px; } .sub { margin-bottom:24px; font-size:14px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:20px; display:flex; flex-direction:column; gap:12px; }
+  .stage { display:grid; place-items:center; height:220px; border-radius:10px; background:var(--bg); border:1px solid var(--border); }
+  .stage.light { background:#fcfcfd; }
+  .row { display:flex; gap:14px; align-items:end; flex-wrap:wrap; }
+  .side { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:8px; background:#141516; border:1px solid var(--border); font-weight:600; font-size:13.5px; }
+  .side.light { background:#f4f5f7; color:#121314; }
+</style>
+</head>
+<body>
+<!-- One master drawing reused by every variant. Side view, facing right. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="ink" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8b93f2" /><stop offset=".55" stop-color="#5e6ad2" /><stop offset="1" stop-color="#a35ee0" />
+    </linearGradient>
+    <g id="elephant" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <!-- back + crown of the head -->
+      <path d="M15 37C15 23 26 15 41 15H57C70 15 79 22 80 34" />
+      <!-- trunk with a curl at the tip -->
+      <path d="M80 34C80 45 82 53 87 55C90 56 91 52 88 50" />
+      <!-- chin to front leg -->
+      <path d="M73 40C70 43 68 45 67 49V61H74V51" />
+      <!-- belly between the legs -->
+      <path d="M31 51C42 55 55 55 67 51" />
+      <!-- back leg (near) -->
+      <path d="M21 44V61H28V51" />
+      <!-- far legs, set back -->
+      <path d="M33 53V59M61 53V59" opacity=".45" />
+      <!-- ear flap -->
+      <path d="M53 20C45 21 42 31 46 39C49 44 56 42 59 35C61 30 59 22 53 20Z" />
+      <!-- ear fold -->
+      <path d="M52 26C49 29 49 34 51 37" opacity=".5" />
+      <!-- tusk -->
+      <path d="M74 41C76 45 79 46 83 45" />
+      <!-- tail -->
+      <path d="M15 37C11 41 10 45 12 49" />
+      <!-- eye -->
+      <circle cx="68" cy="27" r="1.6" fill="currentColor" stroke="none" />
+      <!-- forehead wrinkle -->
+      <path d="M72 21C74 24 75 27 75 30" opacity=".45" />
+    </g>
+    <!-- "idea" spark: three linked nodes over the trunk (the knowledge graph) -->
+    <g id="spark" stroke-linecap="round">
+      <line x1="84" y1="8" x2="92" y2="14" stroke-width="1.6" />
+      <line x1="92" y1="14" x2="86" y2="21" stroke-width="1.6" />
+      <circle cx="84" cy="8" r="2.4" stroke="none" />
+      <circle cx="92" cy="14" r="2.4" stroke="none" />
+      <circle cx="86" cy="21" r="2.4" stroke="none" />
+    </g>
+  </defs>
+</svg>
+
+<main>
+  <h1>Monolínea · refinado</h1>
+  <p class="sub">El mismo trazo continuo, con más anatomía: oreja con pliegue, colmillo, trompa enrulada, cola, patas traseras en segundo plano y una arruga en la frente. Tres variantes.</p>
+
+  <div class="grid">
+    <section class="card">
+      <div class="stage">
+        <svg width="220" height="165" viewBox="0 0 100 72" style="color:#828cf0" stroke="#828cf0" stroke-width="2.4" aria-label="Elefante monolínea">
+          <use href="#elephant" />
+        </svg>
+      </div>
+      <h2>A · Limpio</h2>
+      <p>Un solo color, trazo de 2.4. Es la base: funciona como ícono en la barra lateral y en botones.</p>
+    </section>
+
+    <section class="card">
+      <div class="stage">
+        <svg width="220" height="165" viewBox="0 0 100 72" style="color:#5e6ad2" aria-label="Elefante con idea">
+          <use href="#elephant" stroke="url(#ink)" stroke-width="2.6" />
+          <use href="#spark" stroke="#a35ee0" fill="#a35ee0" />
+        </svg>
+      </div>
+      <h2>B · Gradiente + idea</h2>
+      <p>Trazo en gradiente índigo → violeta, y tres nodos conectados sobre la trompa: el elefante "atrapando" una idea del grafo.</p>
+    </section>
+
+    <section class="card">
+      <div class="stage">
+        <svg width="150" height="150" viewBox="0 0 64 64" aria-label="Ícono de app">
+          <rect width="64" height="64" rx="15" fill="#141516" stroke="rgba(255,255,255,.1)" />
+          <rect width="64" height="64" rx="15" fill="url(#ink)" opacity=".12" />
+          <svg x="5" y="9" width="54" height="40" viewBox="0 0 100 72" style="color:#f7f8f8">
+            <use href="#elephant" stroke="#f7f8f8" stroke-width="3.4" />
+            <use href="#spark" stroke="#a35ee0" fill="#a35ee0" />
+          </svg>
+        </svg>
+      </div>
+      <h2>C · Ícono de app</h2>
+      <p>Versión B dentro del contenedor redondeado, con trazo más grueso para que aguante tamaños chicos.</p>
+    </section>
+  </div>
+
+  <h1 style="margin-top:36px;font-size:20px">Fondo claro y tamaños</h1>
+  <div class="card">
+    <div class="row">
+      <div class="stage light" style="height:auto;padding:16px 24px">
+        <svg width="160" height="115" viewBox="0 0 100 72" style="color:#4350c8"><use href="#elephant" stroke="#4350c8" stroke-width="2.4" /><use href="#spark" stroke="#6d28d9" fill="#6d28d9" /></svg>
+      </div>
+      <svg width="96" height="96" viewBox="0 0 64 64"><rect width="64" height="64" rx="15" fill="#141516" /><rect width="64" height="64" rx="15" fill="url(#ink)" opacity=".12" /><svg x="5" y="9" width="54" height="40" viewBox="0 0 100 72" style="color:#f7f8f8"><use href="#elephant" stroke="#f7f8f8" stroke-width="3.4" /><use href="#spark" stroke="#a35ee0" fill="#a35ee0" /></svg></svg>
+      <svg width="48" height="48" viewBox="0 0 64 64"><rect width="64" height="64" rx="15" fill="#141516" /><svg x="5" y="9" width="54" height="40" viewBox="0 0 100 72" style="color:#f7f8f8"><use href="#elephant" stroke="#f7f8f8" stroke-width="4" /></svg></svg>
+      <svg width="24" height="24" viewBox="0 0 64 64"><rect width="64" height="64" rx="15" fill="#5e6ad2" /><svg x="5" y="9" width="54" height="40" viewBox="0 0 100 72" style="color:#fff"><use href="#elephant" stroke="#fff" stroke-width="5.5" /></svg></svg>
+    </div>
+    <div class="row">
+      <div class="side"><svg width="26" height="19" viewBox="0 0 100 72" style="color:#828cf0"><use href="#elephant" stroke="#828cf0" stroke-width="4.5" /></svg>LearnAnything</div>
+      <div class="side light"><svg width="26" height="19" viewBox="0 0 100 72" style="color:#4350c8"><use href="#elephant" stroke="#4350c8" stroke-width="4.5" /></svg>LearnAnything</div>
+    </div>
+    <p>En 16–24 px los detalles finos (pliegue, arruga, patas de atrás) se pierden; para esos tamaños conviene una versión simplificada con trazo más grueso.</p>
+  </div>
+</main>
+</body>
+</html>
