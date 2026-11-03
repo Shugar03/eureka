@@ -424,6 +424,7 @@ export function SessionView({ id, onBack, onOpenSettings, onChanged, onOpenGraph
                 Enviar
               </button>
             </div>
+            <p className="composer-note">Eureka es una IA y puede cometer errores. Verificá lo importante con tu material o con tu docente.</p>
             </>
           )}
         </footer>
