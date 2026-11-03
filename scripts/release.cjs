@@ -27,7 +27,9 @@ function die(msg) {
 }
 
 function run(cmd, args, opts = {}) {
-  const r = spawnSync(cmd, args, { cwd: ROOT, stdio: opts.capture ? ["ignore", "pipe", "inherit"] : "inherit", shell: process.platform === "win32", encoding: "utf8", env: opts.env ?? process.env });
+  // Only npx needs a shell on Windows (it is a .cmd); with one, an argument with
+  // spaces ("Eureka 0.2.0") would be split in two.
+  const r = spawnSync(cmd, args, { cwd: ROOT, stdio: opts.capture ? ["ignore", "pipe", "inherit"] : "inherit", shell: process.platform === "win32" && cmd === "npx", encoding: "utf8", env: opts.env ?? process.env });
   if (r.status !== 0) die(`falló: ${cmd} ${args.join(" ")}`);
   return (r.stdout ?? "").trim();
 }
