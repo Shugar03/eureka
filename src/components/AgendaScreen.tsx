@@ -6,6 +6,7 @@ import { isoWeekday, slotsOn, upcoming, weeklyHours, WEEKDAYS } from "../lib/pla
 import type { AgendaSlot } from "../lib/plan";
 import { DATE_KIND_LABEL, dayOff, termCourses, termDates, upcomingDates, weeklyClassHours } from "../lib/academic";
 import { buildIcs } from "../lib/ics";
+import { saveFile } from "../lib/saveFile";
 
 interface Props {
   onOpenExam: (id: string) => void;
@@ -52,12 +53,8 @@ export function AgendaScreen({ onOpenExam, onOpenAcademic }: Props) {
   const empty = exams.every((e) => !e.schedule.length) && !dates.length && !acCourses.some((c) => c.slots.length);
 
   // AC-59: the whole agenda as an .ics file (Google Calendar, Outlook…).
-  const exportIcs = () => {
-    const url = URL.createObjectURL(new Blob([buildIcs(exams, today, new Date(), academic)], { type: "text/calendar" }));
-    const a = Object.assign(document.createElement("a"), { href: url, download: "eureka-agenda.ics" });
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    setExported(true);
+  const exportIcs = async () => {
+    if (await saveFile("eureka-agenda.ics", buildIcs(exams, today, new Date(), academic), "text/calendar").catch(() => false)) setExported(true);
   };
 
   return (
@@ -65,9 +62,14 @@ export function AgendaScreen({ onOpenExam, onOpenAcademic }: Props) {
       <header className="chat-head">
         <h1 className="chat-title">Agenda</h1>
         {!empty && (
-          <button className="btn ghost small head-action" onClick={exportIcs} title="Para Google Calendar, Outlook o el calendario de tu teléfono">
+          <button className="btn ghost small head-action" onClick={exportIcs} title="Para Google Calendar, Outlook o el calendario de tu teléfono" aria-describedby="agenda-ics-hint">
             Exportar a calendario (.ics)
           </button>
+        )}
+        {!empty && (
+          <span id="agenda-ics-hint" className="muted small touch-hint">
+            Para Google Calendar, Outlook o el calendario de tu teléfono.
+          </span>
         )}
       </header>
       {exported && (

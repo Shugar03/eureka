@@ -11,6 +11,7 @@ import { useWorkspace, WorkspaceProvider } from "./components/workspace/Workspac
 import { Onboarding } from "./components/Onboarding";
 import { useUiControl } from "./components/useUiControl";
 import { Sidebar } from "./components/Sidebar";
+import { NavDrawer } from "./components/NavDrawer";
 import { CommandMenu, type Command } from "./components/CommandMenu";
 import { GraphScreen } from "./components/GraphScreen";
 import { LibraryScreen } from "./components/LibraryScreen";
@@ -29,6 +30,7 @@ import { PomodoroWidget } from "./components/pomodoro/PomodoroWidget";
 import { Reminders } from "./components/Reminders";
 import { useStudyContext } from "./components/pomodoro/PomodoroContext";
 import { UpdateNotice } from "./components/UpdateNotice";
+import { useHistoryBack } from "./lib/history";
 import "./App.css";
 
 type Route =
@@ -69,8 +71,18 @@ function AppShell() {
     setVisit((v) => v + 1);
     setRoute(r);
   };
+  useHistoryBack(route, setRoute);
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [palette, setPalette] = useState(false);
+  // On a phone the sidebar is a drawer; choosing a screen closes it.
+  const [drawer, setDrawer] = useState(false);
+  const closeDrawer = useCallback(() => setDrawer(false), []);
+  useEffect(closeDrawer, [route, closeDrawer]);
+  // The palette opens on its own: Esc then closes only the palette.
+  const openPalette = () => {
+    setDrawer(false);
+    setPalette(true);
+  };
   // The wallpaper only shows in full on the home screen; elsewhere it is a soft wash.
   useEffect(() => {
     document.documentElement.dataset.view = route.name === "home" ? "home" : "work";
@@ -163,6 +175,7 @@ function AppShell() {
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
+        setDrawer(false);
         setPalette((p) => !p);
       }
     };
@@ -295,32 +308,34 @@ function AppShell() {
     <>
       <div className="wallpaper" aria-hidden />
       <div className="shell">
-        <Sidebar
-          sessions={sessions}
-          activeId={route.name === "session" ? route.id : null}
-          view={route.name}
-          onHome={home}
-          onOpen={open}
-          onSettings={() => settings()}
-          onGraph={graph}
-          onLibrary={library}
-          onPractice={() => practice()}
-          onExams={() => exams()}
-          onCards={() => cards()}
-          onAgenda={agenda}
-          onCode={() => code()}
-          onLanguage={language}
-          onCompanion={companion}
-          onAcademic={academic}
-          onClasses={classes}
-          onProgress={progress}
-          onCommand={() => setPalette(true)}
-          theme={theme}
-          onTheme={setTheme}
-          name={name}
-          onWorkspace={() => settings("workspace")}
-          footer={<PomodoroWidget />}
-        />
+        <NavDrawer open={drawer} onOpen={() => setDrawer(true)} onClose={closeDrawer} onSearch={openPalette}>
+          <Sidebar
+            sessions={sessions}
+            activeId={route.name === "session" ? route.id : null}
+            view={route.name}
+            onHome={home}
+            onOpen={open}
+            onSettings={() => settings()}
+            onGraph={graph}
+            onLibrary={library}
+            onPractice={() => practice()}
+            onExams={() => exams()}
+            onCards={() => cards()}
+            onAgenda={agenda}
+            onCode={() => code()}
+            onLanguage={language}
+            onCompanion={companion}
+            onAcademic={academic}
+            onClasses={classes}
+            onProgress={progress}
+            onCommand={openPalette}
+            theme={theme}
+            onTheme={setTheme}
+            name={name}
+            onWorkspace={() => settings("workspace")}
+            footer={<PomodoroWidget />}
+          />
+        </NavDrawer>
         <main className="main">
           {route.name === "home" && (
             <Home

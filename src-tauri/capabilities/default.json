@@ -6,6 +6,12 @@
   "permissions": [
     "core:default",
     "opener:default",
-    "notification:default"
+    "notification:default",
+    "dialog:allow-save",
+    "fs:allow-write-file",
+    {
+      "identifier": "fs:allow-read-file",
+      "allow": [{ "path": "$DOWNLOAD/**" }]
+    }
   ]
 }

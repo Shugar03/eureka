@@ -112,7 +112,7 @@ pub async fn transcribe(state: &AppState, audio: Vec<u8>, mime: &str, language: 
     if let Some(code) = iso_code(language) {
         form = form.text("language", code);
     }
-    let resp = reqwest::Client::new()
+    let resp = crate::llm::client()?
         .post(format!("{}/audio/transcriptions", ep.base_url.trim_end_matches('/')))
         .bearer_auth(&ep.api_key)
         .multipart(form)

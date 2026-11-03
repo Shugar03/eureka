@@ -128,9 +128,12 @@ export function CareerPanel() {
         <button className="btn small" onClick={() => setEditing("new")}>
           Agregar materia
         </button>
-        <button className="btn ghost small" onClick={() => setLoading(true)} title="Lo que ya marcaste se conserva en las materias que sigan estando">
+        <button className="btn ghost small" onClick={() => setLoading(true)} title="Lo que ya marcaste se conserva en las materias que sigan estando" aria-describedby="career-reload-hint">
           Volver a cargar el plan
         </button>
+        <span id="career-reload-hint" className="muted small touch-hint">
+          Lo que ya marcaste se conserva en las materias que sigan estando.
+        </span>
         <button className={`btn small ${armed ? "danger" : "ghost"}`} onBlur={() => setArmed(false)} onClick={() => (armed ? run(async () => (await careerApi.remove(), null), () => setArmed(false)) : setArmed(true))}>
           {armed ? "¿Seguro? Borrar mi carrera" : "Borrar mi carrera"}
         </button>

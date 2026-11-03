@@ -27,12 +27,17 @@ describe("Settings › Avanzado (modelos)", () => {
     expect(screen.getAllByRole("button", { name: "Quitar key" })).toHaveLength(2);
   });
 
-  it("lists models for the chosen provider into the datalist", async () => {
+  it("lists every model of the chosen provider, whatever is already typed", async () => {
     render(<Settings onBack={() => {}} initialTab="models" />);
     await screen.findByLabelText("Proveedor de Profesor");
     await userEvent.click(screen.getAllByRole("button", { name: "Listar modelos" })[0]);
     expect(await screen.findByText("3 modelos encontrados.")).toBeInTheDocument();
-    expect(document.querySelectorAll("#models-teacher option")).toHaveLength(3);
+    const pick = screen.getByLabelText("Modelo de Profesor: elegir de la lista");
+    // All of them, not only the ones matching the typed id (what a datalist did).
+    expect(pick.querySelectorAll("option")).toHaveLength(4);
+    const second = pick.querySelectorAll("option")[2].textContent!;
+    await userEvent.selectOptions(pick, second);
+    expect(screen.getByLabelText("Modelo de Profesor")).toHaveValue(second);
   });
 
   it("reports when a provider has no key", async () => {

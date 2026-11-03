@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { api, errorText } from "../api";
 import type { GraphView, LearnerInput, PracticeSet, PracticeSummary } from "../types";
 
@@ -166,6 +166,7 @@ function PracticeRunner({ id, onBack }: { id: string; onBack: () => void }) {
   const [draft, setDraft] = useState("");
   const onDraft = useCallback((d: string) => setDraft(d), []);
   const [nudging, setNudging] = useState(false);
+  const nudgeHint = useId();
   const [solvedNote, setSolvedNote] = useState<string | null>(null);
   // AC-167: the next problem is written after each answer, while the correction is read.
   const [writing, setWriting] = useState(false);
@@ -406,9 +407,13 @@ function PracticeRunner({ id, onBack }: { id: string; onBack: () => void }) {
                 disabled={nudging || busy || !draft.trim() || nudges.length >= MAX_NUDGES}
                 onClick={nudge}
                 title={draft.trim() ? "Una pista hecha para lo que venís pensando" : "Escribí lo que venís pensando primero"}
+                aria-describedby={nudgeHint}
               >
                 {nudging ? "Pensando un empujón…" : `Necesito un empujón (${nudges.length}/${MAX_NUDGES})`}
               </button>
+              <span id={nudgeHint} className="muted small touch-hint">
+                {draft.trim() ? "Una pista hecha para lo que venís pensando" : "Escribí lo que venís pensando primero"}
+              </span>
             </div>
           )}
         </section>

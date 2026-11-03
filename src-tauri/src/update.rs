@@ -5,11 +5,15 @@
 //!
 //! The installer must be signed with the key whose public half is in
 //! tauri.conf.json: the plugin refuses anything else.
+#![cfg_attr(mobile, allow(dead_code))]
 
 use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
+#[cfg(desktop)]
+use tauri::Manager;
+#[cfg(desktop)]
 use tauri_plugin_updater::{Update, UpdaterExt};
 
 const REPO: Option<&str> = option_env!("EUREKA_UPDATE_REPO");
@@ -26,8 +30,13 @@ pub enum Check {
 }
 
 /// The update found by the last check, kept until it is installed.
+#[cfg(desktop)]
 #[derive(Default)]
 pub struct Pending(Mutex<Option<Update>>);
+/// Phones update through their store: there is never anything pending.
+#[cfg(mobile)]
+#[derive(Default)]
+pub struct Pending(#[allow(dead_code)] Mutex<()>);
 
 #[derive(Deserialize)]
 struct Release {
@@ -46,10 +55,21 @@ fn manifest_url(release_json: &str) -> Result<String> {
     r.assets.into_iter().find(|a| a.name == MANIFEST).map(|a| a.browser_download_url).ok_or_else(|| anyhow!("el último release no tiene {MANIFEST}"))
 }
 
+#[cfg(mobile)]
+pub async fn check(_app: &AppHandle) -> Result<Check> {
+    Ok(Check::Off)
+}
+
+#[cfg(mobile)]
+pub async fn install(_app: &AppHandle) -> Result<()> {
+    Err(anyhow!("En el celular Eureka se actualiza desde la tienda."))
+}
+
+#[cfg(desktop)]
 pub async fn check(app: &AppHandle) -> Result<Check> {
     let Some(repo) = REPO.filter(|r| !r.is_empty()) else { return Ok(Check::Off) };
     let current = app.package_info().version.to_string();
-    let res = reqwest::Client::new()
+    let res = crate::llm::client()?
         .get(format!("https://api.github.com/repos/{repo}/releases/latest"))
         .header("Accept", "application/vnd.github+json")
         .header("User-Agent", "Eureka")
@@ -75,6 +95,7 @@ pub async fn check(app: &AppHandle) -> Result<Check> {
 
 /// Downloads, verifies the signature and installs; on Windows the installer
 /// closes the app and opens the new version.
+#[cfg(desktop)]
 pub async fn install(app: &AppHandle) -> Result<()> {
     let update = app.state::<Pending>().0.lock().unwrap().take().ok_or_else(|| anyhow!("Primero buscá la actualización."))?;
     update.download_and_install(|_, _| {}, || {}).await.context("no se pudo instalar la actualización")?;

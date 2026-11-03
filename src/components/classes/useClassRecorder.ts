@@ -78,7 +78,7 @@ export function useClassRecorder(onUpdate: (c: ClassRecord) => void) {
     try {
       stream.current = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch {
-      setError("No pude usar el micrófono. Dale permiso en Windows y probá de nuevo.");
+      setError("No pude usar el micrófono. Dale permiso en los ajustes del sistema y probá de nuevo.");
       return false;
     }
     id.current = c.id;

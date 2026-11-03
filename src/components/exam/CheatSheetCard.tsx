@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { api, errorText } from "../../api";
 import type { Exam } from "../../types";
 import { Markdown } from "../Markdown";
+import { saveFile } from "../../lib/saveFile";
 
 interface Props {
   exam: Exam;
@@ -31,10 +32,7 @@ export function CheatSheetCard({ exam, onChanged }: Props) {
 
   const download = () => {
     if (!sheet) return;
-    const url = URL.createObjectURL(new Blob([`# ${exam.name} — hoja de repaso\n\n${sheet.markdown}\n`], { type: "text/markdown" }));
-    const a = Object.assign(document.createElement("a"), { href: url, download: `hoja-de-repaso-${slug(exam.name)}.md` });
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    saveFile(`hoja-de-repaso-${slug(exam.name)}.md`, `# ${exam.name} — hoja de repaso\n\n${sheet.markdown}\n`, "text/markdown").catch(() => {});
   };
 
   // Prints only the sheet: a throwaway frame with its rendered HTML.

@@ -4,6 +4,7 @@ import type { Theme } from "../../lib/theme";
 import { EMPTY_IDENTITY, useWorkspace } from "./WorkspaceContext";
 import { AboutFields, NameFields, TreatmentFields } from "./IdentityFields";
 import { QuotesSection } from "../quotes/QuotesSection";
+import { thisDevice } from "../../lib/platform";
 
 const THEMES: { id: Theme; label: string }[] = [
   { id: "light", label: "Claro" },
@@ -43,7 +44,7 @@ export function WorkspaceTab() {
 
   return (
     <div className="stack">
-      <p className="muted small">Este es tu lugar. Elegí cómo se ve y cómo te saluda: es solo tuyo y queda guardado en esta computadora.</p>
+      <p className="muted small">Este es tu lugar. Elegí cómo se ve y cómo te saluda: es solo tuyo y queda guardado en {thisDevice()}.</p>
 
       <section className="card" aria-label="Sobre vos">
         <h2>Sobre vos</h2>

@@ -47,3 +47,8 @@ mutants.out*/
 # update signing key and token: never in the repo
 *.key
 .update-token
+
+# landing page, promo video and their design notes (local only)
+/marketing/
+/PRODUCT.md
+/.impeccable/

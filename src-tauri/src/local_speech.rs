@@ -4,13 +4,19 @@
 //!
 //! The UI hands over 16 kHz mono WAV (it decodes the recording with WebAudio), so
 //! this module only does PCM → log-mel → greedy decoding.
+#![cfg_attr(target_os = "android", allow(dead_code))]
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, bail, Context, Result};
+// Android leaves candle out (memory, battery and a C dependency through tokenizers):
+// the model files can't be downloaded there and transcription goes through the API.
+#[cfg(not(target_os = "android"))]
 use candle_core::{Device, IndexOp, Tensor};
+#[cfg(not(target_os = "android"))]
 use candle_nn::VarBuilder;
+#[cfg(not(target_os = "android"))]
 use candle_transformers::models::whisper::{self as m, audio, model::Whisper, Config};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
@@ -70,12 +76,15 @@ pub fn status(data_dir: &Path) -> Vec<ModelStatus> {
 /// Downloads the three files, checking the weights' sha256, into a temporary folder
 /// that only becomes the model folder once everything arrived intact.
 pub async fn download(data_dir: &Path, model: &LocalModel, mut progress: impl FnMut(u64, u64)) -> Result<()> {
+    if cfg!(target_os = "android") {
+        bail!("La voz en el equipo no está disponible en el celular.");
+    }
     use futures_util::StreamExt;
     let target = dir(data_dir, model);
     let tmp = target.with_extension("partial");
     let _ = std::fs::remove_dir_all(&tmp);
     std::fs::create_dir_all(&tmp)?;
-    let client = reqwest::Client::new();
+    let client = crate::llm::client()?;
     let mut done = 0u64;
     for file in FILES {
         let url = format!("https://huggingface.co/{}/resolve/main/{file}", model.repo);
@@ -219,7 +228,25 @@ pub fn language_code(language: &str) -> Option<&'static str> {
     })
 }
 
+/// Android: there is no local model.
+#[cfg(target_os = "android")]
+pub struct Engine {
+    pub id: &'static str,
+}
+
+#[cfg(target_os = "android")]
+impl Engine {
+    pub fn load(_data_dir: &Path, _info: &'static LocalModel) -> Result<Self> {
+        bail!("En el celular la voz va por un servicio: elegilo en Ajustes → Avanzado → Voz.")
+    }
+
+    pub fn transcribe(&mut self, _samples: &[f32], _language: &str) -> Result<String> {
+        bail!("En el celular la voz va por un servicio.")
+    }
+}
+
 /// A loaded model, kept in memory between dictations.
+#[cfg(not(target_os = "android"))]
 pub struct Engine {
     pub id: &'static str,
     model: Whisper,
@@ -229,6 +256,7 @@ pub struct Engine {
     device: Device,
 }
 
+#[cfg(not(target_os = "android"))]
 impl Engine {
     pub fn load(data_dir: &Path, info: &'static LocalModel) -> Result<Self> {
         let d = dir(data_dir, info);
@@ -320,15 +348,18 @@ impl Engine {
     }
 }
 
+#[cfg(not(target_os = "android"))]
 fn is_language_token(t: &str) -> bool {
     let inner = t.strip_prefix("<|").and_then(|x| x.strip_suffix("|>")).unwrap_or("");
     (2..=3).contains(&inner.len()) && inner.chars().all(|c| c.is_ascii_lowercase()) || inner == "haw"
 }
 
+#[cfg(not(target_os = "android"))]
 fn argmax(v: &[f32]) -> u32 {
     v.iter().enumerate().max_by(|a, b| a.1.total_cmp(b.1)).map(|(i, _)| i as u32).unwrap_or(0)
 }
 
+#[cfg(not(target_os = "android"))]
 /// Greedy decoding can loop on a phrase; stop when the last 8 tokens already appeared just before.
 fn repeating(tokens: &[u32]) -> bool {
     const N: usize = 8;

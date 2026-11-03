@@ -94,6 +94,16 @@ describe("App shell", () => {
     expect(screen.queryByRole("heading", { name: "Ajustes" })).not.toBeInTheDocument();
   });
 
+  it("on a phone the menu drawer closes when a screen is chosen", async () => {
+    render(<App />);
+    await userEvent.click(screen.getByRole("button", { name: "Abrir menú" }));
+    const menu = screen.getByRole("dialog", { name: "Menú" });
+    await userEvent.click(within(menu).getByRole("button", { name: "Tarjetas" }));
+    expect(await screen.findByRole("heading", { name: "Tarjetas" })).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "Menú" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Abrir menú" })).toHaveAttribute("aria-expanded", "false");
+  });
+
 describe("App: chat first (AC-89, AC-90)", () => {
   it("a greeting is just a chat: no diagnostic question, no plan panel", async () => {
     render(<App />);

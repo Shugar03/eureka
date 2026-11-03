@@ -2,8 +2,11 @@ import { useRef, useState } from "react";
 import { errorText, languageApi } from "../../api";
 import { useAccessibility } from "./AccessibilityContext";
 import { recordingForTranscription } from "../../lib/audio";
+import { MIC_DENIED, onPhone, systemDictation } from "../../lib/platform";
 
-const SETUP_HINT = "Para hablar, elegí la Voz en Ajustes → Avanzado («En esta PC» funciona sin internet). Mientras tanto, Win + H dicta en Windows.";
+const SETUP_HINT = onPhone()
+  ? "Para hablar, elegí la Voz en Ajustes → Avanzado."
+  : `Para hablar, elegí la Voz en Ajustes → Avanzado («En esta PC» funciona sin internet).${systemDictation()}`;
 
 /** Record with the microphone and hand the transcription to `onText` (Voz model). */
 export function useDictation(onText: (text: string) => void) {
@@ -37,7 +40,7 @@ export function useDictation(onText: (text: string) => void) {
       r.start();
       setState("recording");
     } catch {
-      setError("No pude usar el micrófono. Dale permiso en Windows y probá de nuevo.");
+      setError(MIC_DENIED);
     }
   };
 

@@ -238,7 +238,7 @@ pub fn pick_sources(hits: &[Hit], used: &[usize]) -> Vec<SourceRef> {
 
 /// `raw` asks the API for each page's full text too (Tavily `include_raw_content`).
 pub async fn search(base_url: &str, key: &str, query: &str, raw: bool) -> Result<Vec<Hit>> {
-    let resp = reqwest::Client::new()
+    let resp = crate::llm::client()?
         .post(format!("{}/search", base_url.trim_end_matches('/')))
         .bearer_auth(key)
         .json(&json!({ "api_key": key, "query": query, "max_results": MAX_HITS, "search_depth": "basic", "include_raw_content": raw }))

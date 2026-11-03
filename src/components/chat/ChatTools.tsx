@@ -1,10 +1,11 @@
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { errorText, libraryApi, visionApi } from "../../api";
 import { pdfBook, textToMarkdown } from "../../lib/bookText";
 import { imageToDataUrl } from "../../lib/images";
 import { isDocument, isPhoto, titleOf, type Attachment } from "../../lib/attachments";
 import { useDictation } from "../a11y/useDictation";
 import { Icon } from "../Icon";
+import { systemDictation } from "../../lib/platform";
 
 /** AC-105: what the "+" of the chat holds until the message is sent. */
 export function useAttachments() {
@@ -88,9 +89,12 @@ export function AttachChips({ items, working, error, onRemove }: { items: Attach
   );
 }
 
+const NO_VOICE = `Para hablar hace falta un modelo de Voz (Ajustes → Avanzado → Voz).${systemDictation()}`;
+
 /** A microphone that is always there; without a Voz model it says where to set one up. */
 export function MicButton({ onText }: { onText: (text: string) => void }) {
   const d = useDictation(onText);
+  const hintId = useId();
   const label = d.state === "recording" ? "Terminar de grabar" : d.state === "transcribing" ? "Transcribiendo…" : "Hablar con el micrófono";
   return (
     <>
@@ -99,13 +103,19 @@ export function MicButton({ onText }: { onText: (text: string) => void }) {
         className={`icon-btn ${d.state === "recording" ? "is-recording" : ""}`}
         aria-label={label}
         aria-pressed={d.state === "recording"}
-        title={d.ready ? label : "Para hablar hace falta un modelo de Voz (Ajustes → Avanzado → Voz). Mientras tanto, Win + H dicta en Windows."}
+        title={d.ready ? label : NO_VOICE}
+        aria-describedby={d.ready ? undefined : hintId}
         disabled={d.state === "transcribing"}
         onClick={d.toggle}
       >
         <Icon name="mic" size={18} />
       </button>
-      {d.message && <span className={`small ${d.isError ? "error-text" : "muted"}`} role={d.isError ? "alert" : "status"}>{d.message}</span>}
+      {!d.ready && !d.message && (
+        <span id={hintId} className="sr-only">
+          {NO_VOICE}
+        </span>
+      )}
+      {d.message && <span id={d.ready ? undefined : hintId} className={`small ${d.isError ? "error-text" : "muted"}`} role={d.isError ? "alert" : "status"}>{d.message}</span>}
     </>
   );
 }

@@ -136,6 +136,19 @@ Para generar el instalador:
 npx tauri build
 ```
 
+### Android (en preparación)
+
+Eureka también compila para Android con Tauri 2 mobile (mismo código). Todavía no se publica: la interfaz para teléfono está en camino.
+
+**Requisitos:** JDK 17 o más nuevo, el Android SDK con `platforms;android-36`, `build-tools;36.0.0`, `platform-tools`, el NDK (`ndk;30.0.16248370`) y, para probar, `emulator` y una imagen `system-images;android-36;google_apis;x86_64`. Variables: `JAVA_HOME`, `ANDROID_HOME`, `NDK_HOME`. Y los targets de Rust: `rustup target add aarch64-linux-android x86_64-linux-android`.
+
+```bash
+npm run android:dev     # la app en el emulador o el celular conectado, con recarga en vivo
+npm run android:build   # APK de prueba en src-tauri/gen/android/app/build/outputs/apk/
+```
+
+En Android no están la consola de código (salvo SQL), la voz en el equipo ni las actualizaciones automáticas.
+
 **Atajos:** <kbd>Ctrl</kbd>+<kbd>K</kbd> abre la paleta de comandos. Los prompts del agente se editan en **Ajustes → Prompts**. Para que investigue en la web, cargá una key compatible con Tavily en **Ajustes → Búsqueda web**.
 
 ## 🧩 Cómo funciona por dentro

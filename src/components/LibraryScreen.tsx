@@ -254,9 +254,12 @@ export function LibraryScreen({ onOpenSession }: Props) {
                   <button className="btn small primary" disabled={busy} onClick={study}>
                     Estudiar esta sección
                   </button>
-                  <button className="btn ghost small" disabled={busy} onClick={toGraph} title="Usa el modelo para extraer las ideas">
+                  <button className="btn ghost small" disabled={busy} onClick={toGraph} title="Usa el modelo para extraer las ideas" aria-describedby="library-graph-hint">
                     Pasar al grafo
                   </button>
+                  <span id="library-graph-hint" className="muted small touch-hint">
+                    Usa el modelo para extraer las ideas.
+                  </span>
                   <button className={`btn small ${armed ? "danger" : "ghost"}`} onClick={remove}>
                     {armed ? "¿Seguro? Quitar libro" : "Quitar de la biblioteca"}
                   </button>

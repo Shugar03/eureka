@@ -92,12 +92,31 @@ fn url(base: &str, path: &str) -> String {
     format!("{}/{}", base.trim_end_matches('/'), path)
 }
 
+/// The one HTTP client every call goes through (models, voice, search, updates).
 pub(crate) fn client() -> Result<reqwest::Client> {
-    Ok(reqwest::Client::builder()
+    let builder = reqwest::Client::builder()
         .connect_timeout(std::time::Duration::from_secs(20))
+        // A connection silent this long is dead (the phone froze the app, the
+        // network dropped): the turn ends with an error instead of hanging.
+        .read_timeout(std::time::Duration::from_secs(180))
         // Our own name, not reqwest's: OpenCode Go asks clients to identify themselves.
-        .user_agent(concat!("Eureka/", env!("CARGO_PKG_VERSION")))
-        .build()?)
+        .user_agent(concat!("Eureka/", env!("CARGO_PKG_VERSION")));
+    #[cfg(target_os = "android")]
+    let builder = builder.tls_backend_preconfigured(android_tls());
+    Ok(builder.build()?)
+}
+
+/// Android: rustls on ring with the Mozilla roots built in (see Cargo.toml).
+#[cfg(target_os = "android")]
+fn android_tls() -> rustls::ClientConfig {
+    let roots = rustls::RootCertStore { roots: webpki_roots::TLS_SERVER_ROOTS.to_vec() };
+    let mut config = rustls::ClientConfig::builder_with_provider(std::sync::Arc::new(rustls::crypto::ring::default_provider()))
+        .with_safe_default_protocol_versions()
+        .expect("ring supports the default TLS versions")
+        .with_root_certificates(roots)
+        .with_no_client_auth();
+    config.alpn_protocols = vec![b"h2".to_vec(), b"http/1.1".to_vec()];
+    config
 }
 
 /// Streams one completion. `on_text` receives text deltas as they arrive;

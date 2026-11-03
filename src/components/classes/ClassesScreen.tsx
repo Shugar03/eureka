@@ -8,6 +8,7 @@ import { Markdown } from "../Markdown";
 import { ReadAloud } from "../a11y/ReadAloud";
 import { useAccessibility } from "../a11y/AccessibilityContext";
 import { useClassRecorder } from "./useClassRecorder";
+import { onPhone } from "../../lib/platform";
 
 interface Props {
   onOpenSettings: () => void;
@@ -84,7 +85,7 @@ export function ClassesScreen({ onOpenSettings, onOpenDeck, onStudy }: Props) {
           <section className="card" aria-label="Grabar una clase">
             <h2>Grabar una clase</h2>
             <p className="muted">Grabás la clase y se transcribe mientras habla el docente. Después armo los apuntes, las tarjetas y te los leo en voz alta.</p>
-            <p>Para transcribir hace falta elegir la Voz. La opción «En esta PC» funciona sin internet y sin costo.</p>
+            <p>Para transcribir hace falta elegir la Voz. {onPhone() ? "Por ejemplo whisper-1 (OpenAI) o whisper-large-v3 (Groq)." : "La opción «En esta PC» funciona sin internet y sin costo."}</p>
             <div className="row">
               <button className="btn primary" onClick={onOpenSettings}>
                 Elegir la Voz en Ajustes

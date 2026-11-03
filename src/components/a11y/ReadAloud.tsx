@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useId, useMemo } from "react";
 import { speechText, splitAtWord } from "../../lib/accessibility";
 import { useSpeech } from "../../lib/speech";
 import { useAccessibility } from "./AccessibilityContext";
@@ -12,6 +12,7 @@ export function ReadAloud({ markdown, label = "Escuchar", always = false }: { ma
   const { a } = useAccessibility();
   const tts = useSpeech("es");
   const text = useMemo(() => speechText(markdown), [markdown]);
+  const hintId = useId();
   if ((!a.read_aloud && !always) || !text) return null;
   const [before, word, after] = splitAtWord(text, tts.word);
   return (
@@ -21,11 +22,17 @@ export function ReadAloud({ markdown, label = "Escuchar", always = false }: { ma
         className="btn ghost small"
         disabled={!tts.available}
         title={tts.available ? undefined : "Este equipo no tiene voces para leer en voz alta."}
+        aria-describedby={tts.available ? undefined : hintId}
         aria-pressed={tts.speaking}
         onClick={() => (tts.speaking ? tts.stop() : tts.speak(text, a.speech_rate))}
       >
         {tts.speaking ? "Detener lectura" : label}
       </button>
+      {!tts.available && (
+        <span id={hintId} className="muted small touch-hint">
+          Este equipo no tiene voces para leer en voz alta.
+        </span>
+      )}
       {tts.speaking && (
         <p className="read-aloud-text" data-testid="reading">
           {before}

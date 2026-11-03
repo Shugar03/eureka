@@ -5,6 +5,8 @@ import { dayLabel, EMOTIONS, hourLabel, MOODS, moodLabel } from "../../lib/compa
 import { DraftEditor } from "./DraftEditor";
 import { EmotionWheel } from "./EmotionWheel";
 import { InsightsPanel } from "./InsightsPanel";
+import { saveFile } from "../../lib/saveFile";
+import { thisDevice } from "../../lib/platform";
 
 /** AC-83: check-ins and entries, newest first. */
 export function DiaryTab({ view, onView }: { view: CompanionView; onView: (v: CompanionView) => void }) {
@@ -197,13 +199,7 @@ function Privacy({ view, onView }: { view: CompanionView; onView: (v: CompanionV
   const download = async () => {
     setError(null);
     try {
-      const url = URL.createObjectURL(new Blob([await companionApi.exportAll()], { type: "application/json" }));
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "eureka-diario.json";
-      a.click();
-      URL.revokeObjectURL(url);
-      setStatus("Listo: se descargó eureka-diario.json.");
+      if (await saveFile("eureka-diario.json", await companionApi.exportAll(), "application/json")) setStatus("Listo: se guardó eureka-diario.json.");
     } catch (e) {
       setError(errorText(e));
     }
@@ -212,7 +208,7 @@ function Privacy({ view, onView }: { view: CompanionView; onView: (v: CompanionV
   return (
     <section className="card" aria-label="Tu privacidad">
       <h2>Tu privacidad</h2>
-      <p className="muted small">Tu diario se guarda solo en esta computadora. El profesor no lo lee ni se usa para enseñarte, y no entra en las copias de seguridad.</p>
+      <p className="muted small">Tu diario se guarda solo en {thisDevice()}. El profesor no lo lee ni se usa para enseñarte, y no entra en las copias de seguridad.</p>
 
       <div className="field">
         <span>PIN para el diario</span>

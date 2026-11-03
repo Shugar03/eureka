@@ -5,6 +5,7 @@ import { api, errorText } from "../api";
 import type { GraphSource, GraphView } from "../types";
 import { crossEdges, depthOf, details, filterGraph, GNODE_W, layoutByDepth, layoutGraph, linkedSessions } from "../lib/graphView";
 import { focusIdea } from "../lib/focus";
+import { NeuronGraph } from "./NeuronGraph";
 
 interface Props {
   onOpenSession: (id: string) => void;
@@ -14,14 +15,15 @@ interface Props {
 
 const EMPTY: GraphView = { nodes: [], chains: [], edges: [] };
 
-/** AC-170: base ideas at the bottom and reasoning going up, or the free layout. */
-type Layout = "depth" | "free";
+/** AC-176 loose neurons (the default), AC-170 base ideas at the bottom with reasoning going up, or the free layout. */
+type Layout = "neurons" | "depth" | "free";
 const LAYOUT_KEY = "la.graphLayout";
 function savedLayout(): Layout {
   try {
-    return localStorage.getItem(LAYOUT_KEY) === "free" ? "free" : "depth";
+    const v = localStorage.getItem(LAYOUT_KEY);
+    return v === "depth" || v === "free" ? v : "neurons";
   } catch {
-    return "depth";
+    return "neurons";
   }
 }
 
@@ -146,6 +148,9 @@ export function GraphScreen({ onOpenSession, onPractice }: Props) {
           aria-label="Filtrar ideas"
         />
         <div className="tabs" role="radiogroup" aria-label="Vista del grafo">
+          <button role="radio" aria-checked={layout === "neurons"} className={layout === "neurons" ? "is-active" : ""} onClick={() => chooseLayout("neurons")} title="Cada idea es un punto; las conectadas se atraen">
+            Neuronas
+          </button>
           <button role="radio" aria-checked={layout === "depth"} className={layout === "depth" ? "is-active" : ""} onClick={() => chooseLayout("depth")} title="Las ideas base abajo; el razonamiento sube">
             Por profundidad
           </button>
@@ -199,6 +204,8 @@ export function GraphScreen({ onOpenSession, onPractice }: Props) {
             <div className="graph-canvas" data-testid="graph-canvas" ref={canvas}>
               {shown.nodes.length === 0 ? (
                 <p className="muted pad">Ninguna idea coincide con “{query}”.</p>
+              ) : layout === "neurons" ? (
+                <NeuronGraph graph={shown} selected={selected} onSelect={setSelected} cross={crossEdges(shown)} />
               ) : (
                 <ReactFlow
                   nodes={flow.nodes}
@@ -217,6 +224,7 @@ export function GraphScreen({ onOpenSession, onPractice }: Props) {
               )}
               {shown.nodes.length > 0 && (
                 <p className="graph-legend muted small" data-testid="graph-legend">
+                  {layout === "neurons" ? "Cada punto es una idea, más grande cuanto más se conecta. Arrastrá para moverte, la rueda hace zoom. " : ""}
                   {layout === "depth" ? "Abajo las ideas base; cada flecha sube de las premisas a lo que se deduce. " : ""}
                   {flow.cross > 0 ? `Punteadas: ${flow.cross === 1 ? "1 conexión" : `${flow.cross} conexiones`} entre sesiones distintas.` : ""}
                 </p>

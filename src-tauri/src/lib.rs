@@ -1340,10 +1340,12 @@ async fn update_install(app: tauri::AppHandle) -> CmdResult<()> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    #[allow(unused_mut)]
     let mut builder = tauri::Builder::default();
     // AC-154: one Eureka on the real data; a second launch (double click on a
     // `.eureka`) hands its file to the open window. Tests use their own data
     // folder (LA_DATA_DIR) and never reach the person's Eureka.
+    #[cfg(desktop)]
     if std::env::var_os("LA_DATA_DIR").is_none() {
         builder = builder.plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             use tauri::Emitter;
@@ -1357,10 +1359,16 @@ pub fn run() {
             }
         }));
     }
+    #[cfg(desktop)]
+    {
+        builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
+    }
     builder
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
+        // On the phone, files are saved where the user picks (a content:// address).
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_fs::init())
         .manage(update::Pending::default())
         .setup(|app| {
             // LA_DATA_DIR relocates all data (used by tests); default: OS app-data dir.

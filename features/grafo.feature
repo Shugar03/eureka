@@ -89,3 +89,11 @@ Característica: Grafo de conocimiento
     Dado que terminé la sesión "qué es una derivada"
     Cuando elijo "La derivada es la pendiente de la recta tangente" en el grafo y toco "Ver dónde apareció"
     Entonces se abre la sesión con el mensaje marcado y el aviso "Marcado el mensaje donde apareció"
+
+  # AC-176
+  Escenario: El grafo como neuronas
+    Dado que tengo ideas en el grafo
+    Cuando abro el grafo
+    Entonces veo cada idea como un punto que brilla, más grande cuanto más se conecta
+    Cuando elijo una idea
+    Entonces se encienden sus conexiones, se apaga el resto y veo su detalle

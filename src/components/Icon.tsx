@@ -73,6 +73,7 @@ const PATHS = {
   spark: <path d="M4 18l5-6 4 3 7-9M15 6h5v5" />,
   cap: <path d="M3 9l9-4 9 4-9 4-9-4zM7 11.3V15c0 1.5 2.2 3 5 3s5-1.5 5-3v-3.7M21 9v5" />,
   arrow: <path d="M5 12h14M13 6l6 6-6 6" />,
+  menu: <path d="M4 7h16M4 12h16M4 17h16" />,
   moon: <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" />,
   sun: (
     <>

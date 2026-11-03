@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { api, errorText } from "../api";
 import type { SetupDone, SettingsView } from "../types";
+import { onPhone } from "../lib/platform";
 
 const LABEL: Record<string, string> = { openrouter: "OpenRouter", openai: "OpenAI", anthropic: "Anthropic", gemini: "Google Gemini", deepseek: "DeepSeek", "opencode-go": "OpenCode Go" };
 
@@ -80,7 +81,7 @@ export function QuickSetup({ onDone }: { onDone?: (d: SetupDone) => void }) {
             </select>
           </label>
         )}
-        {!done.speech_ready && <p className="muted small">Para grabar clases o dictar, elegí la Voz «En esta PC» en Ajustes → Avanzado: es gratis y no usa internet.</p>}
+        {!done.speech_ready && <p className="muted small">Para grabar clases o dictar, {onPhone() ? "elegí la Voz en Ajustes → Avanzado (por ejemplo whisper-1 de OpenAI)." : "elegí la Voz «En esta PC» en Ajustes → Avanzado: es gratis y no usa internet."}</p>}
         {error && (
           <p className="error-text" role="alert">
             {error}

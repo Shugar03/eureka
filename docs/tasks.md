@@ -110,6 +110,7 @@
 | T98 | El chat arma una preparación de examen desde lenguaje natural (`propose_exam`), se puede escribir libre con una pregunta pendiente, y el asistente maneja la app (`ui_command`, `app_status`, «La app ahora»); tabla de paridad | AC-120…124 | ✅ |
 | T99 | Banco de citas: 366 (una por día del año) con autor y obra verificables, otra/favorita/ocultar, frases propias, bienvenida al abrir | AC-130…133 | ✅ |
 | T108 | Diez lenguajes en la consola: C, C++, Java, C#, Go y SQL (SQLite incluido) con ejercicios, rutas, revisión, proyectos y plantillas; compilar y ejecutar con límites separados | AC-171…172 | ✅ |
+| T112 | El grafo como neuronas: puntos que brillan y se acomodan por fuerzas, vista por defecto; Ajustes muestra todos los modelos del servicio (no solo el escrito); el inicio con separación pareja entre paneles | AC-176 | ✅ |
 | T111 | Invertir los colores de una demo (recordado en el equipo) | AC-175 | ✅ |
 | T110 | Mis problemas desde el chat: el asistente propone practicar los ejercicios que la persona pegó, mandó en una foto o adjuntó como PDF, con la misma tarjeta para revisarlos | AC-174 | ✅ |
 | T109 | Practicar mis propios problemas: pegar la guía o traerla de un PDF o una foto, revisar los ejercicios leídos, y practicarlos con la respuesta de la guía o una de Eureka que se avisa y se puede pedir revisar | AC-173 | ✅ |

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, backupApi, codeApi, errorText, learnerApi } from "../api";
+import { keepFile } from "../lib/saveFile";
+import { onPhone, thisDevice } from "../lib/platform";
 import { LOCAL_SPEECH, type Accessibility, type LearnerProfile, type ModelRef, type PromptView, type ProviderInput, type RememberedSession, type Roles, type Runtime, type SettingsView } from "../types";
 import { langLabel } from "../lib/code";
 import { speechModelWarning } from "../lib/speechModel";
@@ -12,6 +14,7 @@ import { ReadAloud } from "./a11y/ReadAloud";
 import { WorkspaceTab } from "./workspace/WorkspaceTab";
 import { QuickSetup } from "./QuickSetup";
 import { AboutEureka } from "./UpdateNotice";
+import { ModelPicker } from "./settings/ModelPicker";
 import { useAccessibility } from "./a11y/AccessibilityContext";
 
 interface ProviderDraft extends ProviderInput {
@@ -153,7 +156,7 @@ function AccessibilityTab() {
   );
   return (
     <div className="stack">
-      <p className="muted small">Elegí lo que te sirva para estudiar más cómodo. No hace falta ningún diagnóstico, y todo se guarda solo en esta computadora. Los cambios se aplican al instante.</p>
+      <p className="muted small">Elegí lo que te sirva para estudiar más cómodo. No hace falta ningún diagnóstico, y todo se guarda solo en {thisDevice()}. Los cambios se aplican al instante.</p>
 
       <section className="card" aria-label="Leer y escuchar">
         <h2>Leer y escuchar</h2>
@@ -327,12 +330,7 @@ function ConnectionTab() {
 
         <label className="field">
           <span>Modelo</span>
-          <input aria-label="Modelo" list="conn-models" value={model} onChange={(e) => setModel(e.target.value)} placeholder={hasKey ? "Elegí uno de la lista" : "Primero guardá la clave para ver la lista"} />
-          <datalist id="conn-models">
-            {models.map((m) => (
-              <option key={m} value={m} />
-            ))}
-          </datalist>
+          <ModelPicker label="Modelo" value={model} models={models} onChange={setModel} placeholder={hasKey ? "Elegí uno de la lista" : "Primero guardá la clave para ver la lista"} />
           <small className="muted">Es el «cerebro» que usa Eureka. Si no sabés cuál, probá uno económico; podés cambiarlo cuando quieras.</small>
         </label>
 
@@ -451,7 +449,7 @@ function ModelsTab() {
               onChange={(e) => setRole(r.id, e.target.value === LOCAL_SPEECH ? { provider_id: LOCAL_SPEECH, model: "whisper-base" } : { provider_id: e.target.value })}
             >
               <option value="">— proveedor —</option>
-              {r.id === "speech" && <option value={LOCAL_SPEECH}>En esta PC</option>}
+              {r.id === "speech" && !onPhone() && <option value={LOCAL_SPEECH}>En esta PC</option>}
               {providers.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.label}
@@ -462,18 +460,7 @@ function ModelsTab() {
               <LocalSpeech model={roles.speech.model} onModel={(model) => setRole("speech", { model })} onChanged={refreshSpeech} />
             ) : (
             <>
-            <input
-              aria-label={`Modelo de ${r.label}`}
-              list={`models-${r.id}`}
-              value={roles[r.id].model}
-              onChange={(e) => setRole(r.id, { model: e.target.value })}
-              placeholder="ej: anthropic/claude-sonnet-4.5"
-            />
-            <datalist id={`models-${r.id}`}>
-              {(models[roles[r.id].provider_id] ?? []).map((m) => (
-                <option key={m} value={m} />
-              ))}
-            </datalist>
+            <ModelPicker label={`Modelo de ${r.label}`} value={roles[r.id].model} models={models[roles[r.id].provider_id] ?? []} onChange={(model) => setRole(r.id, { model })} placeholder="ej: anthropic/claude-sonnet-4.5" />
             <button className="btn small" disabled={!roles[r.id].provider_id} onClick={() => fetchModels(roles[r.id].provider_id)}>
               Listar modelos
             </button>
@@ -670,7 +657,8 @@ function BackupSection() {
   const create = async () => {
     setError(null);
     try {
-      setStatus(`Respaldo guardado en ${await backupApi.create()}`);
+      const where = await keepFile(await backupApi.create());
+      if (where) setStatus(`Respaldo guardado en ${where}`);
     } catch (e) {
       setError(errorText(e));
     }
@@ -693,7 +681,7 @@ function BackupSection() {
   return (
     <section className="card" aria-label="Respaldo">
       <h2>Respaldo</h2>
-      <p className="muted small">Un .zip con tus sesiones, grafo, exámenes, mazos, prompts y tiempo de estudio, en tu carpeta de Descargas. Las API keys no se incluyen.</p>
+      <p className="muted small">Un .zip con tus sesiones, grafo, exámenes, mazos, prompts y tiempo de estudio, {onPhone() ? "donde elijas guardarlo" : "en tu carpeta de Descargas"}. Las API keys no se incluyen.</p>
       <div className="row">
         <button className="btn" onClick={create}>
           Crear respaldo
@@ -747,7 +735,7 @@ function RemindersSection() {
   return (
     <section className="card" aria-label="Recordatorios">
       <h2>Recordatorios</h2>
-      <p className="muted small">Avisos de Windows (y dentro de la app) para tus clases, fechas de examen, tarjetas del día, y para que te pares y tomes agua mientras estudiás. El sonido se apaga en los ajustes del pomodoro.</p>
+      <p className="muted small">Avisos del sistema (y dentro de la app) para tus clases, fechas de examen, tarjetas del día, y para que te pares y tomes agua mientras estudiás. El sonido se apaga en los ajustes del pomodoro.</p>
       <label className="check">
         <input type="checkbox" checked={s.enabled} onChange={(e) => update({ enabled: e.target.checked })} /> Recordatorios activados
       </label>
@@ -803,7 +791,7 @@ export function SessionMemories() {
     <section className="card" aria-label="Lo que recuerda de tus sesiones">
       <h2>Lo que recuerda de tus sesiones</h2>
       <p className="muted small">
-        Cuando una conversación queda quieta unos minutos, Eureka anota en segundo plano qué vieron, qué quedó pendiente y qué te costó, y pasa las ideas a tu grafo. Así el profesor puede retomar otro día. Usa el modelo de la tarea Extractor y queda solo en esta computadora.
+        Cuando una conversación queda quieta unos minutos, Eureka anota en segundo plano qué vieron, qué quedó pendiente y qué te costó, y pasa las ideas a tu grafo. Así el profesor puede retomar otro día. Usa el modelo de la tarea Extractor y queda solo en {thisDevice()}.
       </p>
       {list.length === 0 ? (
         <p className="muted small">Todavía nada: aparece cuando una conversación lleva un rato quieta.</p>
@@ -857,7 +845,7 @@ export function LearnerSection() {
           </button>
         )}
       </div>
-      <p className="muted small">Cuando una sesión termina o queda quieta un rato se anotan tus confusiones y cómo aprendés mejor, para que el profesor las tenga en cuenta la próxima vez. Queda solo en esta computadora.</p>
+      <p className="muted small">Cuando una sesión termina o queda quieta un rato se anotan tus confusiones y cómo aprendés mejor, para que el profesor las tenga en cuenta la próxima vez. Queda solo en {thisDevice()}.</p>
       {empty ? (
         <p className="muted small">Todavía nada: se completa cuando terminás sesiones o practicás.</p>
       ) : (

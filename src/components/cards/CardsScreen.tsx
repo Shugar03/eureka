@@ -227,6 +227,7 @@ function DecksHome({ onOpen, incoming, onIncomingDone }: { onOpen: (id: string) 
                 type="file"
                 accept={DECK_FILES}
                 aria-label="Importar un mazo de Anki o compartido"
+                aria-describedby="deck-import-hint"
                 disabled={reading}
                 onChange={(e) => {
                   readImport(e.target.files?.[0]);
@@ -234,6 +235,9 @@ function DecksHome({ onOpen, incoming, onIncomingDone }: { onOpen: (id: string) 
                 }}
               />
             </label>
+            <span id="deck-import-hint" className="muted small touch-hint">
+              Un mazo de Anki (.apkg o texto plano) o uno que te compartieron (.eureka).
+            </span>
             <button className="btn primary" disabled={busy || !ready} onClick={create}>
               {busy ? "Generando…" : kind === "manual" ? "Crear mazo" : "Generar mazo"}
             </button>

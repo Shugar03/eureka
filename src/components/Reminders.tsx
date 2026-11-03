@@ -39,7 +39,7 @@ function loadSent(today: string): Set<string> {
   }
 }
 
-/** A Windows notification when running as the app; silently skipped otherwise. */
+/** A system notification when running as the app; silently skipped otherwise. */
 async function notify(r: Reminder) {
   try {
     const n = await import("@tauri-apps/plugin-notification");

@@ -94,7 +94,7 @@ function ListeningPanel({ language, level, code }: { language: string; level: st
     <>
       <section className="card" aria-label="Nuevo listening">
         <h2>Listening</h2>
-        <p className="muted small">Un audio de tu nivel con preguntas, como en IELTS, TOEFL o Cambridge. Se lee con las voces de Windows; el texto aparece recién al corregir.</p>
+        <p className="muted small">Un audio de tu nivel con preguntas, como en IELTS, TOEFL o Cambridge. Se lee con las voces del sistema; el texto aparece recién al corregir.</p>
         <div className="row">
           <input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="Tema (opcional): un viaje, una entrevista de trabajo…" aria-label="Tema del listening" />
           <button className="btn" disabled={busy} onClick={generate}>

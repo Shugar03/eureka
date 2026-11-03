@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { companionApi, errorText } from "../../api";
 import type { CompanionView, EntryDraft } from "../../types";
 import { STARTERS } from "../../lib/companion";
@@ -11,6 +11,7 @@ import { HelpLines } from "./HelpLines";
 export function ChatTab({ view, onView }: { view: CompanionView; onView: (v: CompanionView) => void }) {
   const turns = view.conversation.turns;
   const userTurns = turns.filter((t) => t.role === "user").length;
+  const proposeHint = useId();
   const [draft, setDraft] = useState("");
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -149,9 +150,14 @@ export function ChatTab({ view, onView }: { view: CompanionView; onView: (v: Com
             </button>
           </div>
           <div className="row">
-            <button className="btn small" onClick={propose} disabled={userTurns < 2 || busy !== null || !!pending} title={userTurns < 2 ? "Charlemos un poco más primero" : undefined}>
+            <button className="btn small" onClick={propose} disabled={userTurns < 2 || busy !== null || !!pending} title={userTurns < 2 ? "Charlemos un poco más primero" : undefined} aria-describedby={userTurns < 2 ? proposeHint : undefined}>
               {busy === "proposing" ? "Preparando la entrada…" : "Guardar esta charla en mi diario"}
             </button>
+            {userTurns < 2 && (
+              <span id={proposeHint} className="muted small touch-hint">
+                Charlemos un poco más primero
+              </span>
+            )}
             <button className={`btn small ${armed ? "danger" : "ghost"}`} onClick={fresh} onBlur={() => setArmed(false)} disabled={turns.length === 0 || !!pending}>
               {armed ? "¿Seguro? Empezar de nuevo" : "Nueva charla"}
             </button>

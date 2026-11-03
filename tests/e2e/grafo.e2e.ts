@@ -140,7 +140,7 @@ test("AC-170 por profundidad: las ideas base abajo y el razonamiento sube", asyn
   await expect(screen.getByTestId("graph-banner")).toContainText("Guardado", { timeout: 10_000 });
   await openGraph(screen);
   const view = screen.getByRole("radiogroup", "Vista del grafo");
-  await expect(view.getByRole("radio", "Por profundidad")).toHaveAttribute("aria-checked", "true");
+  await view.getByRole("radio", "Por profundidad").click();
   await expect(screen.getByTestId("graph-legend")).toContainText("Abajo las ideas base");
   await expect(node(screen, DERIVADA)).toContainText("nivel 2");
   await expect(node(screen, PENDIENTE)).toContainText("base");
@@ -150,6 +150,24 @@ test("AC-170 por profundidad: las ideas base abajo y el razonamiento sube", asyn
   await view.getByRole("radio", "Libre").click();
   await expect(screen.getByTestId("graph-node-depth")).toHaveCount(0);
   await expect(node(screen, DERIVADA)).toBeVisible();
+});
+
+test("AC-176 neuronas: la vista por defecto, cada idea un punto que se elige y enciende sus conexiones", async ({ app, screen }) => {
+  await finishSession(app, screen);
+  await expect(screen.getByTestId("graph-banner")).toContainText("Guardado", { timeout: 10_000 });
+  await openGraph(screen);
+  const view = screen.getByRole("radiogroup", "Vista del grafo");
+  await expect(view.getByRole("radio", "Neuronas")).toHaveAttribute("aria-checked", "true");
+  await expect(screen.getByRole("group", "Grafo de ideas como neuronas")).toBeVisible();
+  await expect(screen.getByTestId("graph-legend")).toContainText("Cada punto es una idea");
+  await node(screen, DERIVADA).click();
+  await expect(node(screen, DERIVADA)).toHaveAttribute("aria-pressed", "true");
+  await expect(screen.getByRole("complementary", "Detalle de la idea")).toContainText(DERIVADA);
+  // The choice is remembered: back to depth, the next visit opens there.
+  await view.getByRole("radio", "Por profundidad").click();
+  await screen.getByRole("navigation", "Navegación").getByRole("button", "Práctica").click();
+  await openGraph(screen);
+  await expect(screen.getByRole("radiogroup", "Vista del grafo").getByRole("radio", "Por profundidad")).toHaveAttribute("aria-checked", "true");
 });
 
 test("AC-170 ver dónde apareció una idea en su sesión", async ({ app, screen }) => {
