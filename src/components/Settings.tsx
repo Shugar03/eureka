@@ -331,7 +331,7 @@ function ConnectionTab() {
         <label className="field">
           <span>Clave de acceso</span>
           <input type="password" aria-label="Clave de acceso" value={key} onChange={(e) => setKey(e.target.value)} placeholder={hasKey ? "•••••• guardada (pegá otra para cambiarla)" : "Pegala acá"} />
-          <small className="muted">{KEY_HELP[provider] ?? "Te la da el servicio en tu cuenta."} Queda solo en {yourDevice()}.</small>
+          <small className="muted">{chatgpt && provider === "openai" ? "Ya tenés una cuenta de ChatGPT conectada: la clave es opcional. Si la agregás, Eureka la usa en paralelo." : (KEY_HELP[provider] ?? "Te la da el servicio en tu cuenta.")} Queda solo en {yourDevice()}.</small>
         </label>
 
         <label className="field">

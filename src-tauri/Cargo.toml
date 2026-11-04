@@ -44,6 +44,8 @@ tauri-plugin-fs = "2"
 tauri-plugin-single-instance = "2"
 tauri-plugin-updater = "2"
 reqwest = { version = "0.13.5", default-features = false, features = ["rustls"] }
+# OS keystore for subscription tokens (Windows Credential Manager, macOS Keychain, Secret Service).
+keyring = "4"
 # Local speech to text (Whisper on the CPU). Not on Android: see local_speech.rs.
 candle-core = "0.11.0"
 candle-nn = "0.11.0"
