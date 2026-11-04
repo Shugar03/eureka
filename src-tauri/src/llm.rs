@@ -75,6 +75,19 @@ pub struct Endpoint {
     /// Stable per conversation: OpenCode Go rejects requests without it
     /// (`x-opencode-session`) and uses it for routing and prompt caching.
     pub session: String,
+    /// `Some` for a subscription account (ChatGPT Plus/Pro): that provider does
+    /// not expose `/chat/completions` to subscriber tokens, it speaks the
+    /// Responses API on its own backend. `None` is every API-key provider.
+    pub subscription: Option<Subscription>,
+}
+
+/// What a subscription endpoint needs on every request, beyond the token.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Subscription {
+    /// ChatGPT: `ChatGPT-Account-Id`.
+    pub account_id: String,
+    /// The client name the token was issued to (`originator`).
+    pub originator: String,
 }
 
 /// The conversation id for calls outside a session (practice, exams…): one per run.
@@ -121,13 +134,32 @@ fn android_tls() -> rustls::ClientConfig {
 
 /// Streams one completion. `on_text` receives text deltas as they arrive;
 /// `cancelled` is polled between chunks.
+///
+/// Two wire shapes reach this function: the OpenAI-compatible
+/// `/chat/completions` every API-key provider serves, and the Responses API a
+/// subscription account gets instead (see [`Endpoint::subscription`]).
 pub async fn stream_chat(
     ep: &Endpoint,
     system: &str,
     messages: &[Msg],
     tools: &Value,
     tool_choice: Option<&Value>,
-    mut on_text: impl FnMut(&str),
+    on_text: impl FnMut(&str),
+    cancelled: impl Fn() -> bool,
+) -> Result<Completion> {
+    match &ep.subscription {
+        Some(sub) => stream_responses(ep, sub, system, messages, tools, tool_choice, on_text, cancelled).await,
+        None => stream_completions(ep, system, messages, tools, tool_choice, on_text, cancelled).await,
+    }
+}
+
+async fn stream_completions(
+    ep: &Endpoint,
+    system: &str,
+    messages: &[Msg],
+    tools: &Value,
+    tool_choice: Option<&Value>,
+    on_text: impl FnMut(&str),
     cancelled: impl Fn() -> bool,
 ) -> Result<Completion> {
     let mut wire = vec![json!({ "role": "system", "content": system })];
@@ -159,13 +191,62 @@ pub async fn stream_chat(
         .await
         .context("no se pudo conectar con el proveedor")?;
 
-    if !resp.status().is_success() {
-        let status = resp.status();
-        let text = resp.text().await.unwrap_or_default();
-        bail!("el proveedor respondió {status}: {text}");
-    }
-
+    let resp = check_status(resp).await?;
     let mut parser = SseParser::default();
+    pump(resp, &mut parser, on_text, cancelled).await?;
+    Ok(parser.finish())
+}
+
+/// A subscription account: the provider's own backend, Responses API shape.
+async fn stream_responses(
+    ep: &Endpoint,
+    sub: &Subscription,
+    system: &str,
+    messages: &[Msg],
+    tools: &Value,
+    tool_choice: Option<&Value>,
+    on_text: impl FnMut(&str),
+    cancelled: impl Fn() -> bool,
+) -> Result<Completion> {
+    let body = responses_body(ep, system, messages, tools, tool_choice);
+    let resp = client()?
+        .post(url(&ep.base_url, "responses"))
+        .bearer_auth(&ep.api_key)
+        .header("ChatGPT-Account-Id", &sub.account_id)
+        .header("originator", &sub.originator)
+        .header("session-id", &ep.session)
+        .json(&body)
+        .send()
+        .await
+        .context("no se pudo conectar con el proveedor")?;
+
+    let resp = check_status(resp).await?;
+    let mut parser = ResponsesParser::default();
+    pump(resp, &mut parser, on_text, cancelled).await?;
+    Ok(parser.finish())
+}
+
+async fn check_status(resp: reqwest::Response) -> Result<reqwest::Response> {
+    if resp.status().is_success() {
+        return Ok(resp);
+    }
+    let status = resp.status();
+    let text = resp.text().await.unwrap_or_default();
+    bail!("el proveedor respondió {status}: {text}");
+}
+
+/// The read loop both parsers share: feed bytes, emit deltas, stop on demand.
+trait StreamEvents {
+    fn push(&mut self, bytes: &[u8]) -> Result<Vec<String>>;
+    fn is_done(&self) -> bool;
+}
+
+async fn pump(
+    resp: reqwest::Response,
+    parser: &mut impl StreamEvents,
+    mut on_text: impl FnMut(&str),
+    cancelled: impl Fn() -> bool,
+) -> Result<()> {
     let mut stream = resp.bytes_stream();
     while let Some(chunk) = stream.next().await {
         if cancelled() {
@@ -174,11 +255,79 @@ pub async fn stream_chat(
         for t in parser.push(&chunk?)? {
             on_text(&t);
         }
-        if parser.done {
+        if parser.is_done() {
             break;
         }
     }
-    Ok(parser.finish())
+    Ok(())
+}
+
+/// Translates the chat-completions shapes Eureka already builds (`Msg`, tool
+/// definitions) into the Responses API the subscription backend expects.
+pub fn responses_body(ep: &Endpoint, system: &str, messages: &[Msg], tools: &Value, tool_choice: Option<&Value>) -> Value {
+    let mut input = Vec::new();
+    for m in messages {
+        match m.role.as_str() {
+            // A tool answer is its own item, not a message with a role.
+            "tool" => input.push(json!({
+                "type": "function_call_output",
+                "call_id": m.tool_call_id.clone().unwrap_or_default(),
+                "output": m.content.clone().unwrap_or_default(),
+            })),
+            "assistant" => {
+                if let Some(t) = m.content.as_deref().filter(|t| !t.is_empty()) {
+                    input.push(json!({ "type": "message", "role": "assistant", "content": [{ "type": "output_text", "text": t }] }));
+                }
+                for c in m.tool_calls.iter().flatten() {
+                    input.push(json!({
+                        "type": "function_call",
+                        "call_id": c.id,
+                        "name": c.function.name,
+                        "arguments": c.function.arguments,
+                    }));
+                }
+            }
+            role => input.push(json!({
+                "type": "message",
+                "role": role,
+                "content": [{ "type": "input_text", "text": m.content.clone().unwrap_or_default() }],
+            })),
+        }
+    }
+
+    let mut body = json!({
+        "model": ep.model,
+        "instructions": system,
+        "input": input,
+        "store": false,
+        "stream": true,
+    });
+    // Same rule as chat-completions: no tools means no "tools" key at all.
+    if let Some(list) = tools.as_array().filter(|a| !a.is_empty()) {
+        body["tools"] = json!(list.iter().map(responses_tool).collect::<Vec<_>>());
+        if let Some(choice) = tool_choice {
+            body["tool_choice"] = responses_tool_choice(choice);
+        }
+    }
+    body
+}
+
+/// `{type:"function", function:{…}}` → `{type:"function", name, description, parameters}`.
+fn responses_tool(tool: &Value) -> Value {
+    let flat = tool.get("function").unwrap_or(tool);
+    json!({
+        "type": "function",
+        "name": flat.get("name").cloned().unwrap_or(Value::Null),
+        "description": flat.get("description").cloned().unwrap_or(Value::Null),
+        "parameters": flat.get("parameters").cloned().unwrap_or_else(|| json!({ "type": "object", "properties": {} })),
+    })
+}
+
+fn responses_tool_choice(choice: &Value) -> Value {
+    match choice.get("function").and_then(|f| f.get("name")).and_then(Value::as_str) {
+        Some(name) => json!({ "type": "function", "name": name }),
+        None => choice.clone(),
+    }
 }
 
 /// Incremental parser for an OpenAI-style SSE stream. Pure (no IO) so it can be
@@ -261,16 +410,172 @@ impl SseParser {
             let rest = String::from_utf8_lossy(&std::mem::take(&mut self.buf)).to_string();
             let _ = self.line(rest.trim());
         }
-        for (i, c) in self.calls.iter_mut().enumerate() {
-            if c.id.is_empty() {
-                c.id = format!("call_{}_{}", i, uuid::Uuid::new_v4().simple());
-            }
-            if c.function.arguments.trim().is_empty() {
-                c.function.arguments = "{}".into();
+        normalize_calls(&mut self.calls);
+        Completion { text: self.text, tool_calls: self.calls }
+    }
+}
+
+impl StreamEvents for SseParser {
+    fn push(&mut self, bytes: &[u8]) -> Result<Vec<String>> {
+        SseParser::push(self, bytes)
+    }
+    fn is_done(&self) -> bool {
+        self.done
+    }
+}
+
+/// Tool calls that arrive without an id, or with empty arguments, still have to
+/// be callable: the agent matches the answer back to the call by id.
+fn normalize_calls(calls: &mut Vec<ToolCall>) {
+    for (i, c) in calls.iter_mut().enumerate() {
+        if c.id.is_empty() {
+            c.id = format!("call_{}_{}", i, uuid::Uuid::new_v4().simple());
+        }
+        if c.function.arguments.trim().is_empty() {
+            c.function.arguments = "{}".into();
+        }
+    }
+    calls.retain(|c| !c.function.name.is_empty());
+}
+
+/// Incremental parser for the Responses API stream a subscription account gets.
+///
+/// Text arrives as `response.output_text.delta`. A tool call is announced by
+/// `response.output_item.added`, which carries `call_id` and `name`; its
+/// arguments then come either fragmented (`…function_call_arguments.delta`) or
+/// complete (`…function_call_arguments.done`). There is no `[DONE]` sentinel:
+/// the stream ends at `response.completed`.
+#[derive(Default)]
+pub struct ResponsesParser {
+    buf: Vec<u8>,
+    text: String,
+    calls: Vec<PendingCall>,
+    pub done: bool,
+}
+
+struct PendingCall {
+    item_id: String,
+    call: ToolCall,
+}
+
+impl ResponsesParser {
+    pub fn push(&mut self, bytes: &[u8]) -> Result<Vec<String>> {
+        self.buf.extend_from_slice(bytes);
+        let mut deltas = Vec::new();
+        while !self.done {
+            let Some(pos) = self.buf.iter().position(|&b| b == b'\n') else { break };
+            let line: Vec<u8> = self.buf.drain(..=pos).collect();
+            let line = String::from_utf8_lossy(&line);
+            if let Some(t) = self.line(line.trim())? {
+                deltas.push(t);
             }
         }
-        self.calls.retain(|c| !c.function.name.is_empty());
-        Completion { text: self.text, tool_calls: self.calls }
+        Ok(deltas)
+    }
+
+    fn line(&mut self, line: &str) -> Result<Option<String>> {
+        let Some(data) = line.strip_prefix("data:") else { return Ok(None) };
+        let data = data.trim();
+        if data == "[DONE]" {
+            self.done = true;
+            return Ok(None);
+        }
+        let Ok(v) = serde_json::from_str::<Value>(data) else { return Ok(None) };
+        if let Some(err) = v.get("error") {
+            return Err(anyhow!("error del proveedor: {err}"));
+        }
+        match v.get("type").and_then(Value::as_str).unwrap_or_default() {
+            "response.output_text.delta" => match v.get("delta").and_then(Value::as_str).filter(|t| !t.is_empty()) {
+                Some(t) => {
+                    self.text.push_str(t);
+                    Ok(Some(t.to_string()))
+                }
+                None => Ok(None),
+            },
+            "response.output_item.added" => {
+                let Some(item) = v.get("item").filter(|i| i.get("type").and_then(Value::as_str) == Some("function_call")) else { return Ok(None) };
+                let item_id = item.get("id").and_then(Value::as_str).unwrap_or_default().to_string();
+                if self.calls.iter().any(|c| c.item_id == item_id) {
+                    return Ok(None);
+                }
+                self.calls.push(PendingCall {
+                    item_id,
+                    call: ToolCall {
+                        id: item.get("call_id").and_then(Value::as_str).unwrap_or_default().to_string(),
+                        kind: function_type(),
+                        function: FunctionCall { name: item.get("name").and_then(Value::as_str).unwrap_or_default().to_string(), arguments: String::new() },
+                    },
+                });
+                Ok(None)
+            }
+            "response.function_call_arguments.delta" => {
+                let item_id = v.get("item_id").and_then(Value::as_str).unwrap_or_default();
+                let Some(slot) = self.calls.iter_mut().find(|c| c.item_id == item_id) else { return Ok(None) };
+                if let Some(d) = v.get("delta").and_then(Value::as_str) {
+                    slot.call.function.arguments.push_str(d);
+                }
+                Ok(None)
+            }
+            "response.function_call_arguments.done" => {
+                self.fill_call(&v, false);
+                Ok(None)
+            }
+            "response.output_item.done" => {
+                self.fill_call(&v, true);
+                Ok(None)
+            }
+            "response.completed" => {
+                self.done = true;
+                Ok(None)
+            }
+            "response.failed" => {
+                let detail = v.pointer("/response/error").map(Value::to_string).unwrap_or_default();
+                Err(anyhow!("el proveedor no pudo completar la respuesta: {detail}"))
+            }
+            _ => Ok(None),
+        }
+    }
+
+    /// Copies whatever the final event knows: `arguments` (and the name, which
+    /// some accounts only send the first time) into the matching call.
+    fn fill_call(&mut self, v: &Value, from_item: bool) {
+        let item = if from_item { v.get("item") } else { None };
+        let item_id = match item {
+            Some(i) if i.get("type").and_then(Value::as_str) == Some("function_call") => i.get("id").and_then(Value::as_str).unwrap_or_default(),
+            Some(_) => return,
+            None => v.get("item_id").and_then(Value::as_str).unwrap_or_default(),
+        };
+        let Some(slot) = self.calls.iter_mut().find(|c| c.item_id == item_id) else { return };
+        let source = item.unwrap_or(v);
+        if let Some(args) = source.get("arguments").and_then(Value::as_str).filter(|a| !a.trim().is_empty()) {
+            slot.call.function.arguments = args.to_string();
+        }
+        if let Some(name) = source.get("name").and_then(Value::as_str).filter(|n| !n.is_empty()) {
+            slot.call.function.name = name.to_string();
+        }
+        if let Some(id) = source.get("call_id").and_then(Value::as_str).filter(|i| !i.is_empty()) {
+            slot.call.id = id.to_string();
+        }
+    }
+
+    pub fn finish(mut self) -> Completion {
+        // A last line without trailing newline.
+        if !self.buf.is_empty() && !self.done {
+            let rest = String::from_utf8_lossy(&std::mem::take(&mut self.buf)).to_string();
+            let _ = self.line(rest.trim());
+        }
+        let mut calls: Vec<ToolCall> = self.calls.into_iter().map(|p| p.call).collect();
+        normalize_calls(&mut calls);
+        Completion { text: self.text, tool_calls: calls }
+    }
+}
+
+impl StreamEvents for ResponsesParser {
+    fn push(&mut self, bytes: &[u8]) -> Result<Vec<String>> {
+        ResponsesParser::push(self, bytes)
+    }
+    fn is_done(&self) -> bool {
+        self.done
     }
 }
 
@@ -326,6 +631,51 @@ pub async fn list_model_infos(base_url: &str, api_key: &str) -> Result<Vec<Model
 /// Lists model ids from the provider's `/models` endpoint.
 pub async fn list_models(base_url: &str, api_key: &str) -> Result<Vec<String>> {
     Ok(list_model_infos(base_url, api_key).await?.into_iter().map(|m| m.id).collect())
+}
+
+/// The models a subscription account may use. Its `/models` answers
+/// `{models:[{slug, visibility, supported_in_api, …}]}` instead of the `data[]`
+/// an API-key provider returns, and it only lists a plan's models, so this is
+/// the only honest source — it changes with the subscription.
+pub async fn list_chatgpt_models(ep: &Endpoint) -> Result<Vec<ModelInfo>> {
+    let Some(sub) = &ep.subscription else { bail!("Esta cuenta no es una suscripción.") };
+    // `client_version` is required by the endpoint; any value it can parse works.
+    let resp = client()?
+        .get(format!("{}?client_version=0.0.0", url(&ep.base_url, "models")))
+        .bearer_auth(&ep.api_key)
+        .header("ChatGPT-Account-Id", &sub.account_id)
+        .header("originator", &sub.originator)
+        .header("session-id", &ep.session)
+        .send()
+        .await
+        .context("no se pudo conectar con el proveedor")?;
+    let resp = check_status(resp).await?;
+    Ok(parse_subscription_models(&resp.json().await?))
+}
+
+/// Keeps the models the account can call: `visibility=="list"` and
+/// `supported_in_api`, when the provider says.
+pub fn parse_subscription_models(v: &Value) -> Vec<ModelInfo> {
+    let mut out: Vec<ModelInfo> = v
+        .get("models")
+        .and_then(Value::as_array)
+        .map(|list| {
+            list.iter()
+                .filter_map(|m| {
+                    let id = m.get("slug").and_then(Value::as_str)?;
+                    if m.get("visibility").and_then(Value::as_str).is_some_and(|v| v != "list") {
+                        return None;
+                    }
+                    if m.get("supported_in_api").and_then(Value::as_bool) == Some(false) {
+                        return None;
+                    }
+                    Some(ModelInfo { id: id.to_string(), context: m.get("context_window").and_then(Value::as_u64), tools: true })
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    out.sort_by(|a, b| a.id.cmp(&b.id));
+    out
 }
 
 #[cfg(test)]
@@ -423,5 +773,139 @@ mod tests {
         assert_eq!(w["role"], "tool");
         assert_eq!(w["tool_call_id"], "call_1");
         assert!(w.get("meta").is_none());
+    }
+
+    fn subscription_endpoint() -> Endpoint {
+        Endpoint {
+            base_url: crate::oauth::API_BASE.into(),
+            api_key: "token".into(),
+            model: "gpt-5.6-terra".into(),
+            context_tokens: 100_000,
+            session: "eureka-1".into(),
+            subscription: Some(Subscription { account_id: "acc".into(), originator: "eureka".into() }),
+        }
+    }
+
+    fn responses_sse(events: &[Value]) -> Vec<u8> {
+        events.iter().map(|e| format!("event: response.x\ndata: {e}\n\n")).collect::<String>().into_bytes()
+    }
+
+    fn run_responses(bytes: &[u8], size: usize) -> (String, Completion) {
+        let mut p = ResponsesParser::default();
+        let mut seen = String::new();
+        for chunk in bytes.chunks(size) {
+            for d in p.push(chunk).unwrap() {
+                seen.push_str(&d);
+            }
+        }
+        (seen, p.finish())
+    }
+
+    #[test]
+    fn responses_reassembles_text_split_inside_multibyte_chars() {
+        let bytes = responses_sse(&[
+            json!({ "type": "response.output_text.delta", "delta": "¿Qué " }),
+            json!({ "type": "response.output_text.delta", "delta": "año → ñandú?" }),
+            json!({ "type": "response.completed" }),
+        ]);
+        for size in 1..=7 {
+            let (seen, c) = run_responses(&bytes, size);
+            assert_eq!(c.text, "¿Qué año → ñandú?", "chunk size {size}");
+            assert_eq!(seen, c.text);
+            assert!(!c.text.contains('\u{FFFD}'));
+        }
+    }
+
+    #[test]
+    fn responses_collects_a_tool_call_fragmented_in_three_events() {
+        let bytes = responses_sse(&[
+            json!({ "type": "response.output_item.added", "item": { "type": "function_call", "id": "fc_1", "call_id": "call_a", "name": "record", "arguments": "" } }),
+            json!({ "type": "response.function_call_arguments.delta", "item_id": "fc_1", "delta": "{\"con" }),
+            json!({ "type": "response.function_call_arguments.delta", "item_id": "fc_1", "delta": "cept\": \"x\"}" }),
+            json!({ "type": "response.completed" }),
+        ]);
+        let (_, c) = run_responses(&bytes, 9);
+        assert_eq!(c.tool_calls.len(), 1);
+        assert_eq!(c.tool_calls[0].id, "call_a");
+        assert_eq!(c.tool_calls[0].function.name, "record");
+        assert_eq!(c.tool_calls[0].function.arguments, "{\"concept\": \"x\"}");
+    }
+
+    #[test]
+    fn responses_prefers_the_complete_arguments_of_the_final_event() {
+        let bytes = responses_sse(&[
+            json!({ "type": "response.output_item.added", "item": { "type": "function_call", "id": "fc_1", "call_id": "call_b", "name": "ask", "arguments": "" } }),
+            json!({ "type": "response.function_call_arguments.delta", "item_id": "fc_1", "delta": "{\"a\"" }),
+            json!({ "type": "response.function_call_arguments.done", "item_id": "fc_1", "arguments": "{\"a\":1}" }),
+            json!({ "type": "response.completed" }),
+        ]);
+        let (_, c) = run_responses(&bytes, 5);
+        assert_eq!(c.tool_calls[0].function.arguments, "{\"a\":1}");
+    }
+
+    #[test]
+    fn responses_ignores_the_reasoning_and_message_items() {
+        let bytes = responses_sse(&[
+            json!({ "type": "response.output_item.added", "item": { "type": "reasoning", "id": "rs_1" } }),
+            json!({ "type": "response.output_item.added", "item": { "type": "message", "id": "msg_1" } }),
+            json!({ "type": "response.output_text.delta", "delta": "ok" }),
+            json!({ "type": "response.completed" }),
+        ]);
+        let (_, c) = run_responses(&bytes, 4);
+        assert!(c.tool_calls.is_empty());
+        assert_eq!(c.text, "ok");
+    }
+
+    #[test]
+    fn responses_body_translates_messages_and_tools() {
+        let ep = subscription_endpoint();
+        let msgs = vec![
+            Msg::user("hola", None),
+            Msg {
+                role: "assistant".into(),
+                content: Some("pienso".into()),
+                tool_calls: Some(vec![ToolCall { id: "call_a".into(), kind: "function".into(), function: FunctionCall { name: "record".into(), arguments: "{\"x\":1}".into() } }]),
+                tool_call_id: None,
+                meta: None,
+            },
+            Msg::tool("call_a", "ok", None),
+        ];
+        let tools = json!([{ "type": "function", "function": { "name": "record", "description": "d", "parameters": { "type": "object" } } }]);
+        let choice = json!({ "type": "function", "function": { "name": "record" } });
+        let body = responses_body(&ep, "sos un tutor", &msgs, &tools, Some(&choice));
+
+        assert_eq!(body["model"], "gpt-5.6-terra");
+        assert_eq!(body["instructions"], "sos un tutor");
+        assert_eq!(body["store"], false, "una cuenta de suscripción no guarda el turno");
+        assert_eq!(body["input"][0]["content"][0]["type"], "input_text");
+        assert_eq!(body["input"][0]["content"][0]["text"], "hola");
+        assert_eq!(body["input"][1]["content"][0]["type"], "output_text");
+        assert_eq!(body["input"][2]["type"], "function_call");
+        assert_eq!(body["input"][2]["call_id"], "call_a");
+        assert_eq!(body["input"][3]["type"], "function_call_output");
+        assert_eq!(body["input"][3]["output"], "ok");
+        assert_eq!(body["tools"][0]["name"], "record");
+        assert!(body["tools"][0].get("function").is_none(), "las tools van planas");
+        assert_eq!(body["tool_choice"], json!({ "type": "function", "name": "record" }));
+    }
+
+    #[test]
+    fn responses_body_has_no_tools_key_when_there_are_none() {
+        let body = responses_body(&subscription_endpoint(), "", &[Msg::user("x", None)], &json!([]), Some(&json!("auto")));
+        assert!(body.get("tools").is_none());
+        assert!(body.get("tool_choice").is_none());
+    }
+
+    #[test]
+    fn subscription_models_keep_only_the_callable_ones() {
+        let v = json!({ "models": [
+            { "slug": "gpt-b", "visibility": "list", "supported_in_api": true, "context_window": 400000 },
+            { "slug": "gpt-a", "visibility": "list", "supported_in_api": true },
+            { "slug": "gpt-oculta", "visibility": "hide", "supported_in_api": true },
+            { "slug": "gpt-sin-api", "visibility": "list", "supported_in_api": false },
+        ]});
+        let models = parse_subscription_models(&v);
+        assert_eq!(models.iter().map(|m| m.id.as_str()).collect::<Vec<_>>(), vec!["gpt-a", "gpt-b"]);
+        assert_eq!(models[1].context, Some(400000));
     }
 }

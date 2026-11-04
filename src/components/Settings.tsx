@@ -230,6 +230,8 @@ function friendlyError(e: unknown): string {
   return `No pude conectarme: ${t}`;
 }
 
+import { ChatGptCard } from "./ChatGptCard";
+
 /** One service, one key, one model for everything. Anyone can pick the model; the rest lives in Avanzado. */
 function ConnectionTab() {
   const [view, setView] = useState<SettingsView | null>(null);
@@ -238,6 +240,8 @@ function ConnectionTab() {
   const [key, setKey] = useState("");
   const [models, setModels] = useState<string[]>([]);
   const [status, setStatus] = useState<{ ok: boolean; text: string } | null>(null);
+  // A connected subscription replaces the API key for its provider.
+  const [chatgpt, setChatgpt] = useState(false);
 
   useEffect(() => {
     api
@@ -255,7 +259,8 @@ function ConnectionTab() {
 
   const fetchModels = async (id: string, quiet = false) => {
     try {
-      const list = await api.listModels(id);
+      // A subscription account lists the models its plan allows, not the provider's.
+      const list = chatgpt && id === "openai" ? (await api.chatgptModels()).map((m) => m.id) : await api.listModels(id);
       setModels(list);
       if (!quiet) setStatus({ ok: true, text: `${list.length} modelos disponibles. Elegí uno de la lista o escribí el nombre.` });
     } catch (e) {
@@ -264,12 +269,12 @@ function ConnectionTab() {
     }
   };
 
-  // Offer the list as soon as there is a key to ask with.
+  // Offer the list as soon as there is a key, or a connected account, to ask with.
   useEffect(() => {
     setModels([]);
-    if (provider && hasKey) fetchModels(provider, true);
+    if (provider && (hasKey || (chatgpt && provider === "openai"))) fetchModels(provider, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [provider, hasKey]);
+  }, [provider, hasKey, chatgpt]);
 
   if (!view) return <p className="muted">{status?.text ?? "Cargando…"}</p>;
 
@@ -282,7 +287,7 @@ function ConnectionTab() {
 
   const save = async () => {
     if (!provider) return setStatus({ ok: false, text: "Elegí un servicio." });
-    if (!hasKey && !key.trim()) return setStatus({ ok: false, text: "Pegá tu clave de acceso para poder usar este servicio." });
+    if (!hasKey && !key.trim() && !(chatgpt && provider === "openai")) return setStatus({ ok: false, text: "Pegá tu clave de acceso para poder usar este servicio." });
     if (!model.trim()) return setStatus({ ok: false, text: "Elegí un modelo: es el «cerebro» que va a usar Eureka." });
     try {
       const saved = await api.saveSettings({
@@ -305,6 +310,7 @@ function ConnectionTab() {
   return (
     <div className="stack">
       <QuickSetup onDone={() => api.getSettings().then(setView).catch(() => {})} />
+      <ChatGptCard onChange={setChatgpt} />
       <p className="muted small">O a mano: elegí el servicio que ya usás, pegá tu clave y elegí el modelo. Con eso alcanza para todo.</p>
       <p className={t.model ? "" : "warn-text"} data-testid="connection-state">
         {t.model && label ? `Conectado: ${label} · ${t.model}` : "Todavía no elegiste un modelo."}

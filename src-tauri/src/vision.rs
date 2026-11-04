@@ -108,7 +108,7 @@ async fn call(ep: &Endpoint, body: &Value) -> Result<String> {
 
 pub async fn read(state: &AppState, images: &[String], purpose: &str) -> Result<String> {
     validate(images)?;
-    let ep = endpoint_for(state, Role::Teacher)?;
+    let ep = endpoint_for(state, Role::Teacher).await?;
     let system = state.prompts.get("vision_transcribe")?;
     let text = call(&ep, &body(&ep.model, &system, &instruction(purpose), images)).await?;
     Ok(crate::extract::truncate(text))

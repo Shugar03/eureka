@@ -1020,7 +1020,7 @@ pub async fn explain(state: &AppState, exam_id: &str, q: &Question, chosen: &[us
         return Err(anyhow!("Escribí tu pregunta."));
     }
     let exam = state.exams.load(exam_id)?;
-    let ep = endpoint_for(state, Role::Teacher)?;
+    let ep = endpoint_for(state, Role::Teacher).await?;
     let system = state.prompts.get("exam_explain")?;
     let mut messages = vec![Msg::user(crate::practice::with_access(state, explain_context(&exam.name, q, chosen)), None)];
     for t in history.iter().rev().take(MAX_EXPLAIN_TURNS).rev() {

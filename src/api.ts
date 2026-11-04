@@ -68,6 +68,8 @@ import type {
   SessionSummary,
   SettingsInput,
   SettingsView,
+  AccountView,
+  ModelInfo,
 } from "./types";
 
 export const api = {
@@ -76,6 +78,12 @@ export const api = {
   listModels: (providerId: string) => invoke<string[]>("list_models", { providerId }),
   /** AC-158/159: one key → provider, model, context and a test call. */
   quickSetup: (key: string, provider: string | null) => invoke<SetupOutcome>("quick_setup", { key, provider }),
+  /** Cuenta con suscripción: el sign-in abre el navegador y vuelve solo. */
+  chatgptStatus: () => invoke<AccountView | null>("chatgpt_status"),
+  chatgptConnect: () => invoke<AccountView>("chatgpt_connect"),
+  chatgptDisconnect: () => invoke<void>("chatgpt_disconnect"),
+  /** Los modelos que la cuenta puede usar: dependen del plan, no de Settings. */
+  chatgptModels: () => invoke<ModelInfo[]>("chatgpt_models"),
 
   listSessions: () => invoke<SessionSummary[]>("list_sessions"),
   createSession: (goal: string) => invoke<Session>("create_session", { goal }),

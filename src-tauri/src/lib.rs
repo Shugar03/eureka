@@ -1,3 +1,4 @@
+mod accounts;
 mod activity;
 mod anki;
 mod career;
@@ -21,6 +22,7 @@ mod learner;
 mod academic;
 mod local_speech;
 mod memory;
+mod oauth;
 mod student;
 mod companion;
 mod library;
@@ -52,6 +54,8 @@ use tools::LearnerInput;
 pub struct AppState {
     pub sessions: SessionStore,
     pub settings: SettingsStore,
+    /// Subscription accounts (ChatGPT Plus/Pro); tokens never live in auth.json.
+    pub accounts: accounts::AccountsStore,
     pub prompts: Prompts,
     pub graph: GraphStore,
     pub practice: PracticeStore,
@@ -92,6 +96,7 @@ impl AppState {
         Self {
             sessions: SessionStore::new(&data_dir),
             settings: SettingsStore::new(&data_dir),
+            accounts: accounts::AccountsStore::new(&data_dir),
             prompts: Prompts::new(&data_dir),
             graph: GraphStore::new(&data_dir),
             practice: PracticeStore::new(&data_dir),
@@ -942,7 +947,7 @@ async fn generate_code_exercise(state: State<'_, AppState>, lang: runner::Lang, 
 
 /// One plain answer from the teacher (no tools) with the given prompt.
 async fn teacher_answer(state: &AppState, prompt: &str, input: String) -> CmdResult<String> {
-    let ep = agent::endpoint_for(state, agent::Role::Teacher).map_err(err)?;
+    let ep = agent::endpoint_for(state, agent::Role::Teacher).await.map_err(err)?;
     let system = state.prompts.get(prompt).map_err(err)?;
     // Code help and speaking feedback are read by the learner (AC-75).
     let input = practice::with_access(state, input);
@@ -1204,6 +1209,64 @@ fn opened_deck(state: State<'_, AppState>) -> CmdResult<Option<share::Incoming>>
     share::from_file(&bytes).map(Some).map_err(err)
 }
 
+// ── Cuentas con suscripción (ChatGPT Plus/Pro) ──
+
+/// What Ajustes sees of a connected account: never the tokens.
+#[derive(serde::Serialize)]
+pub struct AccountView {
+    pub provider_id: String,
+    pub account_id: String,
+    pub email: Option<String>,
+    pub expires: i64,
+}
+
+impl AccountView {
+    fn of(account: accounts::Account) -> Self {
+        Self { provider_id: oauth::PROVIDER_ID.to_string(), account_id: account.account_id, email: account.email, expires: account.expires }
+    }
+}
+
+#[tauri::command]
+fn chatgpt_status(state: State<'_, AppState>) -> Option<AccountView> {
+    state.accounts.get(oauth::PROVIDER_ID).map(AccountView::of)
+}
+
+/// Opens the browser and waits for the callback. Nothing is saved until the
+/// token exchange succeeds, so a cancelled sign-in leaves no half account.
+#[tauri::command]
+async fn chatgpt_connect(state: State<'_, AppState>) -> CmdResult<AccountView> {
+    let account = oauth::connect(oauth::ORIGINATOR, |url| {
+        tauri_plugin_opener::open_url(url, None::<&str>).map_err(|e| anyhow::anyhow!("no se pudo abrir el navegador: {e}"))
+    })
+    .await
+    .map_err(err)?;
+    state.accounts.put(oauth::PROVIDER_ID, &account).map_err(err)?;
+    Ok(AccountView::of(account))
+}
+
+#[tauri::command]
+fn chatgpt_disconnect(state: State<'_, AppState>) -> CmdResult<()> {
+    state.accounts.remove(oauth::PROVIDER_ID).map_err(err)
+}
+
+/// The models the connected account may use. A ChatGPT subscription does not
+/// serve the provider's `/models`, and the list depends on the plan, so it is
+/// read from the account itself instead of from Settings.
+#[tauri::command]
+async fn chatgpt_models(state: State<'_, AppState>) -> CmdResult<Vec<llm::ModelInfo>> {
+    let account = state.accounts.get(oauth::PROVIDER_ID).ok_or_else(|| "No hay una cuenta de ChatGPT conectada.".to_string())?;
+    let account = agent::valid_account(&state, account).await.map_err(err)?;
+    let ep = llm::Endpoint {
+        base_url: oauth::API_BASE.to_string(),
+        api_key: account.access,
+        model: String::new(),
+        context_tokens: 0,
+        session: llm::app_session(),
+        subscription: Some(llm::Subscription { account_id: account.account_id, originator: account.originator }),
+    };
+    llm::list_chatgpt_models(&ep).await.map_err(err)
+}
+
 // ── Study log (AC-49) ──
 
 #[tauri::command]
@@ -1409,6 +1472,10 @@ pub fn run() {
             update_install,
             get_settings,
             save_settings,
+            chatgpt_status,
+            chatgpt_connect,
+            chatgpt_disconnect,
+            chatgpt_models,
             update_session_meta,
             student_model,
             student_today,

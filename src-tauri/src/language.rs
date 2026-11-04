@@ -106,7 +106,7 @@ pub async fn transcribe(state: &AppState, audio: Vec<u8>, mime: &str, language: 
         bail!("La grabación está vacía o es demasiado larga.");
     }
     let ext = audio_ext(mime).ok_or_else(|| anyhow!("Formato de audio no soportado ({mime})."))?;
-    let ep = endpoint_for(state, Role::Speech)?;
+    let ep = endpoint_for(state, Role::Speech).await?;
     let part = reqwest::multipart::Part::bytes(audio).file_name(format!("grabacion.{ext}")).mime_str(mime.split(';').next().unwrap_or("audio/webm"))?;
     let mut form = reqwest::multipart::Form::new().text("model", ep.model.clone()).part("file", part);
     if let Some(code) = iso_code(language) {

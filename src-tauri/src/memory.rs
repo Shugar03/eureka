@@ -176,7 +176,7 @@ pub async fn pass(state: &AppState, backoff: &Backoff) {
         let _ = std::fs::write(tidy_mark(&state.data_dir), today.to_string());
     }
     // No extractor (nor teacher) configured: nothing to do, quietly.
-    if crate::agent::endpoint_for(state, Role::Extractor).is_err() {
+    if crate::agent::endpoint_for(state, Role::Extractor).await.is_err() {
         return;
     }
     let mut due_now: Vec<Session> = state.sessions.all().into_iter().filter(|s| due(s, now) && !state.is_running(&s.id) && !backoff.blocked(&s.id)).collect();
