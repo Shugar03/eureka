@@ -17,6 +17,13 @@ Característica: Sesión de aprendizaje Medir → Planificar → Enseñar
     Entonces veo la sesión con la fase "Medir" activa
     Y el agente me hace una pregunta de "Diagnóstico"
 
+  @AC-184
+  Escenario: El diagnóstico es corto y se puede cortar
+    Dado que tengo una pregunta de diagnóstico pendiente
+    Entonces la tarjeta dice "Pregunta 1 de ~2"
+    Cuando toco "Con esto alcanza, empecemos"
+    Entonces el profesor deja de preguntar y pasa a armar el plan con lo que ya midió
+
   @AC-02
   Escenario: Una respuesta necesita texto y confianza
     Dado que tengo una pregunta de diagnóstico pendiente

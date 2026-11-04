@@ -107,4 +107,25 @@ describe("QuestionCard", () => {
     expect(screen.queryByText(/Confianza/)).not.toBeInTheDocument();
     expect(document.querySelector(".answer-thinking")).toBeNull();
   });
+
+  it("AC-184: a diagnostic question says which one it is and offers to stop", async () => {
+    const onEnough = vi.fn();
+    const { rerender } = render(<QuestionCard args={{ question: "¿?", purpose: "probe", of: 3 }} answer={null} pending busy={false} onSubmit={vi.fn()} step={{ n: 2, of: 3 }} onEnough={onEnough} />);
+    expect(screen.getByTestId("probe-step")).toHaveTextContent("Pregunta 2 de ~3");
+    await userEvent.click(screen.getByRole("button", { name: "Con esto alcanza, empecemos" }));
+    expect(onEnough).toHaveBeenCalledOnce();
+    // The estimate never trails the count: a fourth question under «~3» reads «de ~4».
+    rerender(<QuestionCard args={{ question: "¿?", purpose: "probe" }} answer={null} pending busy={false} onSubmit={vi.fn()} step={{ n: 4, of: 3 }} />);
+    expect(screen.getByTestId("probe-step")).toHaveTextContent("Pregunta 4 de ~4");
+    expect(screen.queryByRole("button", { name: "Con esto alcanza, empecemos" })).not.toBeInTheDocument();
+    // Without an estimate there is no total to promise.
+    rerender(<QuestionCard args={{ question: "¿?", purpose: "probe" }} answer={null} pending busy={false} onSubmit={vi.fn()} step={{ n: 1 }} />);
+    expect(screen.getByTestId("probe-step")).toHaveTextContent(/^Pregunta 1$/);
+  });
+
+  it("the card has a microphone for the answer and for the thinking, named apart from the chat's", () => {
+    render(<QuestionCard args={{ question: "¿Por qué?", purpose: "check" }} answer={null} pending busy={false} onSubmit={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "Responder con la voz" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Contar cómo lo pensaste con la voz" })).toBeInTheDocument();
+  });
 });

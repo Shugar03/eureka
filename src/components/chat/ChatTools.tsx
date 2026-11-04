@@ -92,10 +92,10 @@ export function AttachChips({ items, working, error, onRemove }: { items: Attach
 const NO_VOICE = `Para hablar hace falta un modelo de Voz (Ajustes → Avanzado → Voz).${systemDictation()}`;
 
 /** A microphone that is always there; without a Voz model it says where to set one up. */
-export function MicButton({ onText }: { onText: (text: string) => void }) {
+export function MicButton({ onText, label: idleLabel = "Hablar con el micrófono" }: { onText: (text: string) => void; /** What the button is called while idle (a card with two fields needs two names). */ label?: string }) {
   const d = useDictation(onText);
   const hintId = useId();
-  const label = d.state === "recording" ? "Terminar de grabar" : d.state === "transcribing" ? "Transcribiendo…" : "Hablar con el micrófono";
+  const label = d.state === "recording" ? "Terminar de grabar" : d.state === "transcribing" ? "Transcribiendo…" : idleLabel;
   return (
     <>
       <button

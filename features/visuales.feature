@@ -48,3 +48,11 @@ Característica: Diagramas, demos e investigación
     Cuando toco "Invertir colores"
     Entonces la demo se ve con los colores invertidos y sigue en el estado en que la dejé
     Y la próxima demo ya se muestra invertida
+
+  @AC-183
+  Escenario: Abrir una demo en el panel y ajustarla a la ventana
+    Dado que el profesor me mostró una demo interactiva
+    Cuando toco "Abrir en el panel"
+    Entonces la demo se abre a la derecha, en el lugar del plan, y en el chat queda un aviso
+    Y al tocar "Maximizar" se ve entera, ilustración y controles, sin barra de desplazamiento, lo más grande que entra
+    Y la demo sigue en el estado en que la dejé

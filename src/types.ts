@@ -506,6 +506,8 @@ export interface QuestionArgs {
   question: string;
   purpose: "probe" | "predict" | "check";
   options?: string[];
+  /** Diagnostic questions the teacher expects to ask in total (probe only), for «pregunta 2 de ~3». */
+  of?: number;
 }
 
 // ── Knowledge graph (Phase 2) ───────────────────────────────────────────────

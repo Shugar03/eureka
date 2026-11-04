@@ -39,6 +39,32 @@ test("AC-28 NF-14 AC-175 una demo interactiva aislada y sin red", async ({ app, 
   await expect(slope).toHaveText("2.05");
 });
 
+test("AC-183 la demo se abre en un panel, en el lugar del plan, y se ajusta a la ventana", async ({ app, screen, browser }) => {
+  await toTangent(app, screen);
+  const card = screen.getByRole("figure", "Demo: Acercá los puntos");
+  await card.getByRole("button", "Abrir en el panel").click();
+
+  const pane = screen.getByTestId("demo-pane");
+  await expect(pane).toBeVisible();
+  await expect(screen.getByRole("heading", "Plan")).toBeHidden(); // the plan makes way
+  await expect(card).toContainText("abierta en el panel");
+
+  const demo = browser.frameLocator("iframe[title='Acercá los puntos']");
+  await demo.locator("#h").fill("0.05");
+  await expect(demo.locator("#m")).toHaveText("2.05");
+
+  // Maximized, the same frame keeps its state and the whole demo fits: nothing left to scroll.
+  await pane.getByRole("button", "Maximizar").click();
+  await expect(demo.locator("#m")).toHaveText("2.05");
+  // The demo reported its size and the panel scaled it as a whole.
+  await expect(pane.getByTestId("demo-fit")).toHaveAttribute("data-fitted", "true", { timeout: 10_000 });
+
+  await pane.getByRole("button", "Restaurar (Esc)").click();
+  await pane.getByRole("button", "Cerrar panel").click();
+  await expect(screen.getByRole("heading", "Plan")).toBeVisible();
+  await expect(card.getByRole("button", "Abrir en el panel")).toBeVisible();
+});
+
 test("AC-29 investigar con fuentes", async ({ app, screen }) => {
   await toTangent(app, screen);
   await answer(screen, { option: "En la tangente", confidence: 4 });

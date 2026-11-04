@@ -684,8 +684,23 @@ textarea { resize: vertical; }
 .diagram-svg svg { max-width: 100%; height: auto; }
 .visual-fallback pre { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px; overflow-x: auto; font-size: 12px; }
 .visual-title:has(button) { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.visual.is-expanded { position: fixed; inset: 24px; z-index: 60; margin: 0; display: flex; flex-direction: column; padding: 16px; border-radius: var(--radius-lg); background: var(--glass-strong); box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.55); -webkit-backdrop-filter: blur(var(--blur)); backdrop-filter: blur(var(--blur)); }
-.visual.is-expanded .demo-frame { flex: 1; height: auto; min-height: 0; }
+.demo-opened { margin: 4px 0 0; }
+/* A field with a microphone beside it: the mic sits at the bottom of the box. */
+.field-voice { display: flex; align-items: flex-end; gap: 8px; }
+.field-voice .field { flex: 1; min-width: 0; }
+/* The docked panel: it takes the plan's column, can be dragged wider, and maximizes over the whole window. */
+.session.has-pane { grid-template-columns: minmax(0, 1fr) var(--pane-w, 520px); }
+.demo-pane { position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; border-left: 1px solid var(--border); background: var(--bg-2); }
+.pane-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--border); flex-wrap: wrap; row-gap: 6px; }
+.pane-title { font-weight: 600; font-size: 13.5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 140px; }
+.pane-stage { flex: 1; min-height: 0; overflow: auto; display: flex; padding: 10px; }
+.pane-fit { position: relative; margin: auto; flex: none; transition: opacity 0.15s ease; }
+.pane-fit .demo-frame { position: absolute; left: 0; top: 0; transform-origin: 0 0; max-width: none; border: 0; border-radius: var(--radius); }
+.demo-pane .demo-frame.is-real { height: 100%; }
+.pane-grip { position: absolute; left: -4px; top: 0; bottom: 0; width: 9px; cursor: col-resize; z-index: 2; touch-action: none; }
+.pane-grip::after { content: ""; position: absolute; left: 4px; top: 0; bottom: 0; width: 1px; background: transparent; transition: background 0.15s ease; }
+.pane-grip:hover::after, .pane-grip:focus-visible::after { background: var(--accent); width: 2px; left: 3px; }
+.demo-pane.is-max { position: fixed; inset: 16px; z-index: 60; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--glass-strong); box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.55); -webkit-backdrop-filter: blur(var(--blur)); backdrop-filter: blur(var(--blur)); overflow: hidden; }
 .demo-frame { width: 100%; height: 300px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); }
 .research { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-2); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
 .tag-research { background: color-mix(in srgb, var(--purple) 14%, transparent); color: var(--purple); }
@@ -721,6 +736,9 @@ textarea { resize: vertical; }
   .session { grid-template-columns: minmax(0, 1fr) 320px; }
 }
 @media (max-width: 900px) {
+  .session.has-pane { grid-template-columns: 1fr; }
+  .demo-pane { position: fixed; inset: 0; z-index: 60; border-left: none; padding-top: env(safe-area-inset-top); }
+  .pane-grip { display: none; }
   .shell { grid-template-columns: 1fr; }
   .sidebar { display: none; }
   .session { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto; }
@@ -1251,6 +1269,8 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent-ring); bo
 
 /* A conversation with no goal yet: one column, the transcript centred (AC-89). */
 .session.session-chat { grid-template-columns: minmax(0, 1fr); }
+.session.session-chat.has-pane { grid-template-columns: minmax(0, 1fr) var(--pane-w, 520px); }
+@media (max-width: 900px) { .session.session-chat.has-pane { grid-template-columns: 1fr; } }
 .action-card { align-self: flex-start; display: flex; flex-direction: column; gap: 8px; padding: 12px 16px; border-radius: var(--radius-lg); background-color: var(--glass); background-image: linear-gradient(135deg, var(--sheen), transparent 42%); border: 1px solid var(--glass-border); max-width: 460px; }
 .action-hint { font-size: 12.5px; color: var(--muted); }
 

@@ -1,21 +1,76 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { DEMO_CSP, DemoFrame, withCsp } from "./DemoFrame";
+import { DEMO_CSP, DemoFrame, DemoPane, withCsp } from "./DemoFrame";
 import { ResearchCard } from "./ResearchCard";
 import { Diagram } from "./Diagram";
 import { buildTranscript } from "../lib/transcript";
 import type { Session } from "../types";
 
-describe("DemoFrame expand", () => {
-  it("Ampliar grows the same frame and Escape closes it", async () => {
+describe("DemoFrame in the chat", () => {
+  it("offers to open the demo in the panel, and shows a note instead of a second copy while it is open", async () => {
     const { default: userEvent } = await import("@testing-library/user-event");
-    render(<DemoFrame title="Demo" html="<p>hola</p>" />);
-    const frame = screen.getByTitle("Demo");
-    await userEvent.click(screen.getByRole("button", { name: "Ampliar" }));
-    expect(screen.getByTestId("demo")).toHaveClass("is-expanded");
-    expect(screen.getByTitle("Demo")).toBe(frame);
+    const onOpen = vi.fn();
+    const onClose = vi.fn();
+    const { rerender } = render(<DemoFrame title="Demo" html="<p>hola</p>" onOpen={onOpen} onClose={onClose} />);
+    await userEvent.click(screen.getByRole("button", { name: "Abrir en el panel" }));
+    expect(onOpen).toHaveBeenCalledOnce();
+    rerender(<DemoFrame title="Demo" html="<p>hola</p>" opened onOpen={onOpen} onClose={onClose} />);
+    expect(screen.queryByTitle("Demo")).not.toBeInTheDocument();
+    expect(screen.getByText(/abierta en el panel/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Cerrar panel" }));
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+});
+
+describe("DemoPane", () => {
+  const setup = () => {
+    localStorage.removeItem("la.demoFit");
+    const props = { title: "Demo", html: "<p>hola</p>", width: 520, onWidth: vi.fn(), onClose: vi.fn() };
+    render(<DemoPane {...props} />);
+    return props;
+  };
+
+  it("keeps the sandbox and the CSP, and adds only the size report", () => {
+    setup();
+    const frame = document.querySelector("iframe")!;
+    expect(frame.getAttribute("sandbox")).toBe("allow-scripts");
+    const doc = frame.getAttribute("srcdoc") ?? "";
+    expect(doc.startsWith('<meta http-equiv="Content-Security-Policy"')).toBe(true);
+    expect(doc).toContain("demo-size");
+    for (const net of ["fetch", "XMLHttpRequest", "WebSocket", "sendBeacon"]) expect(doc).not.toContain(net);
+  });
+
+  it("maximizes over the window and Escape restores it", async () => {
+    const { default: userEvent } = await import("@testing-library/user-event");
+    setup();
+    const frame = document.querySelector("iframe")!;
+    await userEvent.click(screen.getByRole("button", { name: "Maximizar" }));
+    expect(screen.getByTestId("demo-pane")).toHaveClass("is-max");
+    expect(document.querySelector("iframe")!).toBe(frame);
     await userEvent.keyboard("{Escape}");
-    expect(screen.getByTestId("demo")).not.toHaveClass("is-expanded");
+    expect(screen.getByTestId("demo-pane")).not.toHaveClass("is-max");
+  });
+
+  it("remembers the Ajustar choice, shows the demo at real size without it, and closes", async () => {
+    const { default: userEvent } = await import("@testing-library/user-event");
+    const p = setup();
+    const fit = screen.getByRole("button", { name: "Ajustar" });
+    expect(fit).toHaveAttribute("aria-pressed", "true");
+    await userEvent.click(fit);
+    expect(fit).toHaveAttribute("aria-pressed", "false");
+    expect(localStorage.getItem("la.demoFit")).toBe("0");
+    expect(document.querySelector("iframe")!).toHaveClass("is-real");
+    expect(document.querySelector("iframe")!.getAttribute("srcdoc")).not.toContain("demo-size");
+    await userEvent.click(screen.getByRole("button", { name: "Cerrar panel" }));
+    expect(p.onClose).toHaveBeenCalledOnce();
+  });
+
+  it("the width handle answers the keyboard", async () => {
+    const { default: userEvent } = await import("@testing-library/user-event");
+    const p = setup();
+    screen.getByRole("separator", { name: "Cambiar el ancho del panel" }).focus();
+    await userEvent.keyboard("{ArrowLeft}");
+    expect(p.onWidth).toHaveBeenCalledWith(544);
   });
 });
 

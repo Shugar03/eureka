@@ -14,7 +14,7 @@ import { composeMessage } from "../lib/attachments";
 import { PlanTree } from "./PlanTree";
 import { PhaseBar } from "./PhaseBar";
 import { Diagram } from "./Diagram";
-import { DemoFrame } from "./DemoFrame";
+import { DemoFrame, DemoPane, usePaneWidth } from "./DemoFrame";
 import { ResearchCard } from "./ResearchCard";
 import { ActionCard } from "./ActionCard";
 import { ExamProposalCard } from "./ExamProposalCard";
@@ -50,6 +50,9 @@ const REEXTRACT_AFTER = 4;
 
 export function SessionView({ id, onBack, onOpenSettings, onChanged, onOpenGraph, onOpenCode, onOpenScreen, onOpenExam, onOpenDeck, onOpenPractice, onUiCommand, uiSnapshot }: Props) {
   const [session, setSession] = useState<Session | null>(null);
+  // The demo open in the right-hand panel (it takes the plan's place while it is open).
+  const [pane, setPane] = useState<{ key: string; title: string; html: string } | null>(null);
+  const [paneWidth, setPaneWidth] = usePaneWidth();
   const [streaming, setStreaming] = useState("");
   const [busy, setBusy] = useState(false);
   const [activity, setActivity] = useState("");
@@ -123,6 +126,19 @@ export function SessionView({ id, onBack, onOpenSettings, onChanged, onOpenGraph
   }, [id, run]);
 
   const items = useMemo(() => (session ? buildTranscript(session) : []), [session]);
+  // AC-184: which diagnostic question each probe card is, and how many the teacher expects.
+  const probeSteps = useMemo(() => {
+    const steps = new Map<string, { n: number; of?: number }>();
+    let n = 0;
+    let of: number | undefined;
+    for (const it of items) {
+      if (it.kind !== "question" || it.args.purpose !== "probe") continue;
+      n += 1;
+      of = it.args.of ?? of;
+      steps.set(it.key, { n, of });
+    }
+    return steps;
+  }, [items]);
   const focusKey = useMemo(
     () => (focusIdea ? bestMatch(items.flatMap((it) => (it.kind === "user" || it.kind === "assistant" ? [{ key: it.key, text: it.text }] : [])), focusIdea) : null),
     [focusIdea, items],
@@ -209,7 +225,7 @@ export function SessionView({ id, onBack, onOpenSettings, onChanged, onOpenGraph
   const chatOnly = session.phase === "chat";
 
   return (
-    <div className={`session ${chatOnly ? "session-chat" : ""}`}>
+    <div className={`session ${chatOnly ? "session-chat" : ""} ${pane ? "has-pane" : ""}`} style={pane ? ({ "--pane-w": `${paneWidth}px` } as React.CSSProperties) : undefined}>
       <div className="chat">
         <header className="chat-head">
           <button className="crumb" onClick={onBack} aria-label="Volver a Sesiones">
@@ -301,7 +317,7 @@ export function SessionView({ id, onBack, onOpenSettings, onChanged, onOpenGraph
               case "diagram":
                 return <Diagram key={it.key} title={it.title} code={it.code} />;
               case "demo":
-                return <DemoFrame key={it.key} title={it.title} html={it.html} />;
+                return <DemoFrame key={it.key} title={it.title} html={it.html} opened={pane?.key === it.key} onOpen={() => setPane({ key: it.key, title: it.title, html: it.html })} onClose={() => setPane(null)} />;
               case "code":
                 return (
                   <figure key={it.key} className="code-card" aria-label={`Código: ${it.title}`}>
@@ -329,6 +345,8 @@ export function SessionView({ id, onBack, onOpenSettings, onChanged, onOpenGraph
                     inChat={it.inChat}
                     busy={busy}
                     onSubmit={(input) => run(withReading(input))}
+                    step={probeSteps.get(it.key)}
+                    onEnough={it.pending && it.args.purpose === "probe" ? () => run(withReading({ text: "Con esto alcanza, empecemos.", free: true })) : undefined}
                   />
                 );
             }
@@ -430,7 +448,8 @@ export function SessionView({ id, onBack, onOpenSettings, onChanged, onOpenGraph
         </footer>
       </div>
 
-      {!chatOnly && (
+      {pane && <DemoPane key={pane.key} title={pane.title} html={pane.html} width={paneWidth} onWidth={setPaneWidth} onClose={() => setPane(null)} />}
+      {!chatOnly && !pane && (
       <aside className="side">
         <PhaseBar phase={session.phase} />
         <h2 className="side-title">Plan</h2>

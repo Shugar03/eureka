@@ -20,7 +20,9 @@ pub fn definitions() -> Value {
               "question": { "type": "string", "description": "La pregunta, en Markdown." },
               "purpose": { "type": "string", "enum": ["probe", "predict", "check"] },
               "options": { "type": "array", "items": { "type": "string" },
-                           "description": "Opcional: opciones de opción múltiple. Omitir para respuesta abierta." }
+                           "description": "Opcional: opciones de opción múltiple. Omitir para respuesta abierta." },
+              "of": { "type": "integer", "minimum": 1, "maximum": 4,
+                      "description": "Solo con purpose probe: cuántas preguntas de diagnóstico calculás hacer en total (2 o 3 lo normal, 4 el tope). El aprendiz ve «pregunta 2 de ~3»; corregilo si cambia tu cálculo." }
             },
             "required": ["question", "purpose"]
           })),
@@ -76,7 +78,7 @@ pub fn definitions() -> Value {
             "required": ["title", "mermaid"]
           })),
         f("show_demo",
-          "Muestra una demo interactiva (un documento HTML con CSS y JS inline, sin red ni recursos externos) en un marco aislado. No termina el turno.",
+          "Muestra una demo interactiva (un documento HTML con CSS y JS inline, sin red ni recursos externos) en un marco aislado. La demo se ve chica en el chat y el aprendiz puede abrirla en un panel o a pantalla completa, así que diseñala para cualquier tamaño: sin anchos fijos en píxeles, con la ilustración (SVG con viewBox) ocupando el espacio disponible y los controles y el texto explicativo juntos, a la vista, sin depender del scroll. No termina el turno.",
           json!({
             "type": "object",
             "properties": {
@@ -654,6 +656,21 @@ struct QuestionArgs {
     purpose: Option<String>,
     #[serde(default)]
     options: Option<Vec<String>>,
+    #[serde(default)]
+    of: Option<u8>,
+}
+
+/// The diagnosis is short on purpose: past this many probe questions the agent has to plan with what it has.
+pub const PROBE_MAX: usize = 4;
+
+/// How many diagnostic questions were already asked, not counting the call being applied.
+fn probe_questions_asked(s: &Session, current_call: &str) -> usize {
+    s.messages
+        .iter()
+        .flat_map(|m| m.tool_calls.iter().flatten())
+        .filter(|c| c.id != current_call && c.function.name == "ask_question")
+        .filter(|c| serde_json::from_str::<serde_json::Value>(&c.function.arguments).ok().and_then(|v| v.get("purpose").and_then(|p| p.as_str()).map(str::to_owned)).as_deref() == Some("probe"))
+        .count()
 }
 
 /// Audit item 6: a phase change needs what the next phase builds on.
@@ -738,6 +755,10 @@ pub fn apply(s: &mut Session, call: &ToolCall) -> Outcome {
                 }
                 Ok(q) if q.options.as_ref().is_some_and(|o| !o.is_empty() && !(2..=6).contains(&o.len())) => {
                     Err("error: si das opciones, que sean entre 2 y 6".into())
+                }
+                Ok(q) if q.of.is_some_and(|n| !(1..=PROBE_MAX as u8).contains(&n)) => Err(format!("error: of tiene que estar entre 1 y {PROBE_MAX}")),
+                Ok(q) if q.purpose.as_deref() == Some("probe") && s.phase == Phase::Probe && probe_questions_asked(s, &call.id) >= PROBE_MAX => {
+                    return Outcome::Result(format!("ignorada: ya hiciste {PROBE_MAX} preguntas de diagnóstico, que es el tope. Registrá lo que sabés con record_finding y pasá a plan con set_phase."));
                 }
                 Ok(q) if !q.question.trim().is_empty() => {
                     s.pending_question = Some(call.id.clone());
@@ -1002,6 +1023,25 @@ mod tests {
         let out = apply(&mut s, &call("ask_question", json!({ "question": "¿Qué es una pendiente?", "purpose": "probe" })));
         assert_eq!(out, Outcome::AwaitLearner);
         assert_eq!(s.pending_question.as_deref(), Some("call_ask_question"));
+    }
+
+    #[test]
+    fn the_diagnosis_stops_asking_after_the_cap() {
+        let mut s = Session::new("x");
+        s.phase = Phase::Probe;
+        for i in 0..PROBE_MAX {
+            let c = ToolCall { id: format!("p{i}"), ..call("ask_question", json!({ "question": "q", "purpose": "probe", "of": 3 })) };
+            assert_eq!(apply(&mut s, &c), Outcome::AwaitLearner);
+            s.messages.push(Msg { role: "assistant".into(), content: None, tool_calls: Some(vec![c]), tool_call_id: None, meta: None });
+            s.pending_question = None;
+        }
+        let over = apply(&mut s, &ToolCall { id: "p-extra".into(), ..call("ask_question", json!({ "question": "otra", "purpose": "probe" })) });
+        assert!(matches!(over, Outcome::Result(r) if r.starts_with("ignorada") && r.contains("pasá a plan")), "the fifth probe question is refused");
+        // A prediction during teaching is not a diagnostic question and is never capped.
+        s.phase = Phase::Teach;
+        let predict = apply(&mut s, &ToolCall { id: "p-predict".into(), ..call("ask_question", json!({ "question": "¿qué pasa?", "purpose": "predict" })) });
+        assert_eq!(predict, Outcome::AwaitLearner);
+        assert!(matches!(apply(&mut Session::new("y"), &call("ask_question", json!({ "question": "a", "purpose": "probe", "of": 9 }))), Outcome::Result(r) if r.starts_with("error")), "of out of range is an error");
     }
 
     #[test]

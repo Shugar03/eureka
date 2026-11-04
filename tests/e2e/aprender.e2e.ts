@@ -12,6 +12,17 @@ test("AC-01 empezar una sesión arranca en Medir con una pregunta de diagnóstic
   await expect(screen.getByText("Quiero entender qué es una derivada")).toBeVisible();
 });
 
+test("AC-184 el diagnóstico dice cuántas preguntas son y se puede cortar con «Con esto alcanza»", async ({ app, screen }) => {
+  await startSession(app, screen);
+  await expect(pending(screen).getByTestId("probe-step")).toHaveText("Pregunta 1 de ~2");
+
+  await answer(screen, { text: "por cada paso a la derecha sube 2", confidence: 4 });
+  await expect(pending(screen).getByTestId("probe-step")).toHaveText("Pregunta 2 de ~2", { timeout: 10_000 });
+
+  await pending(screen).getByRole("button", "Con esto alcanza, empecemos").click();
+  await expect(phase(screen, "Planificar")).toHaveAttribute("aria-current", "step", { timeout: 10_000 });
+});
+
 test("AC-02 una respuesta necesita texto y confianza", async ({ app, screen }) => {
   await startSession(app, screen);
   const q = pending(screen);
