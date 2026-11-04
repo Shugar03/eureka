@@ -1,7 +1,7 @@
 //! The agent loop: one learner turn → model calls + tool executions until the
 //! model asks a question, stops calling tools, or hits the step cap.
 
-use crate::llm::{self, Endpoint, Msg};
+use crate::llm::{self, Endpoint, Msg, Subscription};
 use crate::session::{Phase, Session};
 use crate::settings::ModelRef;
 use crate::tools::{self, Outcome};
@@ -102,7 +102,7 @@ pub enum Role {
     Speech,
 }
 
-pub fn endpoint_for(state: &AppState, role: Role) -> Result<Endpoint> {
+pub async fn endpoint_for(state: &AppState, role: Role) -> Result<Endpoint> {
     let settings = state.settings.load();
     let keys = state.settings.keys();
     let own = match role {
@@ -125,11 +125,47 @@ pub fn endpoint_for(state: &AppState, role: Role) -> Result<Endpoint> {
         .iter()
         .find(|p| p.id == chosen.provider_id)
         .ok_or_else(|| anyhow!("El proveedor '{}' no existe.", chosen.provider_id))?;
-    let api_key = keys
-        .get(&provider.id)
-        .filter(|k| !k.is_empty())
-        .ok_or_else(|| anyhow!("Falta la API key de {}. Cargala en Ajustes.", provider.label))?;
-    Ok(Endpoint { base_url: provider.base_url.clone(), api_key: api_key.clone(), model: chosen.model.clone(), context_tokens: context_tokens(chosen), session: crate::llm::app_session() })
+    let (base_url, access, subscription) = match state.accounts.get(&provider.id) {
+        // A connected subscription replaces the API key for its provider and
+        // speaks a different API (see `Endpoint::subscription`).
+        Some(account) => {
+            let account = valid_account(state, &provider.id, account).await?;
+            let base_url = if account.base_url.trim().is_empty() { crate::oauth::API_BASE.to_string() } else { account.base_url.clone() };
+            let subscription = Subscription { account_id: account.account_id, originator: account.originator };
+            (base_url, account.access, Some(subscription))
+        }
+        None => {
+            let api_key = keys
+                .get(&provider.id)
+                .filter(|k| !k.is_empty())
+                .ok_or_else(|| anyhow!("Falta la API key de {}. Cargala en Ajustes.", provider.label))?;
+            (provider.base_url.clone(), api_key.clone(), None)
+        }
+    };
+    Ok(Endpoint { base_url, api_key: access, model: chosen.model.clone(), context_tokens: context_tokens(chosen), session: crate::llm::app_session(), subscription })
+}
+
+/// OpenAI rotates the refresh token on every use, so two refreshes racing with
+/// the same token log the account out. One at a time; the one that waited
+/// reads what the winner saved and does not refresh again.
+static REFRESH_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
+/// The account with a token that still works. Refreshing writes the new pair
+/// back, so the next run does not refresh again.
+pub(crate) async fn valid_account(state: &AppState, provider_id: &str, account: crate::accounts::Account) -> Result<crate::accounts::Account> {
+    if !account.needs_refresh(chrono::Utc::now().timestamp_millis()) {
+        return Ok(account);
+    }
+    let _turn = REFRESH_LOCK.lock().await;
+    let Some(current) = state.accounts.get(provider_id) else {
+        return Err(anyhow!("La cuenta de ChatGPT ya no está conectada. Conectala de nuevo en Ajustes."));
+    };
+    if !current.needs_refresh(chrono::Utc::now().timestamp_millis()) {
+        return Ok(current);
+    }
+    let next = crate::oauth::refresh(&current).await?;
+    state.accounts.put(provider_id, &next)?;
+    Ok(next)
 }
 
 /// The model's context window from Settings (thousands of tokens), or the default.
@@ -138,8 +174,8 @@ pub fn context_tokens(m: &ModelRef) -> usize {
 }
 
 /// The session's phase decides the role: the prober measures, the teacher does the rest.
-fn endpoint(state: &AppState, s: &Session) -> Result<Endpoint> {
-    let mut ep = endpoint_for(state, if s.phase == Phase::Probe { Role::Prober } else { Role::Teacher })?;
+async fn endpoint(state: &AppState, s: &Session) -> Result<Endpoint> {
+    let mut ep = endpoint_for(state, if s.phase == Phase::Probe { Role::Prober } else { Role::Teacher }).await?;
     ep.session = format!("eureka-{}", s.id);
     Ok(ep)
 }
@@ -385,7 +421,7 @@ pub async fn run_turn(state: &AppState, session_id: &str, ch: &Channel<AgentEven
             return Ok(());
         }
         // Rebuilt every step: a tool call may have changed the phase.
-        let ep = endpoint(state, &s)?;
+        let ep = endpoint(state, &s).await?;
         let defs = tools::definitions_for(s.phase);
         // AC-20: while measuring and planning, show what the graph already holds.
         let view = if matches!(s.phase, Phase::Probe | Phase::Plan) { state.graph.view() } else { Default::default() };

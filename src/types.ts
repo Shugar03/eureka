@@ -134,6 +134,22 @@ export interface ProviderView extends Provider {
   has_key: boolean;
 }
 
+/** A connected subscription account (ChatGPT Plus/Pro). Never carries tokens. */
+export interface AccountView {
+  provider_id: string;
+  account_id: string;
+  email: string | null;
+  /** Unix milliseconds; the backend refreshes before it lapses. */
+  expires: number;
+}
+
+/** One model a subscription account may call. */
+export interface ModelInfo {
+  id: string;
+  context: number | null;
+  tools: boolean;
+}
+
 /** AC-106: a Whisper model that runs on this PC. */
 export interface LocalSpeechModel {
   id: string;

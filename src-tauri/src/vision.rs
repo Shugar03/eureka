@@ -108,7 +108,12 @@ async fn call(ep: &Endpoint, body: &Value) -> Result<String> {
 
 pub async fn read(state: &AppState, images: &[String], purpose: &str) -> Result<String> {
     validate(images)?;
-    let ep = endpoint_for(state, Role::Teacher)?;
+    let ep = endpoint_for(state, Role::Teacher).await?;
+    // The subscription backend only speaks the Responses API, which this
+    // request shape (image parts on /chat/completions) does not reach.
+    if ep.subscription.is_some() {
+        bail!("Con la cuenta de ChatGPT todavía no se pueden leer imágenes. Usá una API key para el Profesor, o escribí el texto.");
+    }
     let system = state.prompts.get("vision_transcribe")?;
     let text = call(&ep, &body(&ep.model, &system, &instruction(purpose), images)).await?;
     Ok(crate::extract::truncate(text))

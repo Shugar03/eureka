@@ -486,7 +486,7 @@ impl CompanionStore {
 // ── The conversation ──────────────────────────────────────────────────────
 
 async fn model_reply(state: &AppState, conv: &Conversation, text: &str) -> Result<(String, bool)> {
-    let mut ep = endpoint_for(state, Role::Teacher)?;
+    let mut ep = endpoint_for(state, Role::Teacher).await?;
     ep.session = "eureka-companion".into();
     let system = state.prompts.get("companion")?;
     let mut msgs: Vec<Msg> = conv

@@ -716,7 +716,7 @@ async fn a_model_without_provider_is_not_configured() {
     };
     input.roles.teacher = ModelRef { provider_id: String::new(), model: "t-model".into(), ..Default::default() };
     st.settings.save(input).unwrap();
-    let err = endpoint_for(&st, Role::Teacher).err().expect("must fail");
+    let err = endpoint_for(&st, Role::Teacher).await.err().expect("must fail");
     assert!(err.to_string().contains("No hay modelo configurado"));
     std::fs::remove_dir_all(dir).ok();
 }
@@ -1058,7 +1058,7 @@ async fn long_sessions_keep_a_rolling_summary_of_what_left_the_window() {
 async fn the_history_window_uses_the_models_context_size() {
     let f = fake(vec![Reply::Sse(vec![text("ok")])]).await;
     let (st, dir) = state(&f, true, "");
-    assert_eq!(endpoint_for(&st, Role::Teacher).unwrap().context_tokens, crate::context::DEFAULT_BUDGET);
+    assert_eq!(endpoint_for(&st, Role::Teacher).await.unwrap().context_tokens, crate::context::DEFAULT_BUDGET);
     let m = |k| ModelRef { provider_id: "p".into(), model: "m".into(), context_k: k };
     assert_eq!(context_tokens(&m(Some(200))), 200_000);
     assert_eq!(context_tokens(&m(Some(1))), crate::context::DEFAULT_BUDGET, "absurd sizes fall back");
@@ -1713,5 +1713,79 @@ async fn without_a_key_the_pass_does_nothing() {
     quiet_chat(&st);
     crate::memory::pass(&st, &crate::memory::Backoff::default()).await;
     assert!(f.requests.lock().unwrap().is_empty());
+    std::fs::remove_dir_all(dir).ok();
+}
+
+/// A state whose provider is a subscription account pointing at the fake.
+/// The base URL lives in the account so the fake can stand in for the backend.
+fn subscription_state(f: &Fake) -> (AppState, std::path::PathBuf) {
+    let (st, dir) = state(f, false, "");
+    let account = crate::accounts::Account {
+        kind: "chatgpt".into(),
+        account_id: "acc-test".into(),
+        email: None,
+        access: "sk-fake".into(),
+        refresh: "r".into(),
+        expires: i64::MAX,
+        originator: "eureka".into(),
+        base_url: f.base_url.clone(),
+    };
+    st.accounts.put("fake", &account).unwrap();
+    (st, dir)
+}
+
+#[tokio::test]
+async fn subscription_reply_ends_turn_and_persists() {
+    let f = fake(vec![Reply::Sse(vec![
+        json!({ "type": "response.output_text.delta", "delta": "¡Ho" }),
+        json!({ "type": "response.output_text.delta", "delta": "la!" }),
+        json!({ "type": "response.completed" }),
+    ])])
+    .await;
+    let (st, dir) = subscription_state(&f);
+    let id = new_session(&st);
+    let (r, events) = run(&st, &id).await;
+    r.unwrap();
+    let s = st.sessions.load(&id).unwrap();
+    assert_eq!(s.messages.last().unwrap().content.as_deref(), Some("¡Hola!"));
+    assert_eq!(f.requests.lock().unwrap().len(), 1);
+    let deltas: String = events.iter().filter(|e| e["type"] == "text").map(|e| e["delta"].as_str().unwrap()).collect();
+    assert_eq!(deltas, "¡Hola!");
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[tokio::test]
+async fn subscription_question_pauses_turn_until_the_learner_answers() {
+    let f = fake(vec![
+        Reply::Sse(vec![
+            json!({ "type": "response.output_item.added", "item": { "type": "function_call", "id": "fc_1", "call_id": "q1", "name": "ask_question", "arguments": "" } }),
+            json!({ "type": "response.function_call_arguments.done", "item_id": "fc_1", "arguments": "{\"question\":\"¿Pendiente?\",\"purpose\":\"probe\"}" }),
+            json!({ "type": "response.completed" }),
+        ]),
+        Reply::Sse(vec![
+            json!({ "type": "response.output_text.delta", "delta": "Gracias." }),
+            json!({ "type": "response.completed" }),
+        ]),
+    ])
+    .await;
+    let (st, dir) = subscription_state(&f);
+    let id = new_session(&st);
+    run(&st, &id).await.0.unwrap();
+    assert_eq!(st.sessions.load(&id).unwrap().pending_question.as_deref(), Some("q1"));
+
+    let mut s = st.sessions.load(&id).unwrap();
+    crate::tools::add_learner_input(
+        &mut s,
+        crate::tools::LearnerInput { text: "sube 2".into(), confidence: Some(4), thinking: "creo".into(), ..Default::default() },
+    );
+    st.sessions.save(&mut s).unwrap();
+    run(&st, &id).await.0.unwrap();
+
+    let reqs = f.requests.lock().unwrap();
+    assert_eq!(reqs.len(), 2);
+    // The second request must carry the answer as a function_call_output item.
+    let second = &reqs[1];
+    let input = second["input"].as_array().unwrap();
+    assert!(input.iter().any(|i| i["type"] == "function_call_output" && i["call_id"] == "q1"));
     std::fs::remove_dir_all(dir).ok();
 }
