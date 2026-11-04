@@ -10,6 +10,7 @@ import { loadReminderSettings, saveReminderSettings } from "./Reminders";
 import type { ReminderSettings } from "../lib/reminders";
 import { validReminders } from "../lib/reminders";
 import { Markdown } from "./Markdown";
+import { ChatGptCard } from "./ChatGptCard";
 import { ReadAloud } from "./a11y/ReadAloud";
 import { WorkspaceTab } from "./workspace/WorkspaceTab";
 import { QuickSetup } from "./QuickSetup";
@@ -229,8 +230,6 @@ function friendlyError(e: unknown): string {
   if (/402|429|quota|credit/i.test(t)) return "El servicio dice que no tenés saldo o llegaste al límite.";
   return `No pude conectarme: ${t}`;
 }
-
-import { ChatGptCard } from "./ChatGptCard";
 
 /** One service, one key, one model for everything. Anyone can pick the model; the rest lives in Avanzado. */
 function ConnectionTab() {

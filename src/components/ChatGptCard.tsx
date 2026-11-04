@@ -42,8 +42,10 @@ export function ChatGptCard({ onChange }: { onChange: (connected: boolean) => vo
   const disconnect = async () => {
     try {
       await api.chatgptDisconnect();
-    } catch {
-      // Signing out locally is what matters: the file is gone either way.
+    } catch (e) {
+      // The tokens are still on disk: say so instead of pretending they are gone.
+      setStatus({ ok: false, text: `No se pudo desconectar: ${message(e)}` });
+      return;
     }
     setAccount(null);
     setModels([]);

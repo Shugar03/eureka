@@ -151,7 +151,9 @@ pub fn callback_query(request_line: &str) -> Option<HashMap<String, String>> {
 #[derive(Debug, Deserialize)]
 struct Tokens {
     access_token: String,
-    refresh_token: String,
+    /// A refresh answer may leave this out (RFC 6749 §6): the old one stays valid.
+    #[serde(default)]
+    refresh_token: Option<String>,
     #[serde(default)]
     id_token: Option<String>,
     #[serde(default)]
@@ -161,13 +163,14 @@ struct Tokens {
 impl Tokens {
     fn into_account(self, originator: &str) -> Result<Account> {
         let id_token = self.id_token.ok_or_else(|| anyhow!("OpenAI no devolvió el token de identidad. Probá de nuevo."))?;
+        let refresh = self.refresh_token.ok_or_else(|| anyhow!("OpenAI no devolvió el token de renovación. Probá de nuevo."))?;
         let account_id = account_id(&id_token).ok_or_else(|| anyhow!("La cuenta de ChatGPT no informó su identificador. Probá con otra cuenta."))?;
         Ok(Account {
             kind: "chatgpt".into(),
             account_id,
             email: claim(&id_token, "email"),
             access: self.access_token,
-            refresh: self.refresh_token,
+            refresh,
             expires: expires_at(self.expires_in),
             originator: originator.to_string(),
             base_url: API_BASE.to_string(),
@@ -199,7 +202,7 @@ pub async fn refresh(account: &Account) -> Result<Account> {
     let email = tokens.id_token.as_deref().and_then(|t| claim(t, "email")).or_else(|| account.email.clone());
     let mut next = account.clone();
     next.access = tokens.access_token;
-    next.refresh = tokens.refresh_token;
+    next.refresh = tokens.refresh_token.unwrap_or_else(|| account.refresh.clone());
     next.expires = expires_at(tokens.expires_in);
     next.account_id = account_id;
     next.email = email;
@@ -433,6 +436,14 @@ mod tests {
         let body = form_body(&[("grant_type", "authorization_code"), ("code", "a b"), ("client_id", CLIENT_ID)]);
         assert_eq!(body, "grant_type=authorization_code&code=a%20b&client_id=app_EMoamEEZ73f0CkXaXp7hrann");
         assert!(!body.contains("resource"));
+    }
+
+    #[test]
+    fn a_refresh_answer_without_a_new_refresh_token_still_parses() {
+        let t: Tokens = serde_json::from_str(r#"{"access_token":"a","expires_in":3600}"#).unwrap();
+        assert!(t.refresh_token.is_none());
+        let full: Tokens = serde_json::from_str(r#"{"access_token":"a","refresh_token":"r"}"#).unwrap();
+        assert_eq!(full.refresh_token.as_deref(), Some("r"));
     }
 
     #[test]

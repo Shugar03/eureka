@@ -1255,7 +1255,7 @@ fn chatgpt_disconnect(state: State<'_, AppState>) -> CmdResult<()> {
 #[tauri::command]
 async fn chatgpt_models(state: State<'_, AppState>) -> CmdResult<Vec<llm::ModelInfo>> {
     let account = state.accounts.get(oauth::PROVIDER_ID).ok_or_else(|| "No hay una cuenta de ChatGPT conectada.".to_string())?;
-    let account = agent::valid_account(&state, account).await.map_err(err)?;
+    let account = agent::valid_account(&state, oauth::PROVIDER_ID, account).await.map_err(err)?;
     let ep = llm::Endpoint {
         base_url: oauth::API_BASE.to_string(),
         api_key: account.access,

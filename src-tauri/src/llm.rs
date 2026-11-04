@@ -485,6 +485,8 @@ impl ResponsesParser {
             return Err(anyhow!("error del proveedor: {err}"));
         }
         match v.get("type").and_then(Value::as_str).unwrap_or_default() {
+            // A bare error event carries its message at the top level.
+            "error" => Err(anyhow!("error del proveedor: {}", v.get("message").and_then(Value::as_str).unwrap_or("sin detalle"))),
             "response.output_text.delta" => match v.get("delta").and_then(Value::as_str).filter(|t| !t.is_empty()) {
                 Some(t) => {
                     self.text.push_str(t);
@@ -841,6 +843,14 @@ mod tests {
         ]);
         let (_, c) = run_responses(&bytes, 5);
         assert_eq!(c.tool_calls[0].function.arguments, "{\"a\":1}");
+    }
+
+    #[test]
+    fn responses_error_event_fails_instead_of_returning_an_empty_answer() {
+        let bytes = responses_sse(&[json!({ "type": "error", "message": "cuota agotada" })]);
+        let mut p = ResponsesParser::default();
+        let err = p.push(&bytes).unwrap_err();
+        assert!(err.to_string().contains("cuota agotada"));
     }
 
     #[test]

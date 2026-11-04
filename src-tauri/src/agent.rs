@@ -129,7 +129,7 @@ pub async fn endpoint_for(state: &AppState, role: Role) -> Result<Endpoint> {
         // A connected subscription replaces the API key for its provider and
         // speaks a different API (see `Endpoint::subscription`).
         Some(account) => {
-            let account = valid_account(state, account).await?;
+            let account = valid_account(state, &provider.id, account).await?;
             let base_url = if account.base_url.trim().is_empty() { crate::oauth::API_BASE.to_string() } else { account.base_url.clone() };
             let subscription = Subscription { account_id: account.account_id, originator: account.originator };
             (base_url, account.access, Some(subscription))
@@ -145,14 +145,26 @@ pub async fn endpoint_for(state: &AppState, role: Role) -> Result<Endpoint> {
     Ok(Endpoint { base_url, api_key: access, model: chosen.model.clone(), context_tokens: context_tokens(chosen), session: crate::llm::app_session(), subscription })
 }
 
+/// OpenAI rotates the refresh token on every use, so two refreshes racing with
+/// the same token log the account out. One at a time; the one that waited
+/// reads what the winner saved and does not refresh again.
+static REFRESH_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
 /// The account with a token that still works. Refreshing writes the new pair
 /// back, so the next run does not refresh again.
-pub(crate) async fn valid_account(state: &AppState, account: crate::accounts::Account) -> Result<crate::accounts::Account> {
+pub(crate) async fn valid_account(state: &AppState, provider_id: &str, account: crate::accounts::Account) -> Result<crate::accounts::Account> {
     if !account.needs_refresh(chrono::Utc::now().timestamp_millis()) {
         return Ok(account);
     }
-    let next = crate::oauth::refresh(&account).await?;
-    state.accounts.put(crate::oauth::PROVIDER_ID, &next)?;
+    let _turn = REFRESH_LOCK.lock().await;
+    let Some(current) = state.accounts.get(provider_id) else {
+        return Err(anyhow!("La cuenta de ChatGPT ya no está conectada. Conectala de nuevo en Ajustes."));
+    };
+    if !current.needs_refresh(chrono::Utc::now().timestamp_millis()) {
+        return Ok(current);
+    }
+    let next = crate::oauth::refresh(&current).await?;
+    state.accounts.put(provider_id, &next)?;
     Ok(next)
 }
 
