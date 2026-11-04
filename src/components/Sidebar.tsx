@@ -82,50 +82,54 @@ export function Sidebar({ sessions, activeId, view, onHome, onOpen, onSettings, 
         </button>
       </div>
 
-      <div className="sb-section">Estudiar</div>
-      {study.map(renderItem)}
+      <div className="sb-scroll">
+        <div className="sb-section">Estudiar</div>
+        {study.map(renderItem)}
 
-      <div className="sb-section">Mi material</div>
-      {material.map(renderItem)}
+        <div className="sb-section">Mi material</div>
+        {material.map(renderItem)}
 
-      <details className="sb-more" open={moreOpen ?? moreHasActive} onToggle={(e) => setMoreOpen(e.currentTarget.open)}>
-        <summary className="sb-section">Más</summary>
-        {more.map(renderItem)}
-      </details>
+        <details className="sb-more" open={moreOpen ?? moreHasActive} onToggle={(e) => setMoreOpen(e.currentTarget.open)}>
+          <summary className="sb-section">Más</summary>
+          {more.map(renderItem)}
+        </details>
 
-      <div className="sb-section">Sesiones</div>
-      <div className="sb-list" role="region" aria-label="Sesiones recientes" tabIndex={0}>
-        {sessions.filter((s) => !s.archived).length === 0 && <p className="sb-empty">Todavía no hay sesiones.</p>}
-        {sessions.filter((s) => !s.archived).map((s) => (
-          <button
-            key={s.id}
-            className={`sb-item sb-session ${activeId === s.id ? "is-active" : ""}`}
-            aria-current={activeId === s.id ? "page" : undefined}
-            onClick={() => onOpen(s.id)}
-            title={`${s.title} · ${PHASES.find((p) => p.id === s.phase)?.label}`}
-          >
-            <span className={`sb-phase phase-${s.phase}`} aria-hidden>
-              {PHASE_ICON[s.phase]}
-            </span>
-            <span className="sb-label">{s.title}</span>
-            {s.pinned && <span className="sb-pin" aria-label="Fijada">●</span>}
-          </button>
-        ))}
+        <div className="sb-section">Sesiones</div>
+        <div className="sb-list" role="region" aria-label="Sesiones recientes" tabIndex={0}>
+          {sessions.filter((s) => !s.archived).length === 0 && <p className="sb-empty">Todavía no hay sesiones.</p>}
+          {sessions.filter((s) => !s.archived).map((s) => (
+            <button
+              key={s.id}
+              className={`sb-item sb-session ${activeId === s.id ? "is-active" : ""}`}
+              aria-current={activeId === s.id ? "page" : undefined}
+              onClick={() => onOpen(s.id)}
+              title={`${s.title} · ${PHASES.find((p) => p.id === s.phase)?.label}`}
+            >
+              <span className={`sb-phase phase-${s.phase}`} aria-hidden>
+                {PHASE_ICON[s.phase]}
+              </span>
+              <span className="sb-label">{s.title}</span>
+              {s.pinned && <span className="sb-pin" aria-label="Fijada">●</span>}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {renderItem({ view: "settings", icon: "gear", label: "Ajustes", run: onSettings })}
-      {footer}
-      {onWorkspace && (
-        <button className="sb-profile" onClick={onWorkspace} title="Cambiar el fondo, el color, el tema y tu nombre">
-          <span className="sb-avatar" aria-hidden>
-            {initial || <Icon name="sparkle" size={16} />}
-          </span>
-          <span className="sb-profile-text">
-            <strong>{name.trim() || "Mi espacio"}</strong>
-            <small>Personalizar</small>
-          </span>
-        </button>
-      )}
+      <div className="sb-foot">
+        {footer}
+        {renderItem({ view: "settings", icon: "gear", label: "Ajustes", run: onSettings })}
+        {onWorkspace && (
+          <button className="sb-profile" onClick={onWorkspace} title="Cambiar el fondo, el color, el tema y tu nombre">
+            <span className="sb-avatar" aria-hidden>
+              {initial || <Icon name="sparkle" size={16} />}
+            </span>
+            <span className="sb-profile-text">
+              <strong>{name.trim() || "Mi espacio"}</strong>
+              <small>Personalizar</small>
+            </span>
+          </button>
+        )}
+      </div>
     </nav>
   );
 }

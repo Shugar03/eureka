@@ -302,8 +302,8 @@ textarea { resize: vertical; }
 .sb-search:hover { background: var(--surface-2); color: var(--text); }
 .sb-more > summary { display: flex; align-items: center; list-style: none; cursor: pointer; }
 .sb-more > summary::-webkit-details-marker { display: none; }
-.sb-more > summary::after { content: "▾"; margin-left: auto; transition: transform 0.2s ease; }
-.sb-more[open] > summary::after { transform: rotate(180deg); }
+.sb-more > summary::after { content: ""; margin-left: auto; width: 7px; height: 7px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: translateY(-2px) rotate(45deg); transition: transform 0.2s ease; }
+.sb-more[open] > summary::after { transform: translateY(1px) rotate(-135deg); }
 .sb-item {
   display: flex;
   align-items: center;
@@ -323,7 +323,11 @@ textarea { resize: vertical; }
 .sb-item.is-active { background: var(--surface-3); color: var(--text); }
 .sb-icon { width: 16px; text-align: center; color: var(--muted); font-size: 13px; }
 .sb-section { font-size: 11.5px; font-weight: 500; color: var(--dim); padding: 16px 8px 4px; }
-.sb-list { overflow-y: auto; display: flex; flex-direction: column; gap: 1px; min-height: 0; }
+/* The navigation scrolls on its own and keeps its row height; the brand and the foot (pomodoro, Ajustes, profile) stay in view. */
+.sb-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: inherit; }
+.sb-scroll > * { flex-shrink: 0; }
+.sb-foot { flex-shrink: 0; display: flex; flex-direction: column; gap: inherit; padding-top: 6px; }
+.sb-list { display: flex; flex-direction: column; gap: 1px; }
 .sb-empty { font-size: 12.5px; color: var(--dim); padding: 4px 8px; margin: 0; }
 .sb-session .sb-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sb-phase { font-size: 11px; width: 16px; text-align: center; flex-shrink: 0; }
@@ -644,7 +648,8 @@ textarea { resize: vertical; }
 .graph-detail-text { font-size: 15px; color: var(--text); margin: 0; line-height: 1.5; }
 .graph-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
 .graph-list li { display: flex; flex-wrap: wrap; gap: 6px; }
-.graph-list .chip { text-align: left; }
+/* A premise or conclusion is a sentence, not a tag: a rounded block that reads as text, not a stretched pill. */
+.graph-list .chip { width: 100%; text-align: left; border-radius: 10px; padding: 8px 12px; font-size: 13.5px; line-height: 1.45; color: var(--text-2); }
 .graph-source { align-items: center; justify-content: space-between; }
 .graph-empty { grid-column: 1 / -1; display: grid; place-content: center; text-align: center; padding: 40px; }
 .graph-empty h2 { margin: 0 0 6px; font-size: 18px; }
