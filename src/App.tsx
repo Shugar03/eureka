@@ -61,7 +61,7 @@ export default function App() {
 }
 
 function AppShell() {
-  const { theme, setTheme, name, identity } = useWorkspace();
+  const { setTheme, name, identity } = useWorkspace();
   const ui = useUiControl();
   const [route, setRoute] = useState<Route>({ name: "home" });
   // Bumped on every navigation, so going to a screen again (e.g. "Exámenes"
@@ -329,8 +329,6 @@ function AppShell() {
             onClasses={classes}
             onProgress={progress}
             onCommand={openPalette}
-            theme={theme}
-            onTheme={setTheme}
             name={name}
             onWorkspace={() => settings("workspace")}
             footer={<PomodoroWidget />}

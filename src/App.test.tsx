@@ -51,6 +51,8 @@ describe("App shell", () => {
     await userEvent.type(input, "tema: claro{Enter}");
     expect(document.documentElement.dataset.theme).toBe("light");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Ajustes" }));
+    await userEvent.click(await screen.findByRole("tab", { name: "Mi espacio" }));
     await userEvent.click(screen.getByRole("radio", { name: "Tema oscuro" }));
     expect(document.documentElement.dataset.theme).toBe("dark");
   });
