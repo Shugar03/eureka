@@ -1,0 +1,22 @@
+Eureka
+Copyright (c) Shugar03. Licensed under AGPL-3.0-only (see LICENSE).
+
+Eureka does not ship these models: it downloads them only when the person
+chooses the voice "En esta PC" (Settings > Advanced > Voice).
+
+Parakeet TDT 0.6B v3
+  Copyright (c) NVIDIA Corporation.
+  https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3
+  Licensed under the Creative Commons Attribution 4.0 International License
+  (CC-BY-4.0): https://creativecommons.org/licenses/by/4.0/
+  Eureka uses the int8 ONNX export by istupakov, unmodified:
+  https://huggingface.co/istupakov/parakeet-tdt-0.6b-v3-onnx
+
+Whisper (tiny, base)
+  Copyright (c) OpenAI. MIT License.
+  https://github.com/openai/whisper
+
+Software linked into Eureka for local speech:
+  ONNX Runtime, Copyright (c) Microsoft Corporation. MIT License.
+  parakeet-rs, by altunenes. MIT OR Apache-2.0.
+  candle, by Hugging Face. MIT OR Apache-2.0.

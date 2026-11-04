@@ -102,7 +102,7 @@ Eureka habla con cualquier proveedor compatible con OpenAI: **OpenRouter, OpenAI
 | Extractor | Guarda lo aprendido en el grafo y resume sesiones largas | Uno barato |
 | Práctica | Genera y corrige ejercicios | Uno barato |
 | Investigador | Resume la web con fuentes | Uno barato |
-| Voz | Transcribe tu speaking | Whisper o similar |
+| Voz | Transcribe tu speaking | «En esta PC» (Parakeet v3, sin internet) o Whisper |
 
 El harness está pensado para **gastar pocos tokens**:
 - compacta el historial y resume las sesiones largas;
@@ -208,6 +208,10 @@ npm run test:all     # todo
 ## 🤝 Contribuí
 
 ¿Encontraste un bug, tenés una idea o querés sumar un idioma? Abrí un *issue* o mandá un *pull request*. Antes de proponer una función, mirá [docs/spec.md](docs/spec.md): cada cambio entra con su criterio de aceptación y sus pruebas.
+
+## 🙏 Créditos
+
+La voz «En esta PC» usa [Parakeet TDT 0.6B v3](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3) de **NVIDIA** ([CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/); export ONNX de [istupakov](https://huggingface.co/istupakov/parakeet-tdt-0.6b-v3-onnx)) con [ONNX Runtime](https://onnxruntime.ai/), y [Whisper](https://github.com/openai/whisper) de OpenAI (MIT) con [candle](https://github.com/huggingface/candle). Los modelos no vienen en el instalador: se descargan cuando los elegís. Detalle en [NOTICE](NOTICE).
 
 ## 📄 Licencia
 

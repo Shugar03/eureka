@@ -252,7 +252,7 @@ export const studentApi = {
   markKnown: (name: string) => invoke<StudentModel>("student_mark_known", { name }),
 };
 
-/** AC-106: Whisper on this PC, downloaded on request (no internet or key afterwards). */
+/** AC-106/AC-185: speech on this PC (Parakeet v3 or Whisper), downloaded on request (no internet or key afterwards). */
 export const localSpeechApi = {
   status: () => invoke<LocalSpeechModel[]>("local_speech_status"),
   download: (model: string, onProgress: (p: { done: number; total: number }) => void) => {

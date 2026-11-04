@@ -664,10 +664,11 @@ function newSession(goal: string): Session {
 
 // ── IPC router ──────────────────────────────────────────────────────────────
 
-// AC-106: the local Whisper models (sizes as in the backend).
+// AC-106/AC-185: the local speech models (sizes as in the backend; Parakeet v3 is the default).
 const LOCAL_MODELS = [
-  { id: "whisper-tiny", label: "Rápido (tiny)", bytes: 151_061_672 },
-  { id: "whisper-base", label: "Mejor (base)", bytes: 290_403_936 },
+  { id: "parakeet-v3", label: "Mejor calidad (Parakeet v3)", bytes: 670_479_942 },
+  { id: "whisper-tiny", label: "Liviano (Whisper tiny)", bytes: 151_061_672 },
+  { id: "whisper-base", label: "Liviano, mejor (Whisper base)", bytes: 290_403_936 },
 ];
 const localInstalled = new Set<string>();
 const localSpeech = () => LOCAL_MODELS.map((m) => ({ ...m, installed: localInstalled.has(m.id) }));

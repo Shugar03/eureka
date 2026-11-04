@@ -9,6 +9,6 @@ export const looksLikeTranscription = (model: string) => TRANSCRIPTION.test(mode
 export function speechModelWarning(model: string, providerId: string): string | null {
   const m = model.trim();
   if (!m || providerId === "local" || looksLikeTranscription(m)) return null;
-  const base = `«${m}» parece un modelo de texto. Para dictar y para el speaking hace falta uno de transcripción, por ejemplo whisper-1 (OpenAI) o whisper-large-v3 (Groq), o elegí «En esta PC» para usar Whisper sin internet.`;
+  const base = `«${m}» parece un modelo de texto. Para dictar y para el speaking hace falta uno de transcripción, por ejemplo whisper-1 (OpenAI) o whisper-large-v3 (Groq), o elegí «En esta PC» para usar Parakeet v3 sin internet.`;
   return providerId === "opencode-go" ? `${base} OpenCode Go no lista modelos de transcripción: dejá este rol vacío o usá otro proveedor solo para la voz.` : base;
 }
