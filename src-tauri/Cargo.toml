@@ -1,6 +1,6 @@
 [package]
 name = "eureka"
-version = "0.2.1"
+version = "0.3.0"
 description = "Eureka: un tutor con IA que mide, planifica y enseña"
 authors = ["Shugar03"]
 license = "AGPL-3.0-only"
