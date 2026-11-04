@@ -132,7 +132,7 @@ export function WorkspaceTab() {
         <h2>Luz</h2>
         <div className="tabs" role="radiogroup" aria-label="Tema de la app">
           {THEMES.map((t) => (
-            <button key={t.id} role="radio" aria-checked={theme === t.id} className={theme === t.id ? "is-active" : ""} onClick={() => setTheme(t.id)}>
+            <button key={t.id} role="radio" aria-label={`Tema ${t.label.toLowerCase()}`} aria-checked={theme === t.id} className={theme === t.id ? "is-active" : ""} onClick={() => setTheme(t.id)}>
               {t.label}
             </button>
           ))}

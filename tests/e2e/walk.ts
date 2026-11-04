@@ -123,7 +123,7 @@ export async function walk(seed: number, { app, screen, browser }: Fixtures, tur
         await expect(screen.getByRole("radio", a.which)).toHaveAttribute("aria-checked", "true");
         break;
       case "palette":
-        await screen.getByRole("button", "Buscar o ejecutar… Ctrl K").click();
+        await screen.getByRole("button", "Buscar o ejecutar").click();
         await expect(screen.getByRole("dialog", "Paleta de comandos")).toBeVisible();
         await screen.getByLabel("Buscar comando").press("Escape");
         await expect(screen.getByRole("dialog", "Paleta de comandos")).toBeHidden();

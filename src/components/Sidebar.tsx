@@ -1,8 +1,7 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import logo from "../../assets/brand/eureka-mark.svg";
 import type { SessionSummary } from "../types";
 import { PHASES } from "../lib/transcript";
-import type { Theme } from "../lib/theme";
 import { Icon, type IconName } from "./Icon";
 
 interface Props {
@@ -25,8 +24,6 @@ interface Props {
   onLanguage: () => void;
   onCompanion: () => void;
   onCommand: () => void;
-  theme: Theme;
-  onTheme: (t: Theme) => void;
   /** The learner's name (Mi espacio); the profile card opens that tab. */
   name?: string;
   onWorkspace?: () => void;
@@ -34,34 +31,45 @@ interface Props {
   footer?: ReactNode;
 }
 
-const THEMES: { id: Theme; label: string; icon: IconName }[] = [
-  { id: "dark", label: "Oscuro", icon: "moon" },
-  { id: "light", label: "Claro", icon: "sun" },
-  { id: "system", label: "Sistema", icon: "half" },
-];
-
 const PHASE_ICON: Record<string, string> = { chat: "○", probe: "◔", plan: "◑", teach: "◕", done: "●" };
 
 type View = Props["view"];
+type Item = { view: View; icon: IconName; label: string; run: () => void };
 
-export function Sidebar({ sessions, activeId, view, onHome, onOpen, onSettings, onGraph, onLibrary, onPractice, onExams, onCards, onAgenda, onAcademic, onClasses, onProgress, onCode, onLanguage, onCompanion, onCommand, theme, onTheme, footer, name = "", onWorkspace }: Props) {
-  const items: { view: View; icon: IconName; label: string; run: () => void }[] = [
+export function Sidebar({ sessions, activeId, view, onHome, onOpen, onSettings, onGraph, onLibrary, onPractice, onExams, onCards, onAgenda, onAcademic, onClasses, onProgress, onCode, onLanguage, onCompanion, onCommand, footer, name = "", onWorkspace }: Props) {
+  const study: Item[] = [
     { view: "home", icon: "plus", label: "Nueva sesión", run: onHome },
-    { view: "graph", icon: "graph", label: "Grafo", run: onGraph },
-    { view: "library", icon: "book", label: "Biblioteca", run: onLibrary },
     { view: "practice", icon: "pencil", label: "Práctica", run: onPractice },
     { view: "exams", icon: "target", label: "Exámenes", run: onExams },
     { view: "cards", icon: "cards", label: "Tarjetas", run: onCards },
+  ];
+  const material: Item[] = [
+    { view: "library", icon: "book", label: "Biblioteca", run: onLibrary },
     { view: "agenda", icon: "calendar", label: "Agenda", run: onAgenda },
     { view: "academic", icon: "cap", label: "Mi cursada", run: onAcademic },
     { view: "classes", icon: "mic", label: "Clases", run: onClasses },
     { view: "progress", icon: "spark", label: "Mi progreso", run: onProgress },
+  ];
+  const more: Item[] = [
+    { view: "graph", icon: "graph", label: "Grafo", run: onGraph },
+    { view: "companion", icon: "heart", label: "Acompañamiento", run: onCompanion },
     { view: "code", icon: "code", label: "Código", run: onCode },
     { view: "language", icon: "globe", label: "Idiomas", run: onLanguage },
-    { view: "companion", icon: "heart", label: "Acompañamiento", run: onCompanion },
-    { view: "settings", icon: "gear", label: "Ajustes", run: onSettings },
   ];
+  /** null = follow the active view; a boolean = the learner toggled it. */
+  const [moreOpen, setMoreOpen] = useState<boolean | null>(null);
+  const moreHasActive = more.some((it) => it.view === view);
   const initial = name.trim().charAt(0).toUpperCase();
+
+  const renderItem = (it: Item) => (
+    <button key={it.view} className={`sb-item ${view === it.view ? "is-active" : ""}`} onClick={it.run}>
+      <span className="sb-icon" aria-hidden>
+        <Icon name={it.icon} />
+      </span>
+      {it.label}
+    </button>
+  );
+
   return (
     <nav className="sidebar" aria-label="Navegación">
       <div className="sb-brand">
@@ -69,23 +77,21 @@ export function Sidebar({ sessions, activeId, view, onHome, onOpen, onSettings, 
           <img src={logo} alt="" width={20} height={20} />
         </span>
         Eureka
+        <button className="sb-search" onClick={onCommand} aria-label="Buscar o ejecutar" title="Buscar o ejecutar · Ctrl K">
+          <Icon name="search" size={15} />
+        </button>
       </div>
 
-      <button className="sb-search" onClick={onCommand}>
-        <span className="sb-search-label">
-          <Icon name="search" size={15} /> Buscar o ejecutar…
-        </span>
-        <kbd>Ctrl K</kbd>
-      </button>
+      <div className="sb-section">Estudiar</div>
+      {study.map(renderItem)}
 
-      {items.map((it) => (
-        <button key={it.view} className={`sb-item ${view === it.view ? "is-active" : ""}`} onClick={it.run}>
-          <span className="sb-icon" aria-hidden>
-            <Icon name={it.icon} />
-          </span>
-          {it.label}
-        </button>
-      ))}
+      <div className="sb-section">Mi material</div>
+      {material.map(renderItem)}
+
+      <details className="sb-more" open={moreOpen ?? moreHasActive} onToggle={(e) => setMoreOpen(e.currentTarget.open)}>
+        <summary className="sb-section">Más</summary>
+        {more.map(renderItem)}
+      </details>
 
       <div className="sb-section">Sesiones</div>
       <div className="sb-list" role="region" aria-label="Sesiones recientes" tabIndex={0}>
@@ -107,9 +113,10 @@ export function Sidebar({ sessions, activeId, view, onHome, onOpen, onSettings, 
         ))}
       </div>
 
+      {renderItem({ view: "settings", icon: "gear", label: "Ajustes", run: onSettings })}
       {footer}
       {onWorkspace && (
-        <button className="sb-profile" onClick={onWorkspace} title="Cambiar el fondo, el color y tu nombre">
+        <button className="sb-profile" onClick={onWorkspace} title="Cambiar el fondo, el color, el tema y tu nombre">
           <span className="sb-avatar" aria-hidden>
             {initial || <Icon name="sparkle" size={16} />}
           </span>
@@ -119,21 +126,6 @@ export function Sidebar({ sessions, activeId, view, onHome, onOpen, onSettings, 
           </span>
         </button>
       )}
-      <div className="sb-theme" role="radiogroup" aria-label="Tema">
-        {THEMES.map((t) => (
-          <button
-            key={t.id}
-            role="radio"
-            aria-checked={theme === t.id}
-            aria-label={`Tema ${t.label.toLowerCase()}`}
-            title={t.label}
-            className={theme === t.id ? "is-active" : ""}
-            onClick={() => onTheme(t.id)}
-          >
-            <Icon name={t.icon} size={15} />
-          </button>
-        ))}
-      </div>
     </nav>
   );
 }
