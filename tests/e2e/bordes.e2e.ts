@@ -27,7 +27,7 @@ test("AC-15 Ctrl K abre la paleta y Enter ejecuta", async ({ app, screen }) => {
 
 test("AC-15 AC-14 la paleta se navega con flechas", async ({ app, screen, browser }) => {
   await app.open("/");
-  await screen.getByRole("button", "Buscar o ejecutar… Ctrl K").click();
+  await screen.getByRole("button", "Buscar o ejecutar").click();
   await screen.getByLabel("Buscar comando").fill("tema");
   await expect(palette(screen).getByRole("option")).toHaveCount(3);
   await expect(palette(screen).getByRole("option", "Tema: oscuro")).toHaveAttribute("aria-selected", "true");
@@ -39,13 +39,13 @@ test("AC-15 AC-14 la paleta se navega con flechas", async ({ app, screen, browse
 
 test("AC-15 la paleta se cierra con Escape o clic afuera y avisa sin resultados", async ({ app, screen }) => {
   await app.open("/");
-  await screen.getByRole("button", "Buscar o ejecutar… Ctrl K").click();
+  await screen.getByRole("button", "Buscar o ejecutar").click();
   await screen.getByLabel("Buscar comando").fill("zzzz-no-existe");
   await expect(palette(screen)).toContainText("Sin resultados");
   await screen.getByLabel("Buscar comando").press("Escape");
   await expect(palette(screen)).toBeHidden();
 
-  await screen.getByRole("button", "Buscar o ejecutar… Ctrl K").click();
+  await screen.getByRole("button", "Buscar o ejecutar").click();
   await expect(palette(screen)).toBeVisible();
   await screen.getByTestId("cmd-backdrop").click({ position: { x: 10, y: 10 } });
   await expect(palette(screen)).toBeHidden();
@@ -54,7 +54,7 @@ test("AC-15 la paleta se cierra con Escape o clic afuera y avisa sin resultados"
 test("AC-15 la paleta abre sesiones por nombre", async ({ app, screen }) => {
   await startSession(app, screen, "tema paleta");
   await screen.getByRole("button", "Nueva sesión").click();
-  await screen.getByRole("button", "Buscar o ejecutar… Ctrl K").click();
+  await screen.getByRole("button", "Buscar o ejecutar").click();
   await screen.getByLabel("Buscar comando").fill("paleta");
   await screen.getByLabel("Buscar comando").press("Enter");
   await expect(screen.getByRole("heading", "tema paleta")).toBeVisible();

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Sidebar } from "./Sidebar";
 import type { SessionSummary } from "../types";
@@ -14,8 +14,8 @@ const s = (id: string, title: string): SessionSummary => ({
   plan_done: 1,
 });
 
-function setup(sessions: SessionSummary[] = [s("1", "Derivadas"), s("2", "Entropía")]) {
-  const props = {
+function baseProps(sessions: SessionSummary[] = [s("1", "Derivadas"), s("2", "Entropía")]) {
+  return {
     sessions,
     activeId: "2",
     view: "session" as const,
@@ -35,9 +35,11 @@ function setup(sessions: SessionSummary[] = [s("1", "Derivadas"), s("2", "Entrop
     onLanguage: vi.fn(),
     onCompanion: vi.fn(),
     onCommand: vi.fn(),
-    theme: "dark" as const,
-    onTheme: vi.fn(),
   };
+}
+
+function setup(sessions: SessionSummary[] = [s("1", "Derivadas"), s("2", "Entropía")]) {
+  const props = baseProps(sessions);
   render(<Sidebar {...props} />);
   return props;
 }
@@ -64,10 +66,11 @@ describe("Sidebar", () => {
     expect(screen.getByText("Todavía no hay sesiones.")).toBeInTheDocument();
   });
 
-  it("switches theme from the radio group", async () => {
-    const p = setup();
-    expect(screen.getByRole("radio", { name: "Tema oscuro" })).toHaveAttribute("aria-checked", "true");
-    await userEvent.click(screen.getByRole("radio", { name: "Tema claro" }));
-    expect(p.onTheme).toHaveBeenCalledWith("light");
+  it("keeps the secondary group collapsed unless its view is open", () => {
+    const { container } = render(<Sidebar {...baseProps()} view="graph" />);
+    expect(container.querySelector("details.sb-more")).toHaveAttribute("open");
+    cleanup();
+    const closed = render(<Sidebar {...baseProps()} view="session" />);
+    expect(closed.container.querySelector("details.sb-more")).not.toHaveAttribute("open");
   });
 });
