@@ -50,6 +50,10 @@ keyring = "4"
 candle-core = "0.11.0"
 candle-nn = "0.11.0"
 candle-transformers = "0.11.0"
+# Parakeet TDT (NVIDIA, ONNX) for local speech. ONNX Runtime comes prebuilt and statically
+# linked; Windows only has prebuilt binaries with an execution provider, hence directml
+# (only the CPU is used, and DirectML.dll is delay-loaded: see build.rs).
+parakeet-rs = { version = "0.4.4", features = ["directml"] }
 
 # Android: rustls with ring and built-in roots. The platform verifier reqwest uses
 # elsewhere needs a JNI init Tauri doesn't do, and aws-lc-sys is fragile to cross-compile.
@@ -78,6 +82,17 @@ opt-level = 3
 [profile.dev.package.half]
 opt-level = 3
 [profile.dev.package.safetensors]
+opt-level = 3
+# Parakeet's features (STFT, mel) and decoding loop; ONNX Runtime itself is prebuilt.
+[profile.dev.package.parakeet-rs]
+opt-level = 3
+[profile.dev.package.ndarray]
+opt-level = 3
+[profile.dev.package.realfft]
+opt-level = 3
+[profile.dev.package.rustfft]
+opt-level = 3
+[profile.dev.package.matrixmultiply]
 opt-level = 3
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration

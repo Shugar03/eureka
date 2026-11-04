@@ -150,7 +150,7 @@ export interface ModelInfo {
   tools: boolean;
 }
 
-/** AC-106: a Whisper model that runs on this PC. */
+/** AC-106/AC-185: a speech model that runs on this PC (Parakeet v3 or Whisper). */
 export interface LocalSpeechModel {
   id: string;
   label: string;
@@ -158,8 +158,10 @@ export interface LocalSpeechModel {
   installed: boolean;
 }
 
-/** The Voz role's provider id for the local Whisper. */
+/** The Voz role's provider id for the speech model on this PC. */
 export const LOCAL_SPEECH = "local";
+/** AC-185: what «En esta PC» picks first; Whisper tiny/base stay as the light options. */
+export const DEFAULT_LOCAL_SPEECH = "parakeet-v3";
 
 export interface ModelRef {
   provider_id: string;

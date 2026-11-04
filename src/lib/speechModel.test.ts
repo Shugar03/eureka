@@ -18,6 +18,7 @@ describe("speechModelWarning", () => {
     const w = speechModelWarning("deepseek-v4.1-flash", "openrouter")!;
     expect(w).toContain("«deepseek-v4.1-flash» parece un modelo de texto");
     expect(w).toContain("whisper-1 (OpenAI)");
+    expect(w).toContain("«En esta PC» para usar Parakeet v3");
     expect(w).not.toContain("OpenCode Go");
   });
 
