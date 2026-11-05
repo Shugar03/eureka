@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { api, backupApi, codeApi, errorText, learnerApi } from "../api";
 import { keepFile } from "../lib/saveFile";
 import { onPhone, thisDevice, yourDevice } from "../lib/platform";
-import { LOCAL_SPEECH, type Accessibility, type LearnerProfile, type ModelRef, type PromptView, type ProviderInput, type RememberedSession, type Roles, type Runtime, type SettingsView } from "../types";
+import { DEFAULT_LOCAL_SPEECH, LOCAL_SPEECH, type Accessibility, type LearnerProfile, type ModelRef, type PromptView, type ProviderInput, type RememberedSession, type Roles, type Runtime, type SettingsView } from "../types";
 import { langLabel } from "../lib/code";
 import { speechModelWarning } from "../lib/speechModel";
 import { LocalSpeech } from "./settings/LocalSpeech";
@@ -28,7 +28,7 @@ const ROLE_INFO: { id: keyof Roles; label: string; hint: string }[] = [
   { id: "extractor", label: "Extractor", hint: "Arma el grafo al terminar. Un modelo barato alcanza. Vacío = el principal." },
   { id: "practice", label: "Práctica", hint: "Genera y corrige problemas. Vacío = el principal." },
   { id: "researcher", label: "Investigador", hint: "Resume búsquedas web con fuentes. Vacío = el principal." },
-  { id: "speech", label: "Voz", hint: "Transcribe tu voz (micrófono y speaking): «En esta PC» usa Whisper sin internet; o whisper-1 (OpenAI), whisper-large-v3 (Groq). Vacío = sin voz." },
+  { id: "speech", label: "Voz", hint: "Transcribe tu voz (micrófono y speaking): «En esta PC» usa Parakeet v3 (o Whisper, más liviano) sin internet; o whisper-1 (OpenAI), whisper-large-v3 (Groq). Vacío = sin voz." },
 ];
 
 const PROMPT_LABEL: Record<string, string> = {
@@ -451,7 +451,7 @@ function ModelsTab() {
             <select
               aria-label={`Proveedor de ${r.label}`}
               value={roles[r.id].provider_id}
-              onChange={(e) => setRole(r.id, e.target.value === LOCAL_SPEECH ? { provider_id: LOCAL_SPEECH, model: "whisper-base" } : { provider_id: e.target.value })}
+              onChange={(e) => setRole(r.id, e.target.value === LOCAL_SPEECH ? { provider_id: LOCAL_SPEECH, model: DEFAULT_LOCAL_SPEECH } : { provider_id: e.target.value })}
             >
               <option value="">— proveedor —</option>
               {r.id === "speech" && !onPhone() && <option value={LOCAL_SPEECH}>En esta PC</option>}

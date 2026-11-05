@@ -1,6 +1,8 @@
-//! Speech to text on this PC (AC-106): OpenAI's Whisper run on the CPU with candle
-//! (pure Rust, no cmake/clang). The model is downloaded once, on request, into the
-//! data folder; after that dictation works without internet or an API key.
+//! Speech to text on this PC (AC-106, AC-185): NVIDIA's Parakeet TDT 0.6B v3 (ONNX,
+//! int8, through ONNX Runtime) by default, and OpenAI's Whisper run on the CPU with
+//! candle (pure Rust, no cmake/clang) as the light options. The model is downloaded
+//! once, on request, into the data folder; after that dictation works without
+//! internet or an API key.
 //!
 //! The UI hands over 16 kHz mono WAV (it decodes the recording with WebAudio), so
 //! this module only does PCM → log-mel → greedy decoding.
@@ -18,6 +20,8 @@ use candle_core::{Device, IndexOp, Tensor};
 use candle_nn::VarBuilder;
 #[cfg(not(target_os = "android"))]
 use candle_transformers::models::whisper::{self as m, audio, model::Whisper, Config};
+#[cfg(not(target_os = "android"))]
+use parakeet_rs::{ExecutionConfig, ParakeetTDT, TimestampMode, Transcriber};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 
@@ -31,34 +35,78 @@ const MEL_FILTERS: &[u8] = include_bytes!("../assets/melfilters.bytes");
 pub const MAX_SECONDS: usize = 60;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Kind {
+    Whisper,
+    Parakeet,
+}
+
+/// A file of a model; with its size and sha256 it's verified (and a cut download can resume).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ModelFile {
+    name: &'static str,
+    /// 0 for Whisper's small json files, which aren't pinned.
+    bytes: u64,
+    sha256: Option<&'static str>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LocalModel {
     pub id: &'static str,
     pub label: &'static str,
+    pub kind: Kind,
     repo: &'static str,
-    /// Size of model.safetensors, in bytes (shown before downloading).
+    /// A commit, so the pinned hashes always match ("main" for Whisper's small json files).
+    revision: &'static str,
+    /// What the download weighs, in bytes (shown before downloading).
     pub bytes: u64,
-    sha256: &'static str,
+    files: &'static [ModelFile],
 }
 
-/// Multilingual only: the `.en` variants can't do Spanish.
-pub const MODELS: [LocalModel; 2] = [
-    LocalModel { id: "whisper-tiny", label: "Rápido (tiny)", repo: "openai/whisper-tiny", bytes: 151_061_672, sha256: "7ebd0e69e78190ffe1438491fa05cc1f5c1aa3a4c4db3bc1723adbb551ea2395" },
-    LocalModel { id: "whisper-base", label: "Mejor (base)", repo: "openai/whisper-base", bytes: 290_403_936, sha256: "07cadb9f25677c8d50df603e66a98fbd842cce45047139baeb16e6219a1e807b" },
+const fn file(name: &'static str, bytes: u64, sha256: &'static str) -> ModelFile {
+    ModelFile { name, bytes, sha256: Some(sha256) }
+}
+
+const fn whisper_files(bytes: u64, weights: &'static str) -> [ModelFile; 3] {
+    [ModelFile { name: "config.json", bytes: 0, sha256: None }, ModelFile { name: "tokenizer.json", bytes: 0, sha256: None }, file("model.safetensors", bytes, weights)]
+}
+
+const fn total(files: &[ModelFile]) -> u64 {
+    let (mut sum, mut i) = (0, 0);
+    while i < files.len() {
+        sum += files[i].bytes;
+        i += 1;
+    }
+    sum
+}
+
+const WHISPER_TINY: [ModelFile; 3] = whisper_files(151_061_672, "7ebd0e69e78190ffe1438491fa05cc1f5c1aa3a4c4db3bc1723adbb551ea2395");
+const WHISPER_BASE: [ModelFile; 3] = whisper_files(290_403_936, "07cadb9f25677c8d50df603e66a98fbd842cce45047139baeb16e6219a1e807b");
+/// The int8 export: a quarter of the fp32 one and faster on the CPU. Hashes = the repo's LFS oids.
+const PARAKEET_V3: [ModelFile; 3] = [
+    file("encoder-model.int8.onnx", 652_183_999, "6139d2fa7e1b086097b277c7149725edbab89cc7c7ae64b23c741be4055aff09"),
+    file("decoder_joint-model.int8.onnx", 18_202_004, "eea7483ee3d1a30375daedc8ed83e3960c91b098812127a0d99d1c8977667a70"),
+    file("vocab.txt", 93_939, "d58544679ea4bc6ac563d1f545eb7d474bd6cfa467f0a6e2c1dc1c7d37e3c35d"),
+];
+
+/// Multilingual only (the `.en` Whisper variants can't do Spanish). The first is the default.
+pub const MODELS: [LocalModel; 3] = [
+    LocalModel { id: "parakeet-v3", label: "Mejor calidad (Parakeet v3)", kind: Kind::Parakeet, repo: "istupakov/parakeet-tdt-0.6b-v3-onnx", revision: "8f23f0c03c8761650bdb5b40aaf3e40d2c15f1ce", bytes: total(&PARAKEET_V3), files: &PARAKEET_V3 },
+    LocalModel { id: "whisper-tiny", label: "Liviano (Whisper tiny)", kind: Kind::Whisper, repo: "openai/whisper-tiny", revision: "main", bytes: total(&WHISPER_TINY), files: &WHISPER_TINY },
+    LocalModel { id: "whisper-base", label: "Liviano, mejor (Whisper base)", kind: Kind::Whisper, repo: "openai/whisper-base", revision: "main", bytes: total(&WHISPER_BASE), files: &WHISPER_BASE },
 ];
 
 pub fn model(id: &str) -> Option<&'static LocalModel> {
     MODELS.iter().find(|m| m.id == id)
 }
 
-const FILES: [&str; 3] = ["config.json", "tokenizer.json", "model.safetensors"];
-
 pub fn dir(data_dir: &Path, model: &LocalModel) -> PathBuf {
     data_dir.join("speech").join(model.id)
 }
 
+/// Only a complete model counts: its folder appears once every file arrived intact.
 pub fn installed(data_dir: &Path, model: &LocalModel) -> bool {
     let d = dir(data_dir, model);
-    FILES.iter().all(|f| d.join(f).is_file())
+    model.files.iter().all(|f| d.join(f.name).is_file())
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -73,38 +121,76 @@ pub fn status(data_dir: &Path) -> Vec<ModelStatus> {
     MODELS.iter().map(|m| ModelStatus { id: m.id.into(), label: m.label.into(), bytes: m.bytes, installed: installed(data_dir, m) }).collect()
 }
 
-/// Downloads the three files, checking the weights' sha256, into a temporary folder
-/// that only becomes the model folder once everything arrived intact.
+/// What a cut download left of a file: its hash so far and its length (nothing if absent).
+fn partial(path: &Path) -> Result<(Sha256, u64)> {
+    use std::io::Read;
+    let mut hash = Sha256::new();
+    let Ok(mut f) = std::fs::File::open(path) else { return Ok((hash, 0)) };
+    let (mut buf, mut len) = (vec![0u8; 1 << 20], 0u64);
+    loop {
+        let n = f.read(&mut buf)?;
+        if n == 0 {
+            return Ok((hash, len));
+        }
+        hash.update(&buf[..n]);
+        len += n as u64;
+    }
+}
+
+fn hex(hash: Sha256) -> String {
+    hash.finalize().iter().map(|b| format!("{b:02x}")).collect()
+}
+
+/// Downloads the files, checking the sha256 of the pinned ones, into a temporary folder
+/// that only becomes the model folder once everything arrived intact. A cut download
+/// continues the pinned files where it was left the next time.
 pub async fn download(data_dir: &Path, model: &LocalModel, mut progress: impl FnMut(u64, u64)) -> Result<()> {
     if cfg!(target_os = "android") {
         bail!("La voz en el equipo no está disponible en el celular.");
     }
     use futures_util::StreamExt;
+    use reqwest::StatusCode;
     let target = dir(data_dir, model);
     let tmp = target.with_extension("partial");
-    let _ = std::fs::remove_dir_all(&tmp);
     std::fs::create_dir_all(&tmp)?;
     let client = crate::llm::client()?;
     let mut done = 0u64;
-    for file in FILES {
-        let url = format!("https://huggingface.co/{}/resolve/main/{file}", model.repo);
-        let resp = client.get(&url).send().await.with_context(|| format!("no se pudo descargar {file}"))?;
-        if !resp.status().is_success() {
-            bail!("La descarga de {file} respondió {}.", resp.status());
+    for file in model.files {
+        let path = tmp.join(file.name);
+        // Unpinned files can't be checked, so they always come again.
+        let (mut hash, mut have) = if file.sha256.is_some() { partial(&path)? } else { (Sha256::new(), 0) };
+        let url = format!("https://huggingface.co/{}/resolve/{}/{}", model.repo, model.revision, file.name);
+        let mut req = client.get(&url);
+        if have > 0 {
+            req = req.header(reqwest::header::RANGE, format!("bytes={have}-"));
         }
-        let mut out = std::fs::File::create(tmp.join(file))?;
-        let mut hash = Sha256::new();
-        let mut stream = resp.bytes_stream();
-        while let Some(chunk) = stream.next().await {
-            let chunk = chunk.context("la descarga se cortó")?;
-            std::io::Write::write_all(&mut out, &chunk)?;
-            hash.update(&chunk);
-            done += chunk.len() as u64;
-            progress(done, model.bytes);
+        let resp = req.send().await.with_context(|| format!("no se pudo descargar {}", file.name))?;
+        // 416: the file was already whole; only the hash below decides.
+        let complete = have > 0 && resp.status() == StatusCode::RANGE_NOT_SATISFIABLE;
+        if !complete && !resp.status().is_success() {
+            bail!("La descarga de {} respondió {}.", file.name, resp.status());
         }
-        let hex: String = hash.finalize().iter().map(|b| format!("{b:02x}")).collect();
-        if file == "model.safetensors" && hex != model.sha256 {
-            let _ = std::fs::remove_dir_all(&tmp);
+        if have > 0 && resp.status() == StatusCode::OK {
+            // The server ignored the range and sends it all again.
+            (hash, have) = (Sha256::new(), 0);
+        }
+        let mut out = std::fs::OpenOptions::new().create(true).write(true).append(have > 0).truncate(have == 0).open(&path)?;
+        done += have;
+        progress(done, model.bytes);
+        if !complete {
+            let mut stream = resp.bytes_stream();
+            while let Some(chunk) = stream.next().await {
+                let chunk = chunk.context("la descarga se cortó (al reintentar sigue donde quedó)")?;
+                std::io::Write::write_all(&mut out, &chunk)?;
+                hash.update(&chunk);
+                done += chunk.len() as u64;
+                progress(done, model.bytes);
+            }
+        }
+        drop(out);
+        let len = std::fs::metadata(&path)?.len();
+        if file.sha256.is_some_and(|want| len != file.bytes || hex(hash) != want) {
+            let _ = std::fs::remove_file(&path);
             bail!("El modelo descargado no coincide con el original (archivo dañado). Probá de nuevo.");
         }
     }
@@ -115,6 +201,7 @@ pub async fn download(data_dir: &Path, model: &LocalModel, mut progress: impl Fn
 
 pub fn remove(data_dir: &Path, model: &LocalModel) -> Result<()> {
     let d = dir(data_dir, model);
+    let _ = std::fs::remove_dir_all(d.with_extension("partial"));
     if d.exists() {
         std::fs::remove_dir_all(d)?;
     }
@@ -249,6 +336,68 @@ impl Engine {
 #[cfg(not(target_os = "android"))]
 pub struct Engine {
     pub id: &'static str,
+    backend: Backend,
+}
+
+#[cfg(not(target_os = "android"))]
+enum Backend {
+    Whisper(Box<WhisperEngine>),
+    Parakeet(Box<ParakeetTDT>),
+}
+
+#[cfg(not(target_os = "android"))]
+impl Engine {
+    pub fn load(data_dir: &Path, info: &'static LocalModel) -> Result<Self> {
+        if !installed(data_dir, info) {
+            bail!("El modelo de voz local no está descargado. Bajalo en Ajustes → Modelos → Voz.");
+        }
+        let d = dir(data_dir, info);
+        let backend = match info.kind {
+            Kind::Whisper => Backend::Whisper(Box::new(WhisperEngine::load(&d)?)),
+            Kind::Parakeet => {
+                let threads = std::thread::available_parallelism().map_or(4, |n| n.get()).min(8);
+                let env = parakeet_rs::ort::init().build().map_err(|e| anyhow!("no se pudo iniciar ONNX Runtime: {e}"))?;
+                let config = ExecutionConfig::new().with_environment(env).with_intra_threads(threads);
+                Backend::Parakeet(Box::new(ParakeetTDT::from_pretrained(&d, Some(config)).map_err(|e| anyhow!("no se pudo cargar Parakeet: {e}"))?))
+            }
+        };
+        Ok(Self { id: info.id, backend })
+    }
+
+    pub fn transcribe(&mut self, samples: &[f32], language: &str) -> Result<String> {
+        if samples.len() < m::SAMPLE_RATE / 4 {
+            bail!("La grabación es muy corta. Hablá un poco más.");
+        }
+        // Also what keeps Parakeet's attention (and its memory) small: the UI records in parts.
+        if samples.len() > MAX_SECONDS * m::SAMPLE_RATE {
+            bail!("La grabación dura más de {MAX_SECONDS} segundos; probá de a partes.");
+        }
+        let text = match &mut self.backend {
+            Backend::Whisper(w) => w.transcribe(samples, language)?,
+            // Parakeet detects the language by itself (25 European languages).
+            Backend::Parakeet(p) => {
+                let out = p.transcribe_samples(samples.to_vec(), m::SAMPLE_RATE as u32, 1, Some(TimestampMode::Tokens)).map_err(|e| anyhow!("Parakeet no pudo transcribir: {e}"))?;
+                tidy(&out.text)
+            }
+        };
+        if text.trim().is_empty() {
+            bail!("No se entendió nada en la grabación. Probá hablar más cerca del micrófono.");
+        }
+        Ok(text)
+    }
+}
+
+/// One space between words, none before punctuation (pieces join with stray spaces).
+fn tidy(text: &str) -> String {
+    let mut out = text.split_whitespace().collect::<Vec<_>>().join(" ");
+    for p in [" .", " ,", " ?", " !", " ;", " :"] {
+        out = out.replace(p, &p[1..]);
+    }
+    out
+}
+
+#[cfg(not(target_os = "android"))]
+struct WhisperEngine {
     model: Whisper,
     tokenizer: Tokenizer,
     filters: Vec<f32>,
@@ -257,12 +406,8 @@ pub struct Engine {
 }
 
 #[cfg(not(target_os = "android"))]
-impl Engine {
-    pub fn load(data_dir: &Path, info: &'static LocalModel) -> Result<Self> {
-        let d = dir(data_dir, info);
-        if !installed(data_dir, info) {
-            bail!("El modelo de voz local no está descargado. Bajalo en Ajustes → Modelos → Voz.");
-        }
+impl WhisperEngine {
+    fn load(d: &Path) -> Result<Self> {
         let device = Device::Cpu;
         let config: Config = serde_json::from_str(&std::fs::read_to_string(d.join("config.json"))?).context("config.json inválido")?;
         if config.num_mel_bins != 80 {
@@ -275,16 +420,11 @@ impl Engine {
         let suppress: Vec<f32> = (0..config.vocab_size as u32).map(|i| if config.suppress_tokens.contains(&i) { f32::NEG_INFINITY } else { 0.0 }).collect();
         let suppress = Tensor::new(suppress.as_slice(), &device)?;
         let filters = MEL_FILTERS.chunks_exact(4).map(|b| f32::from_le_bytes([b[0], b[1], b[2], b[3]])).collect();
-        Ok(Self { id: info.id, model, tokenizer, filters, suppress, device })
+        Ok(Self { model, tokenizer, filters, suppress, device })
     }
 
-    pub fn transcribe(&mut self, samples: &[f32], language: &str) -> Result<String> {
-        if samples.len() < m::SAMPLE_RATE / 4 {
-            bail!("La grabación es muy corta. Hablá un poco más.");
-        }
-        if samples.len() > MAX_SECONDS * m::SAMPLE_RATE {
-            bail!("La grabación dura más de {MAX_SECONDS} segundos; probá de a partes.");
-        }
+    /// The length checks and the "nothing understood" error are in `Engine::transcribe`.
+    fn transcribe(&mut self, samples: &[f32], language: &str) -> Result<String> {
         let cfg = self.model.config.clone();
         let mel = audio::pcm_to_mel(&cfg, samples, &self.filters);
         let frames = mel.len() / cfg.num_mel_bins;
@@ -302,11 +442,7 @@ impl Engine {
             }
             seek += size;
         }
-        let text = text.join(" ");
-        if text.trim().is_empty() {
-            bail!("No se entendió nada en la grabación. Probá hablar más cerca del micrófono.");
-        }
-        Ok(text)
+        Ok(text.join(" "))
     }
 
     fn decode(&mut self, mel: &Tensor, language: &str) -> Result<String> {
@@ -434,28 +570,88 @@ mod tests {
         assert!(MODELS.iter().all(|m| !m.repo.ends_with(".en")));
         let tmp = std::env::temp_dir().join(format!("la-speech-{}", uuid::Uuid::new_v4()));
         let tiny = model("whisper-tiny").unwrap();
-        assert!(!status(&tmp)[0].installed);
+        let installed_ = |s: &[ModelStatus], id: &str| s.iter().any(|m| m.id == id && m.installed);
+        assert!(!installed_(&status(&tmp), "whisper-tiny"));
         std::fs::create_dir_all(dir(&tmp, tiny)).unwrap();
-        for f in FILES {
-            std::fs::write(dir(&tmp, tiny).join(f), "x").unwrap();
+        for f in tiny.files {
+            std::fs::write(dir(&tmp, tiny).join(f.name), "x").unwrap();
         }
         let s = status(&tmp);
-        assert!(s[0].installed && !s[1].installed);
+        assert!(installed_(&s, "whisper-tiny") && !installed_(&s, "whisper-base") && !installed_(&s, "parakeet-v3"));
+        // A half download (the .partial folder) doesn't count, and deleting clears it too.
+        let parakeet = model("parakeet-v3").unwrap();
+        let partial_dir = dir(&tmp, parakeet).with_extension("partial");
+        std::fs::create_dir_all(&partial_dir).unwrap();
+        for f in parakeet.files {
+            std::fs::write(partial_dir.join(f.name), "x").unwrap();
+        }
+        assert!(!installed(&tmp, parakeet));
+        remove(&tmp, parakeet).unwrap();
+        assert!(!partial_dir.exists());
         remove(&tmp, tiny).unwrap();
         assert!(!installed(&tmp, tiny));
         assert!(model("whisper-large").is_none());
         let _ = std::fs::remove_dir_all(&tmp);
     }
 
-    /// End to end with the real model (downloads ~150 MB the first time):
+    #[test]
+    fn parakeet_comes_first_and_every_big_file_is_pinned() {
+        assert_eq!(MODELS[0].id, "parakeet-v3");
+        assert_eq!(MODELS[0].kind, Kind::Parakeet);
+        assert!(MODELS[1..].iter().all(|m| m.kind == Kind::Whisper));
+        assert_eq!(model("parakeet-v3").unwrap().bytes, 670_479_942);
+        for m in MODELS {
+            assert_eq!(m.bytes, m.files.iter().map(|f| f.bytes).sum::<u64>(), "{}", m.id);
+            for f in m.files {
+                // Pinned = a real size and a 64-hex sha256; unpinned = Whisper's small json files.
+                match f.sha256 {
+                    Some(h) => assert!(f.bytes > 0 && h.len() == 64 && h.chars().all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase()), "{}", f.name),
+                    None => assert!(f.bytes == 0 && f.name.ends_with(".json") && m.kind == Kind::Whisper, "{}", f.name),
+                }
+            }
+        }
+        // Parakeet: exactly what parakeet-rs reads, only the int8 export, at a fixed commit.
+        let p = model("parakeet-v3").unwrap();
+        let names: Vec<_> = p.files.iter().map(|f| f.name).collect();
+        assert_eq!(names, ["encoder-model.int8.onnx", "decoder_joint-model.int8.onnx", "vocab.txt"]);
+        assert!(p.revision.len() == 40 && p.revision != "main");
+    }
+
+    #[test]
+    fn a_cut_download_is_continued_from_its_hash_and_length() {
+        let tmp = std::env::temp_dir().join(format!("la-speech-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&tmp).unwrap();
+        let (h, len) = partial(&tmp.join("missing")).unwrap();
+        assert_eq!((hex(h), len), (hex(Sha256::new()), 0));
+        std::fs::write(tmp.join("half"), b"hola mundo").unwrap();
+        let (mut h, len) = partial(&tmp.join("half")).unwrap();
+        assert_eq!(len, 10);
+        h.update(b"!");
+        let mut whole = Sha256::new();
+        whole.update(b"hola mundo!");
+        assert_eq!(hex(h), hex(whole));
+        let _ = std::fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
+    fn tidies_the_spaces_parakeet_pieces_leave() {
+        assert_eq!(tidy("  Hola ,  ¿cómo  andás ? Bien . "), "Hola, ¿cómo andás? Bien.");
+        assert_eq!(tidy("La derivada de x al cuadrado es 2x."), "La derivada de x al cuadrado es 2x.");
+        assert_eq!(tidy("   "), "");
+    }
+
+    /// End to end with the real model (Parakeet v3 by default: downloads ~670 MB the first time):
     /// `LA_SPEECH_WAV=ruta.wav cargo test --lib local_speech::tests::real -- --ignored --nocapture`
+    /// (`LA_SPEECH_MODEL=whisper-tiny` for Whisper).
     #[test]
     #[ignore]
     fn real_transcription() {
         let data = PathBuf::from(std::env::var("LA_SPEECH_DIR").unwrap_or_else(|_| "D:/dev-cache/eureka-speech".into()));
-        let tiny = model(&std::env::var("LA_SPEECH_MODEL").unwrap_or_else(|_| "whisper-tiny".into())).unwrap();
+        let tiny = model(&std::env::var("LA_SPEECH_MODEL").unwrap_or_else(|_| MODELS[0].id.into())).unwrap();
         if !installed(&data, tiny) {
+            let started = std::time::Instant::now();
             tokio::runtime::Runtime::new().unwrap().block_on(download(&data, tiny, |_, _| {})).unwrap();
+            println!("{} MB descargados en {:?}", tiny.bytes / 1_000_000, started.elapsed());
         }
         let samples = wav_samples(&std::fs::read(std::env::var("LA_SPEECH_WAV").expect("LA_SPEECH_WAV")).unwrap()).unwrap();
         let started = std::time::Instant::now();

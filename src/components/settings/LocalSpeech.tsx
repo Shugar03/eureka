@@ -5,7 +5,7 @@ import type { LocalSpeechModel } from "../../types";
 export const mb = (bytes: number) => `${Math.round(bytes / 1_000_000)} MB`;
 
 /**
- * AC-106: the Voz role on this PC. The model is downloaded once (size shown first),
+ * AC-106/AC-185: the Voz role on this PC (Parakeet v3 first, Whisper as the light options). The model is downloaded once (size shown first),
  * then dictation and speaking work without internet or an API key.
  */
 export function LocalSpeech({ model, onModel, onChanged }: { model: string; onModel: (id: string) => void; onChanged: () => void }) {
@@ -69,7 +69,7 @@ export function LocalSpeech({ model, onModel, onChanged }: { model: string; onMo
         </progress>
       )}
       <p className="muted small local-speech-note">
-        Whisper corre en tu PC: después de descargarlo no usa internet ni API key. El primer dictado tarda unos segundos en cargar el modelo. «Rápido» va bien para dictar; «Mejor» entiende más en español. Guardá los ajustes para usarlo.
+        Corre en tu PC: después de descargarlo no usa internet ni API key. El primer dictado tarda unos segundos en cargar el modelo. Parakeet v3 (de NVIDIA) es el que mejor entiende, con puntuación y detectando el idioma; los Whisper pesan menos si tu PC tiene poco espacio o memoria. Guardá los ajustes para usarlo.
       </p>
       {error && (
         <p className="error-text small" role="alert">

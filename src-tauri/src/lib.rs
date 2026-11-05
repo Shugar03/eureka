@@ -81,7 +81,7 @@ pub struct AppState {
     runtimes: tokio::sync::Mutex<Option<Vec<runner::Runtime>>>,
     /// Cancel flags of sessions with a turn in progress.
     running: Mutex<HashMap<String, Arc<AtomicBool>>>,
-    /// The local Whisper, loaded on the first dictation and kept for the next ones.
+    /// The local speech model (Parakeet or Whisper), loaded on the first dictation and kept for the next ones.
     local_speech: Arc<Mutex<Option<local_speech::Engine>>>,
     /// What the screen last said it is doing (pomodoro, theme, reminders…): lives only in memory.
     ui: Mutex<String>,

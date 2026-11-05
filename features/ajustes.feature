@@ -1,5 +1,5 @@
 # language: es
-# Cubre: AC-09, AC-10, AC-11, AC-12 (docs/spec.md)
+# Cubre: AC-09, AC-10, AC-11, AC-12, AC-185 (docs/spec.md)
 # Automatización: tests/e2e/ajustes.e2e.ts
 
 Característica: Configurar modelos, keys y prompts
@@ -58,3 +58,17 @@ Característica: Configurar modelos, keys y prompts
     Entonces veo "Conectado: <servicio> · <modelo>"
     Y los modelos por tarea siguen en "Avanzado"
 
+  @AC-185
+  Escenario: Parakeet v3 es la voz en esta PC por defecto
+    Cuando abro Ajustes → Avanzado y elijo "En esta PC" como proveedor de Voz
+    Entonces queda elegido "Mejor calidad (Parakeet v3)" con "670 MB"
+    Y "Liviano (Whisper tiny)" y "Liviano, mejor (Whisper base)" aparecen después
+    Cuando presiono "Descargar (670 MB)"
+    Entonces veo el progreso y después "Borrar modelo"
+    Y dictar transcribe sin internet, con puntuación y en el idioma en que hablo
+
+  @AC-185
+  Escenario: Quien ya usaba Whisper lo conserva
+    Dado que la Voz es "En esta PC" con "Liviano, mejor (Whisper base)"
+    Cuando abro Ajustes
+    Entonces sigue elegido "Liviano, mejor (Whisper base)"

@@ -164,20 +164,32 @@ describe("Settings › Accesibilidad: guardado", () => {
 });
 
 describe("Settings › Voz en esta PC (AC-106)", () => {
-  it("offers the local Whisper only for Voz, shows the size, downloads it and can delete it", async () => {
+  it("offers the local model only for Voz, shows the size, downloads it and can delete it", async () => {
     render(<Settings onBack={() => {}} initialTab="models" />);
     const provider = await screen.findByLabelText("Proveedor de Voz");
     expect(within(screen.getByLabelText("Proveedor de Profesor")).queryByRole("option", { name: /En esta PC/ })).toBeNull();
     await userEvent.selectOptions(provider, "En esta PC");
     expect(screen.queryByLabelText("Modelo de Voz")).toBeNull();
     const local = await screen.findByLabelText("Modelo de voz local");
-    expect(local).toHaveValue("whisper-base");
+    // AC-185: Parakeet v3 is what «En esta PC» picks.
+    expect(local).toHaveValue("parakeet-v3");
     expect(screen.queryByRole("note")).toBeNull();
-    await userEvent.click(await screen.findByRole("button", { name: "Descargar (290 MB)" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Descargar (670 MB)" }));
     expect(await screen.findByRole("button", { name: "Borrar modelo" }, { timeout: 4000 })).toBeInTheDocument();
-    expect(within(local).getByRole("option", { name: /Mejor \(base\) · 290 MB · descargado/ })).toBeInTheDocument();
+    expect(within(local).getByRole("option", { name: /Mejor calidad \(Parakeet v3\) · 670 MB · descargado/ })).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Borrar modelo" }));
-    expect(await screen.findByRole("button", { name: "Descargar (290 MB)" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Descargar (670 MB)" })).toBeInTheDocument();
+  });
+
+  it("lists Parakeet v3 first and keeps a Whisper someone chose (AC-185)", async () => {
+    render(<Settings onBack={() => {}} initialTab="models" />);
+    await userEvent.selectOptions(await screen.findByLabelText("Proveedor de Voz"), "En esta PC");
+    const local = await screen.findByLabelText("Modelo de voz local");
+    await within(local).findByRole("option", { name: /Whisper base/ });
+    expect(within(local).getAllByRole("option").map((o) => o.textContent)).toEqual(["Mejor calidad (Parakeet v3) · 670 MB", "Liviano (Whisper tiny) · 151 MB", "Liviano, mejor (Whisper base) · 290 MB"]);
+    await userEvent.selectOptions(local, "whisper-base");
+    expect(local).toHaveValue("whisper-base");
+    expect(screen.getByRole("button", { name: "Descargar (290 MB)" })).toBeInTheDocument();
   });
 });
 
