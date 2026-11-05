@@ -144,7 +144,13 @@ pub async fn extract(state: &AppState, source: Source, input: String) -> Result<
     }
     let (propositions, chains) = validate(raw).map_err(|e| anyhow!(e))?;
     let counts = (propositions.len(), chains.len());
-    state.graph.append(&Extraction { source, at: chrono::Utc::now(), propositions, chains })?;
+    let at = chrono::Utc::now();
+    // AC-196: the same result in the student's memory, under stable topics (no extra call).
+    let extra = if matches!(source, Source::Session { .. }) { serde_json::from_str::<Value>(&args).unwrap_or_default() } else { Value::Null };
+    if let Err(e) = state.memdb.record_extraction(&source, &propositions, &chains, &extra, at) {
+        eprintln!("memoria del estudiante: {e}");
+    }
+    state.graph.append(&Extraction { source, at, propositions, chains })?;
     Ok((state.graph.view(), counts.0, counts.1))
 }
 

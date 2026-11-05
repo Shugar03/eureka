@@ -250,37 +250,39 @@ fn make_cards(state: &AppState, s: &Session, args: &str) -> String {
 /// Audit item 16: the teacher asks the learner's memory on demand (read-only).
 pub fn recall(state: &AppState, s: &Session, args: &str) -> String {
     let a: serde_json::Value = serde_json::from_str(args).unwrap_or_default();
+    // AC-198: progressive reading — previews first, the whole record by its id.
+    if let Some(id) = a["id"].as_str().map(str::trim).filter(|x| !x.is_empty()) {
+        return recall_full(state, id);
+    }
     let Some(query) = a["query"].as_str().map(str::trim).filter(|q| !q.is_empty()) else {
-        return "error: recall necesita {\"query\": \"palabras clave\"}".into();
+        return "error: recall necesita {\"query\": \"palabras clave\"} o {\"id\": \"M12\"}".into();
     };
     let kind = a["kind"].as_str().unwrap_or("todo");
     let mut out: Vec<String> = Vec::new();
-    if matches!(kind, "todo" | "ideas") {
-        let view = state.graph.view();
-        for n in crate::graph::relevant(&view, query, 6) {
-            let src = n.sources.first().map(|s| match s {
-                crate::graph::Source::Session { title, .. } | crate::graph::Source::Notes { title, .. } => title.as_str(),
-            });
-            out.push(format!("- Idea entendida: {}{}", n.text, src.map(|t| format!(" (de «{t}»)")).unwrap_or_default()));
+    use crate::memdb::Kind;
+    let kinds: &[Kind] = match kind {
+        "ideas" => &[Kind::Idea, Kind::Domina],
+        "confusiones" => &[Kind::Confusion, Kind::LeCuesta],
+        "sesiones" | "examen" => &[],
+        _ => &Kind::ALL,
+    };
+    if !kinds.is_empty() {
+        out.extend(state.memdb.search(query, kinds, 6).unwrap_or_default().iter().map(crate::memdb::preview));
+    }
+    // AC-109: what other sessions left in memory.
+    if matches!(kind, "todo" | "sesiones") {
+        for r in state.memdb.search_sessions(query, &s.id, 3).unwrap_or_default() {
+            out.push(format!("- [S{}] Sesión «{}» ({}): {}", r.rowid, r.title, r.at.with_timezone(&chrono::Local).format("%d/%m"), crate::memdb::short(&r.summary, 140)));
         }
     }
     let qwords: std::collections::HashSet<String> = crate::graph::normalize(query).split_whitespace().filter(|w| w.len() > 3).map(String::from).collect();
     let hits = |text: &str| crate::graph::normalize(text).split_whitespace().any(|w| qwords.contains(w));
-    if matches!(kind, "todo" | "confusiones") {
-        for m in state.learner.load().misconceptions.iter().filter(|m| hits(&format!("{} {}", m.concept, m.wrong_idea))).take(4) {
-            out.push(format!("- Confusión {}: «{}» — {}", if m.fixed { "reparada" } else { "abierta" }, m.concept, m.wrong_idea));
-        }
-    }
-    // AC-109: what other sessions left in memory.
-    if matches!(kind, "todo" | "sesiones") {
-        out.extend(crate::memory::recall(&state.sessions.all(), query, &s.id));
-    }
     if matches!(kind, "todo" | "examen") {
         let exam_id = s.exam.as_ref().map(|e| e.exam_id.clone());
         for e in state.exams.list().iter().filter(|e| exam_id.is_none() || exam_id.as_deref() == Some(e.id.as_str())) {
             let Ok(exam) = state.exams.load(&e.id) else { continue };
             for r in exam.review.iter().filter(|r| hits(&r.question.stem)).take(3) {
-                let stem: String = r.question.stem.replace('\n', " ").chars().take(160).collect();
+                let stem: String = r.question.stem.replace(['\n', '\r'], " ").chars().take(160).collect();
                 out.push(format!("- Falló en «{}»: {stem}", exam.name));
             }
         }
@@ -289,7 +291,43 @@ pub fn recall(state: &AppState, s: &Session, args: &str) -> String {
     if out.is_empty() {
         format!("Nada en la memoria sobre «{query}». Probá con sinónimos o medilo con una pregunta.")
     } else {
-        format!("Memoria sobre «{query}»:\n{}", out.join("\n"))
+        format!("Memoria sobre «{query}» (vista previa; el registro entero, con `id`):\n{}", out.join("\n"))
+    }
+}
+
+/// The whole record behind a preview: `M12` (an observation) or `S3` (a session).
+fn recall_full(state: &AppState, id: &str) -> String {
+    let (prefix, num) = id.split_at(1.min(id.len()));
+    let Ok(n) = num.parse::<i64>() else { return format!("error: «{id}» no es un id de recall (M12 o S3).") };
+    let day = |d: chrono::DateTime<chrono::Utc>| d.with_timezone(&chrono::Local).format("%d/%m/%Y").to_string();
+    match prefix {
+        "M" | "m" => {
+            let Some(o) = state.memdb.get(n).ok().flatten().filter(|o| o.state != "borrada") else { return format!("No hay nada con el id {id}.") };
+            let mut out = format!("[M{}] {} — {}\n{}", o.id, o.kind.label(), o.title, if o.content == o.title { String::new() } else { format!("{}\n", o.content) });
+            out.push_str(&format!("Estado: {}{}{} · actualizada {}\n", o.state, if o.verified { " · verificada" } else { "" }, if o.by_student { " · la corrigió el estudiante" } else { "" }, day(o.updated_at)));
+            for e in &o.evidence {
+                out.push_str(&format!("- Evidencia {}: {}\n", day(e.at), e.label));
+            }
+            for r in state.memdb.relations(o.id).unwrap_or_default() {
+                let other = if r.from == o.id { r.to } else { r.from };
+                if let Some(x) = state.memdb.get(other).ok().flatten().filter(|x| x.state != "borrada") {
+                    out.push_str(&format!("- {} [M{}] {}: {}\n", r.kind, x.id, x.kind.label(), crate::memdb::short(&x.title, 100)));
+                }
+            }
+            out
+        }
+        "S" | "s" => {
+            let Some(r) = state.memdb.session(n).ok().flatten() else { return format!("No hay nada con el id {id}.") };
+            let mut out = format!("[S{}] Sesión «{}» ({})\n{}\n", r.rowid, r.title, day(r.at), r.summary);
+            if !r.pending.is_empty() {
+                out.push_str(&format!("Pendiente: {}.\n", r.pending.join("; ")));
+            }
+            if !r.struggled.is_empty() {
+                out.push_str(&format!("Le costó: {}.\n", r.struggled.join("; ")));
+            }
+            out
+        }
+        _ => format!("error: «{id}» no es un id de recall (M12 o S3)."),
     }
 }
 

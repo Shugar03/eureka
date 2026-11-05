@@ -1,0 +1,1 @@
+Dos observaciones sobre un aprendiz se contradicen. Con `resolve_conflict` decidí cuál vale: "a", "b" o "ambas" (si hablan de partes distintas del tema), con una frase de motivo. Ante la duda, la verificada.

@@ -1,8 +1,8 @@
 # Plan: memoria del estudiante estilo Engram, exportable en OKF
 
-> Estado: **decidido** (5/11/2026), planificado después del OCR, la documentación
-> y el experimento de embeddings estáticos (`docs/plan-embeddings-estaticos.md`).
-> Los criterios de aceptación se numeran cuando se implemente.
+> Estado: **fases 1 a 3 implementadas** (AC-195..AC-200 en `docs/spec.md`, código en
+> `src-tauri/src/memdb.rs`); la fase 4 (embeddings estáticos, `docs/plan-embeddings-estaticos.md`)
+> sigue pendiente de su experimento.
 
 ## 1. Decisión
 
@@ -58,3 +58,17 @@ Una sola vez, al actualizar: el registro actual (`graph/extractions.jsonl`), las
 - Ideas duplicadas y contradicciones sobre un conjunto de sesiones guionadas (antes y después).
 - Tokens por pasada de memoria y por turno, con el benchmark de tokens (`token_budget`).
 - Acierto del recall con preguntas sobre sesiones pasadas, incluida una paráfrasis.
+
+### Resultados (fases 1 a 3)
+
+Medido con los tests `memdb::tests::measure_*` (sesiones guionadas) y `token_budget`:
+
+| | Antes | Después |
+|---|---|---|
+| Entradas repetidas (mismo concepto y tipo), 19 anotaciones de 5 sesiones | 6 | 1 (dos ideas con verbos distintos, «deriva»/«derivan») |
+| Conceptos con «domina» y «le cuesta» a la vez | 3 | 1, esperando al modelo (verificada vieja contra nueva sin verificar) |
+| Recall: sesión correcta primero, 10 preguntas con plurales y paráfrasis | 7 | 10 |
+| Tokens del pase de memoria en segundo plano | 2439 | 2439 (sin llamadas nuevas) |
+| Tokens por llamada del profesor (herramienta `recall` con `id`) | — | +22 |
+
+La migración sobre una copia de datos reales (3 extracciones, 3 sesiones recordadas, el perfil) dejó 47 observaciones en 47 temas, 26 relaciones, sin duplicados ni contradicciones; la segunda corrida no agregó nada.

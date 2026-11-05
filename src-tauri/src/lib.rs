@@ -22,6 +22,7 @@ mod learner;
 mod academic;
 mod local_speech;
 mod ocr;
+mod memdb;
 mod memory;
 mod oauth;
 mod student;
@@ -70,6 +71,8 @@ pub struct AppState {
     pub classes: classes::ClassStore,
     pub projects: project::ProjectStore,
     pub learner: learner::LearnerStore,
+    /// AC-195: the student's memory (observations with stable topics), opened on first use.
+    pub memdb: memdb::MemoryDb,
     pub library: library::LibraryStore,
     /// Mi cursada: terms, courses, class slots and the dates that matter.
     pub academic: academic::AcademicStore,
@@ -114,6 +117,7 @@ impl AppState {
             classes: classes::ClassStore::new(&data_dir),
             projects: project::ProjectStore::new(&data_dir),
             learner: learner::LearnerStore::new(&data_dir),
+            memdb: memdb::MemoryDb::new(&data_dir),
             library: library::LibraryStore::new(&data_dir),
             academic: academic::AcademicStore::new(&data_dir),
             career: career::CareerStore::new(&data_dir),
@@ -496,12 +500,15 @@ fn delete_session(state: State<'_, AppState>, id: String, forget: Option<bool>) 
                 let _ = state.graph.forget(Source::Session { id: s.id.clone(), title: s.title.clone() });
             }
             let label = format!("Sesión: {}", s.title);
+            let _ = state.memdb.forget_source(&Source::Session { id: s.id.clone(), title: s.title.clone() }.key(), Some(&label), None);
             let _ = state.learner.update(|p| {
                 p.misconceptions.retain(|m| m.source != label);
                 p.preferences.retain(|x| x.source != label);
             });
         }
     }
+    // Its memory (summary, pending, what was hard) lived in the session file: it goes with it.
+    let _ = state.memdb.forget_session(&id);
     state.sessions.delete(&id).map_err(err)
 }
 
@@ -561,6 +568,7 @@ fn forget_session_memory(state: State<'_, AppState>, id: String) -> CmdResult<Ve
     // An empty memory that has "seen" these messages: the background pass won't rebuild it from them.
     s.memory = Some(memory::SessionMemory::forgotten(s.messages.len()));
     state.sessions.save_quiet(&s).map_err(err)?;
+    state.memdb.forget_session(&id).map_err(err)?;
     Ok(session_memories(state))
 }
 
@@ -593,6 +601,7 @@ async fn remember_session_now(state: State<'_, AppState>, id: String) -> CmdResu
 /// Forgets one source of the graph (a session or imported notes).
 #[tauri::command]
 fn forget_source(state: State<'_, AppState>, source: Source) -> CmdResult<GraphView> {
+    state.memdb.forget_source(&source.key(), None, Some(&[memdb::Kind::Idea])).map_err(err)?;
     state.graph.forget(source).map_err(err)?;
     Ok(state.graph.view())
 }
@@ -612,17 +621,75 @@ fn forget_learner(state: State<'_, AppState>, kind: String, index: usize) -> Cmd
         .update(|p| {
             match kind.as_str() {
                 "misconception" if index < p.misconceptions.len() => {
-                    p.misconceptions.remove(index);
+                    let m = p.misconceptions.remove(index);
+                    let _ = state.memdb.forget_topic(memdb::Kind::Confusion, &m.concept);
                 }
                 "preference" if index < p.preferences.len() => {
-                    p.preferences.remove(index);
+                    let x = p.preferences.remove(index);
+                    let _ = state.memdb.forget_topic(memdb::Kind::Preferencia, &x.text);
                 }
-                "all" => *p = learner::Profile::default(),
+                "all" => {
+                    p.misconceptions.iter().for_each(|m| drop(state.memdb.forget_topic(memdb::Kind::Confusion, &m.concept)));
+                    p.preferences.iter().for_each(|x| drop(state.memdb.forget_topic(memdb::Kind::Preferencia, &x.text)));
+                    *p = learner::Profile::default()
+                }
                 _ => {}
             }
             p.clone()
         })
         .map_err(err)
+}
+
+// ── Lo que Eureka sabe de vos (AC-199, AC-200) ──
+
+#[tauri::command]
+fn memory_list(state: State<'_, AppState>) -> CmdResult<Vec<memdb::Observation>> {
+    state.memdb.list().map_err(err)
+}
+
+/// The student corrects an observation: it becomes verified and theirs.
+#[tauri::command]
+fn memory_edit(state: State<'_, AppState>, id: i64, title: String, content: String, kind: String) -> CmdResult<Vec<memdb::Observation>> {
+    let kind = memdb::Kind::parse(&kind).ok_or("Ese tipo no existe.")?;
+    // A confusion (or preference) turned into another kind is the student's now: its old profile entry goes.
+    if let Some(o) = state.memdb.get(id).map_err(err)?.filter(|o| o.kind != kind) {
+        let _ = state.learner.update(|p| memdb::strip_from_profile(p, o.kind, &o.topic));
+    }
+    state.memdb.edit(id, &title, &content, kind).map_err(err)?;
+    state.memdb.list().map_err(err)
+}
+
+/// Deletes one observation, also from the old profile so nothing brings it back.
+#[tauri::command]
+fn memory_delete(state: State<'_, AppState>, id: i64) -> CmdResult<Vec<memdb::Observation>> {
+    if let Some(o) = state.memdb.get(id).map_err(err)? {
+        let _ = state.learner.update(|p| memdb::strip_from_profile(p, o.kind, &o.topic));
+    }
+    state.memdb.delete(id).map_err(err)?;
+    state.memdb.list().map_err(err)
+}
+
+/// "Olvidar todo" of what Eureka knows about the person (the graph is forgotten from Grafo).
+#[tauri::command]
+fn memory_forget_all(state: State<'_, AppState>) -> CmdResult<Vec<memdb::Observation>> {
+    state.memdb.forget_all().map_err(err)?;
+    state.learner.update(|p| *p = learner::Profile::default()).map_err(err)?;
+    state.memdb.list().map_err(err)
+}
+
+/// AC-200: Markdown pages with frontmatter and links, in a folder of Downloads (an Obsidian vault).
+#[tauri::command]
+fn memory_export(app: tauri::AppHandle, state: State<'_, AppState>) -> CmdResult<String> {
+    let base = app.path().download_dir().map_err(err)?;
+    let name = format!("Eureka - lo que sabe de vos {}", chrono::Local::now().format("%Y-%m-%d"));
+    let mut dir = base.join(&name);
+    let mut n = 2;
+    while dir.exists() {
+        dir = base.join(format!("{name} ({n})"));
+        n += 1;
+    }
+    state.memdb.export_okf(&dir).map_err(err)?;
+    Ok(dir.to_string_lossy().into_owned())
 }
 
 /// Adds the learner's input (if any) and runs one agent turn, streaming
@@ -1206,7 +1273,7 @@ fn create_backup(app: tauri::AppHandle, state: State<'_, AppState>) -> CmdResult
     let dir = app.path().download_dir().map_err(err)?;
     let name = format!("Eureka-respaldo-{}.zip", chrono::Local::now().format("%Y%m%d-%H%M"));
     let path = dir.join(name);
-    backup::write_zip(&state.data_dir, &path).map_err(err)?;
+    backup::backup_state(&state, &path).map_err(err)?;
     Ok(path.to_string_lossy().into_owned())
 }
 
@@ -1214,7 +1281,7 @@ fn create_backup(app: tauri::AppHandle, state: State<'_, AppState>) -> CmdResult
 #[tauri::command]
 fn restore_backup(state: State<'_, AppState>, bytes: Vec<u8>) -> CmdResult<usize> {
     let safety = state.data_dir.join(format!("antes-de-restaurar-{}.zip", chrono::Local::now().format("%Y%m%d-%H%M%S")));
-    let restored = backup::restore(&state.data_dir, &bytes, &safety).map_err(err)?;
+    let restored = backup::restore_state(&state, &bytes, &safety).map_err(err)?;
     // AC-190: the library's files changed under the index.
     state.library.invalidate();
     Ok(restored)
@@ -1558,6 +1625,12 @@ pub fn run() {
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
                 let backoff = memory::Backoff::default();
+                // AC-195: the one-time migration to the student's memory (resumable; old files stay).
+                match memdb::migrate(&handle.state::<AppState>()) {
+                    Ok(c) if c.created + c.merged > 0 => eprintln!("memoria del estudiante: {c:?}"),
+                    Ok(_) => {}
+                    Err(e) => eprintln!("memoria del estudiante: {e}"),
+                }
                 tokio::time::sleep(std::time::Duration::from_secs(30)).await;
                 loop {
                     memory::pass(&handle.state::<AppState>(), &backoff).await;
@@ -1583,6 +1656,11 @@ pub fn run() {
             student_mark_known,
             session_memories,
             forget_session_memory,
+            memory_list,
+            memory_edit,
+            memory_delete,
+            memory_forget_all,
+            memory_export,
             remember_session_now,
             companion_state,
             companion_ack_privacy,

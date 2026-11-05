@@ -35,6 +35,7 @@ const DEFAULTS: &[(&str, &str)] = &[
     ("lang_speaking", include_str!("../prompts/lang_speaking.md")),
     ("summarize_history", include_str!("../prompts/summarize_history.md")),
     ("remember_session", include_str!("../prompts/remember_session.md")),
+    ("memory_conflict", include_str!("../prompts/memory_conflict.md")),
     ("chat", include_str!("../prompts/chat.md")),
     ("academic_parse", include_str!("../prompts/academic_parse.md")),
     ("career_parse", include_str!("../prompts/career_parse.md")),

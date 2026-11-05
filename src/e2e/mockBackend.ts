@@ -17,6 +17,7 @@
 //   ?disputeOne    the checker disagrees with the 1st question of each mock (it is dropped)
 //   ?noSpeech      no speech model configured (speaking explains how)
 //   ?withProfile   the learner profile has a confusion and a preference
+//   ?withMemory    the student's memory also has an idea, a pending item and a contradiction
 //   ?noRust        Rust is not installed (the console explains how to install it)
 //   ?noOcr         no local OCR (like the phone): scanned PDFs are refused as before
 //   ?ocrUnsure     the OCR reads photos with low confidence (the vision model reads them)
@@ -53,6 +54,7 @@ import type {
   Deck,
   Grade,
   LearnerProfile,
+  MemoryKind,
   Project,
   Lang,
   StudyEntry,
@@ -79,6 +81,7 @@ import { NOTES_HEADER, scriptedExtraction } from "./extractScript";
 import { fold, type LedgerLine } from "./graphFold";
 import * as lib from "./libraryScript";
 import { scriptedGrade, scriptedProblems } from "./practiceScript";
+import { MemoryMock } from "./memoryMock";
 import { isRight } from "../lib/exam";
 import { DEFAULT_ACCESSIBILITY } from "../lib/accessibility";
 import { scriptedExplain } from "./examScript";
@@ -380,6 +383,9 @@ const store = {
       : { teacher: { provider_id: "openrouter", model: "demo/profesor" }, prober: { provider_id: "", model: "" }, extractor: { provider_id: "", model: "" }, practice: { provider_id: "", model: "" }, researcher: { provider_id: "", model: "" }, speech: params.has("noSpeech") ? { provider_id: "", model: "" } : { provider_id: "openrouter", model: "demo/whisper" } },
   },
 };
+
+/** AC-199: «Lo que Eureka sabe de vos», starting from the profile above. */
+const memory = new MemoryMock(() => store.learner, params.has("withMemory"));
 
 let seq = 0;
 const nid = () => `${Date.now().toString(36)}${(seq++).toString(36)}`;
@@ -1048,6 +1054,16 @@ export function install() {
       }
       case "get_learner":
         return clone(store.learner);
+      case "memory_list":
+        return memory.view();
+      case "memory_edit":
+        return memory.edit(Number(args.id), String(args.title ?? ""), String(args.content ?? ""), args.kind as MemoryKind);
+      case "memory_delete":
+        return memory.remove(Number(args.id));
+      case "memory_forget_all":
+        return memory.forgetAll();
+      case "memory_export":
+        return memory.exportPath();
       case "student_model":
         return studentModel();
       case "student_today":

@@ -35,6 +35,8 @@ import type {
   SharedDeckIncoming,
   Grade,
   LearnerProfile,
+  MemoryKind,
+  MemoryObservation,
   Listening,
   LocalSpeechModel,
   RememberedSession,
@@ -234,6 +236,15 @@ export const identityApi = {
 export const accessibilityApi = {
   get: () => invoke<Accessibility>("get_accessibility"),
   save: (input: Accessibility) => invoke<Accessibility>("save_accessibility", { input }),
+};
+
+/** AC-199/AC-200: «Lo que Eureka sabe de vos»: list, correct, delete, export. */
+export const memoryApi = {
+  list: () => invoke<MemoryObservation[]>("memory_list"),
+  edit: (id: number, title: string, content: string, kind: MemoryKind) => invoke<MemoryObservation[]>("memory_edit", { id, title, content, kind }),
+  remove: (id: number) => invoke<MemoryObservation[]>("memory_delete", { id }),
+  forgetAll: () => invoke<MemoryObservation[]>("memory_forget_all"),
+  exportOkf: () => invoke<string>("memory_export"),
 };
 
 export const learnerApi = {

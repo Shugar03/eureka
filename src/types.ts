@@ -1113,6 +1113,29 @@ export interface LearnerProfile {
   preferences: { text: string; source: string; at: string }[];
 }
 
+/** AC-195..AC-200: one observation of the student's memory. */
+export type MemoryKind = "le_cuesta" | "confusion" | "pendiente" | "domina" | "preferencia" | "idea";
+
+export interface MemoryObservation {
+  id: number;
+  /** Stable topic key, e.g. "concepto:derivada". */
+  topic: string;
+  kind: MemoryKind;
+  title: string;
+  content: string;
+  evidence: { source: string; label: string; at: string }[];
+  confidence: number;
+  created_at: string;
+  updated_at: string;
+  verified: boolean;
+  by_student: boolean;
+  /** Review date (YYYY-MM-DD). */
+  due: string | null;
+  /** "activa" | "reparada" (also "reemplazada" | "borrada", never listed). */
+  state: string;
+  conflict: boolean;
+}
+
 /** AC-186: what the model calls spent, as the providers reported it (only on this PC). */
 export interface UsageTotals {
   calls: number;

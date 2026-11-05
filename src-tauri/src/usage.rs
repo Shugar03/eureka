@@ -266,7 +266,7 @@ pub fn bucket(e: &Event) -> (&'static str, &'static str) {
         "turn" if e.phase.as_deref() == Some("chat") => ("chat", "Charla"),
         "turn" => ("teacher", "Profesor en la sesión"),
         "summarize_history" => ("summary", "Resumen de la sesión"),
-        "remember_session" | "extract" => ("memory", "Memoria e ideas"),
+        "remember_session" | "extract" | "memory_conflict" => ("memory", "Memoria e ideas"),
         "cards_generate" => ("cards", "Tarjetas"),
         "research" => ("research", "Investigación"),
         "vision_transcribe" => ("vision", "Lectura de fotos"),

@@ -255,8 +255,67 @@ pub fn model(state: &AppState, today: NaiveDate) -> StudentModel {
     let minutes_7d = state.study.since(&week_ago).iter().map(|e| e.minutes).sum();
 
     let mut topics = b.topics;
+    let mut preferences: Vec<String> = profile.preferences.iter().map(|p| p.text.clone()).collect();
+    // AC-199: what the student corrected or deleted in «Lo que Eureka sabe de vos» wins.
+    if let Ok((mine, gone)) = state.memdb.overrides() {
+        apply_overrides(&mut topics, &mut preferences, &mut pending, &mine, &gone);
+    }
     topics.sort_by(|a, b| a.status.cmp(&b.status).then(b.at.cmp(&a.at)));
-    StudentModel { topics, pending, upcoming, preferences: profile.preferences.iter().map(|p| p.text.clone()).collect(), cards_due, minutes_7d }
+    StudentModel { topics, pending, upcoming, preferences, cards_due, minutes_7d }
+}
+
+/// The student's word over the computed signals: their own observations set
+/// the status of a topic; what they deleted leaves (unless newer evidence came).
+fn apply_overrides(topics: &mut Vec<TopicState>, preferences: &mut Vec<String>, pending: &mut Vec<Pending>, mine: &[crate::memdb::Observation], gone: &[(String, crate::memdb::Kind, DateTime<Utc>)]) {
+    use crate::memdb::{same_topic, topic, Kind};
+    let concept = |name: &str| topic(Kind::LeCuesta, name);
+    // A deleted observation takes out only its own effect: that status of that topic.
+    for (t, kind, at) in gone {
+        match kind {
+            Kind::Preferencia => preferences.retain(|p| !same_topic(&topic(Kind::Preferencia, p), t)),
+            Kind::Idea => {}
+            Kind::Pendiente => {
+                pending.retain(|p| !(same_topic(&concept(&p.item), t) && p.at <= *at));
+                topics.retain(|x| !(x.status == Status::Pendiente && same_topic(&concept(&x.name), t) && x.at <= *at));
+            }
+            Kind::Domina => topics.retain(|x| !(x.status == Status::Domina && same_topic(&concept(&x.name), t) && x.at <= *at)),
+            // «Le cuesta» from memory or sessions; an open confusion behind the topic is another observation.
+            Kind::LeCuesta => topics.retain(|x| !(x.status == Status::LeCuesta && !x.confusion && same_topic(&concept(&x.name), t) && x.at <= *at)),
+            // A confusion leaves the profile when deleted; here only a topic that was nothing but it.
+            Kind::Confusion => topics.retain(|x| !(x.status == Status::LeCuesta && x.confusion && x.sources.iter().all(|s| s == "confusión") && same_topic(&concept(&x.name), t) && x.at <= *at)),
+        }
+    }
+    for o in mine {
+        let status = match o.kind {
+            Kind::Domina => Status::Domina,
+            Kind::LeCuesta | Kind::Confusion => Status::LeCuesta,
+            Kind::Pendiente => Status::Pendiente,
+            Kind::Preferencia => {
+                // The student's wording replaces the old one.
+                match preferences.iter_mut().find(|p| same_topic(&topic(Kind::Preferencia, p), &o.topic)) {
+                    Some(p) => *p = o.title.clone(),
+                    None => preferences.insert(0, o.title.clone()),
+                }
+                continue;
+            }
+            Kind::Idea => continue,
+        };
+        let evidence = if o.content.is_empty() || o.content == o.title { "lo corregiste vos".to_string() } else { format!("lo corregiste vos: {}", o.content.chars().take(100).collect::<String>()) };
+        topics.retain(|x| !same_topic(&concept(&x.name), &o.topic) || x.status == status);
+        match topics.iter_mut().find(|x| same_topic(&concept(&x.name), &o.topic)) {
+            Some(x) => {
+                x.name = o.title.clone();
+                x.evidence.insert(0, evidence);
+                x.evidence.truncate(MAX_EVIDENCE);
+                x.at = o.updated_at;
+                x.confusion = false;
+                if !x.sources.iter().any(|s| s == "vos") {
+                    x.sources.push("vos".into());
+                }
+            }
+            None => topics.push(TopicState { key: normalize(&o.title), name: o.title.clone(), status, evidence: vec![evidence], at: o.updated_at, sources: vec!["vos".into()], confusion: false }),
+        }
+    }
 }
 
 /// "## Lo que sabemos de vos" for the agent, in every phase: what relates to this
@@ -366,6 +425,7 @@ Si la persona saluda o no trae un tema, ofrecéselo con `propose_action` (uno o 
 
 /// "Esto ya lo sé": repairs the open confusion behind a topic. False when there was none.
 pub fn mark_known(state: &AppState, name: &str) -> anyhow::Result<bool> {
+    let _ = state.memdb.repair(name);
     state.learner.update(|p| {
         let open: Vec<String> = p.misconceptions.iter().filter(|m| !m.fixed && same_topic(&m.concept, name)).map(|m| m.concept.clone()).collect();
         open.iter().fold(false, |any, c| crate::learner::mark_fixed(p, c, "Lo marcaste vos") || any)
@@ -388,6 +448,53 @@ mod tests {
 
     fn day() -> NaiveDate {
         chrono::Local::now().date_naive()
+    }
+
+    #[test]
+    fn what_the_student_corrects_or_deletes_wins_in_the_model() {
+        let (st, dir) = st();
+        st.learner.update(|p| crate::learner::add_misconception(p, "La derivada", "es el área", false, "Sesión: a")).unwrap();
+        crate::memdb::migrate(&st).unwrap();
+        let id = st.memdb.list().unwrap()[0].id;
+        // As the command does: the confusion is the student's «domina» now.
+        st.learner.update(|p| crate::memdb::strip_from_profile(p, crate::memdb::Kind::Confusion, &st.memdb.get(id).unwrap().unwrap().topic)).unwrap();
+        st.memdb.edit(id, "La derivada", "ya la entiendo", crate::memdb::Kind::Domina).unwrap();
+        let t = topic(&model(&st, day()), "derivada").clone();
+        assert_eq!(t.status, Status::Domina);
+        assert_eq!(t.evidence[0], "lo corregiste vos: ya la entiendo");
+        st.memdb.delete(id).unwrap();
+        assert!(!model(&st, day()).topics.iter().any(|t| same_topic(&t.name, "derivada")), "deleted: the old confusion doesn't show either");
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn deleting_one_observation_removes_only_its_own_effect() {
+        let (st, dir) = st();
+        // «Le cuesta» from a session memory, «Ya lo domina» from a finished session, and an open confusion.
+        let mut chat = Session::new_chat("charla");
+        chat.messages.push(Msg::user("hola", None));
+        chat.memory = Some(crate::memory::SessionMemory { summary: "Vimos límites y fracciones.".into(), pending: vec![], struggled: vec!["los límites".into(), "las fracciones".into()], messages: 2, at: Utc::now() - chrono::Duration::days(3) });
+        st.sessions.save(&mut chat).unwrap();
+        let mut done = Session::new("límites");
+        done.phase = Phase::Done;
+        st.sessions.save(&mut done).unwrap();
+        st.learner.update(|p| crate::learner::add_misconception(p, "Integrales", "son derivadas", false, "Sesión: x")).unwrap();
+        crate::memdb::migrate(&st).unwrap();
+        let rows = st.memdb.list().unwrap();
+        let find = |title: &str| rows.iter().find(|o| o.title == title).unwrap().clone();
+        st.memdb.delete(find("los límites").id).unwrap();
+        st.memdb.delete(find("las fracciones").id).unwrap();
+        let m = model(&st, day());
+        assert_eq!(topic(&m, "límites").status, Status::Domina, "the finished session still says domina");
+        assert!(!m.topics.iter().any(|t| same_topic(&t.name, "fracciones")), "that «le cuesta» was all there was");
+        assert_eq!(topic(&m, "Integrales").status, Status::LeCuesta, "another observation: untouched");
+        // The profile loses only the deleted entry.
+        let mut p = st.learner.load();
+        crate::memdb::strip_from_profile(&mut p, crate::memdb::Kind::LeCuesta, "concepto:integral");
+        assert_eq!(p.misconceptions.len(), 1, "deleting a «le cuesta» never touches a confusion");
+        crate::memdb::strip_from_profile(&mut p, crate::memdb::Kind::Confusion, "concepto:integral");
+        assert!(p.misconceptions.is_empty());
+        let _ = std::fs::remove_dir_all(dir);
     }
 
     #[test]

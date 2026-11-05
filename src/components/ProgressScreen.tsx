@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { errorText, studentApi } from "../api";
 import type { ActionScreen, StudentModel, TopicState, TopicStatus } from "../types";
-import { LearnerSection, SessionMemories } from "./Settings";
+import { MemorySection } from "./MemorySection";
+import { SessionMemories } from "./Settings";
 
 const GROUPS: { status: TopicStatus; title: string; empty: string }[] = [
   { status: "le_cuesta", title: "Le cuesta", empty: "Nada por ahora." },
@@ -128,7 +129,7 @@ export function ProgressScreen({ onOpenScreen, onOpenSession, onStudy }: { onOpe
             </div>
           </>
         )}
-        <LearnerSection />
+        <MemorySection />
         <SessionMemories />
       </div>
     </div>

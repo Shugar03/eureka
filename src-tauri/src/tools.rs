@@ -117,9 +117,9 @@ pub fn definitions() -> Value {
             "type": "object",
             "properties": {
               "query": { "type": "string", "description": "Palabras clave, con sinónimos (ej.: 'derivada pendiente tangente')" },
-              "kind": { "type": "string", "enum": ["todo", "ideas", "confusiones", "sesiones", "examen"], "description": "Qué buscar (por defecto, todo)" }
-            },
-            "required": ["query"]
+              "kind": { "type": "string", "enum": ["todo", "ideas", "confusiones", "sesiones", "examen"], "description": "Qué buscar (por defecto, todo)" },
+              "id": { "type": "string", "description": "Un id de la vista previa (M12, S3): trae el registro entero" }
+            }
           })),
         f("library_search",
           "Busca en la biblioteca del aprendiz (sus PDFs y apuntes, ya indexados) y devuelve fragmentos numerados [L1], [L2]… con libro, sección y página. Usalo ANTES que research cuando el tema puede estar en su bibliografía. Citá con esos números. No termina el turno.",

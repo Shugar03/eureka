@@ -24,7 +24,7 @@ pub enum Source {
 }
 
 impl Source {
-    fn key(&self) -> String {
+    pub fn key(&self) -> String {
         match self {
             Source::Session { id, .. } => format!("session:{id}"),
             Source::Notes { id, .. } => format!("notes:{id}"),
@@ -187,8 +187,8 @@ pub fn validate(raw: RawExtraction) -> Result<(Vec<RawProposition>, Vec<RawChain
     Ok((props, chains))
 }
 
-/// Rebuilds the graph from the ledger: latest extraction per source wins.
-pub fn fold(ledger: &[Extraction]) -> GraphView {
+/// The latest extraction of each source, oldest first (a forgotten source's is empty).
+pub fn latest(ledger: &[Extraction]) -> Vec<&Extraction> {
     let mut latest: BTreeMap<String, &Extraction> = BTreeMap::new();
     for e in ledger {
         let k = e.source.key();
@@ -198,6 +198,12 @@ pub fn fold(ledger: &[Extraction]) -> GraphView {
     }
     let mut extractions: Vec<&Extraction> = latest.into_values().collect();
     extractions.sort_by_key(|e| e.at);
+    extractions
+}
+
+/// Rebuilds the graph from the ledger: latest extraction per source wins.
+pub fn fold(ledger: &[Extraction]) -> GraphView {
+    let extractions = latest(ledger);
 
     let mut nodes: Vec<Node> = Vec::new();
     let mut index: HashMap<String, usize> = HashMap::new();

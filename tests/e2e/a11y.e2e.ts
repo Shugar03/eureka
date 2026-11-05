@@ -56,6 +56,18 @@ for (const theme of ["Tema oscuro", "Tema claro"] as const) {
     await audit(browser, `paleta de comandos, ${theme}`);
   });
 
+  test(`a11y lo que Eureka sabe de vos (${theme})`, async ({ app, screen, browser }) => {
+    await app.open("/?withProfile&withMemory");
+    await setTheme(screen, theme);
+    await screen.getByRole("navigation", "Navegación").getByRole("button", "Mi progreso").click({ timeout: 30_000 });
+    const me = screen.getByRole("region", "Lo que Eureka sabe de vos");
+    await expect(me.getByRole("list", "Le cuesta")).toBeVisible();
+    await audit(browser, `mi progreso › lo que Eureka sabe de vos, ${theme}`);
+    await me.getByRole("button", "Corregir: Regla de la cadena").first().click();
+    await expect(me.getByRole("form", "Corregir: Regla de la cadena")).toBeVisible();
+    await audit(browser, `mi progreso › corregir una observación, ${theme}`);
+  });
+
   test(`a11y sesión en cada fase (${theme})`, async ({ app, screen, browser }) => {
     await app.open("/");
     await setTheme(screen, theme);
