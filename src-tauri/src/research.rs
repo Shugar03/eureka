@@ -150,7 +150,8 @@ pub fn patch(s: &mut crate::session::Session, results: Vec<(String, ResearchResu
 
 /// Runs one job and hands the result over (the worker spawns one per job).
 pub async fn run_job(state: &AppState, job: Job) {
-    let result = run(state, &job.question).await;
+    // AC-186: the summary counts for the session that asked.
+    let result = crate::usage::in_session(&job.session_id, run(state, &job.question)).await;
     state.research.finish(&job, result);
     let _ = crate::agent::deliver_research(state, &job.session_id, false);
 }

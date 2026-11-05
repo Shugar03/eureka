@@ -649,6 +649,8 @@ async fn research_runs_in_the_background_and_arrives_once() {
         assert_eq!(reqs[2]["api_key"], "sk-search");
         assert_eq!(reqs[3]["tool_choice"]["function"]["name"], crate::research::SUMMARY_TOOL);
     }
+    // AC-186: the background summary counts for the session that asked.
+    assert!(st.usage.all().iter().any(|e| e.purpose == "research" && e.session_id.as_deref() == Some(id.as_str())));
     let s = st.sessions.load(&id).unwrap();
     let meta = s.messages.iter().find(|m| m.role == "tool").unwrap().meta.clone().unwrap();
     assert_eq!((meta["kind"].as_str(), meta["told"].as_bool(), meta["sources"].as_array().unwrap().len()), (Some("research"), Some(false), 1), "only cited sources");
@@ -1842,6 +1844,22 @@ async fn forced_calls_are_counted_by_their_prompt() {
     r.unwrap();
     let e = &st.usage.all()[0];
     assert_eq!((e.purpose.as_str(), e.role.as_str(), e.session_id.as_deref(), e.cost), ("summarize_history", "extractor", Some("s-x"), Some(0.001)));
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[tokio::test]
+async fn the_background_memory_pass_counts_for_its_session() {
+    let f = fake(vec![
+        Reply::Sse(vec![tool(0, "m1", crate::memory::TOOL, json!({ "summary": "Vio la pendiente." }))]),
+        Reply::Sse(vec![knowledge(&[("a", "La pendiente mide cuánto sube")], &[])]),
+    ])
+    .await;
+    let (st, dir) = state(&f, true, "");
+    let id = new_session(&st);
+    crate::memory::consolidate(&st, &id).await.unwrap();
+    let events = st.usage.all();
+    assert_eq!(events.iter().map(|e| e.purpose.as_str()).collect::<Vec<_>>(), vec!["remember_session", "extract"]);
+    assert!(events.iter().all(|e| e.session_id.as_deref() == Some(id.as_str()) && e.role == "extractor"));
     std::fs::remove_dir_all(dir).ok();
 }
 

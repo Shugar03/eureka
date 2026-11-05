@@ -115,10 +115,12 @@ Donde **sí** se rompe (por diseño, no por un bug):
    que agrega una respuesta larga saca mensajes viejos y cambia el aviso «Se omitieron N mensajes», que va en la
    posición 2. Todo el historial se corre: en el turno B de la sesión larga solo se repiten **6 953 de 39 830
    tokens (17 %)**; cuando no se saca nada (respuesta corta) se repite el 99 %. **Es la mayor pérdida medida.**
-4. **Subscripción ChatGPT (Responses API)**: no manda `prompt_cache_key`; el caché depende solo del enrutado del
+4. **Llega una investigación en segundo plano (`research::patch`)**: el mensaje «Investigación en curso» se
+   reescribe en su lugar con el resultado, así que el turno siguiente corta el caché en ese mensaje.
+5. **Suscripción ChatGPT (Responses API)**: no manda `prompt_cache_key`; el caché depende solo del enrutado del
    proveedor.
 
-No encontré un bug que rompa el caché que se pueda arreglar con un cambio trivial; los cuatro puntos son decisiones
+No encontré un bug que rompa el caché que se pueda arreglar con un cambio trivial; los cinco puntos son decisiones
 de diseño y quedan como optimizaciones.
 
 ## El pase de memoria en segundo plano
@@ -136,10 +138,13 @@ de diseño y quedan como optimizaciones.
 
 ## Las optimizaciones con más ahorro (no implementadas todavía)
 
-Estimaciones con los números de arriba. «Sin caché» = tokens que el proveedor cobra a precio lleno. Los precios con
-caché varían: OpenAI y DeepSeek cobran la parte en caché a ~10–50 % del precio; Gemini 2.5 cachea solo en forma
-implícita; según su documentación, Claude por el endpoint compatible con OpenAI no cachea, y por OpenRouter necesita
-`cache_control`.
+Estimaciones con los números de arriba. «Sin caché» = tokens que el proveedor cobra a precio lleno. Lo que cuesta
+leer del caché, según la documentación de OpenRouter (consultada el 4/11/2026): DeepSeek y Claude 0,1× el precio de
+entrada, Gemini 0,25×, OpenAI 0,25× o 0,5× según el modelo. OpenAI y DeepSeek cachean solos (OpenAI desde 1 024
+tokens); Gemini 2.5+ en forma implícita; **Claude no cachea si no se le pide** (`cache_control`, y escribir en el caché
+cuesta algo más que la entrada normal). Por el endpoint de Anthropic compatible con OpenAI el caché **no está
+disponible** (lo dice su documentación) y `prompt_tokens_details` llega vacío, así que ahí el «% en caché» queda en
+«—».
 
 1. **La ventana que se desliza por bloques (histéresis)**. Al pasar el 60 %, recortar hasta ~45 % de una vez y
    mantener el corte fijo hasta volver al 60 %, con el aviso «Se omitieron…» igual mientras no se mueve. Medido:
@@ -155,10 +160,11 @@ implícita; según su documentación, Claude por el endpoint compatible con Open
    romper el caché: hoy son 27 k de los 36 k tokens sin repetir de la sesión guionada. Costo: cada pedido de
    diagnóstico y plan crece ~2–4 k (en caché a partir del segundo). Ahorro neto: **~20 k tokens sin caché por sesión**
    (~25 %) con proveedores que cachean; con los que no, empeora. Conviene hacerlo después de la dieta (2).
-4. **Caché explícito para Claude y Gemini**. Con OpenRouter y modelos de Anthropic, un `cache_control` después de
-   tools + sistema. Como el 85 % de la entrada es estático, desde el segundo pedido se ahorra ~90 % de esa parte: en
-   la sesión guionada, **~50–55 k de 81 k tokens-equivalentes (~65 %)**. Para la suscripción de ChatGPT: mandar
-   `prompt_cache_key` con el id de la sesión (mejora el enrutado; no cambia el conteo).
+4. **Caché explícito para Claude**. Con OpenRouter y modelos de Anthropic, el `cache_control` de nivel superior (o
+   un punto de corte después de tools + sistema). Hoy esos pedidos pagan todo a precio lleno. Con el caché, los 45 k
+   tokens que se repiten en la sesión guionada se leerían a 0,1×: ~40 k menos, menos el recargo de escribir los
+   prefijos nuevos (~7 k) → **~33 k de 81 k tokens-equivalentes (~40 %)** para quien usa Claude. Para la suscripción
+   de ChatGPT: mandar `prompt_cache_key` con el id de la sesión (mejora el enrutado; no cambia el conteo).
 5. **Un solo pase de memoria por sesión**. `remember_session` y `extract` en una llamada forzada que devuelva las dos
    cosas: la transcripción viaja una vez. Por sesión que pasa: ~1 k tokens de 2,4 k (**~40 %**) y la mitad de las
    llamadas; con transcripciones largas, hasta ~15 k menos por pase.

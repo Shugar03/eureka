@@ -106,6 +106,11 @@ fn graph_stale(s: &Session) -> bool {
 
 /// One pass over one session: its memory, then the graph and the learner profile.
 pub async fn consolidate(state: &AppState, id: &str) -> Result<()> {
+    // AC-186: the background pass counts for the session it remembers.
+    crate::usage::in_session(id, consolidate_now(state, id)).await
+}
+
+async fn consolidate_now(state: &AppState, id: &str) -> Result<()> {
     let s = state.sessions.load(id)?;
     let messages = s.messages.len();
     let transcript = crate::extract::session_transcript(&s);

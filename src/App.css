@@ -676,6 +676,10 @@ textarea { resize: vertical; }
 .summary-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .summary-table th, .summary-table td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--border); }
 .summary-table th { color: var(--dim); font-weight: 500; font-size: 12px; }
+/* AC-186: six columns that fit a phone: fixed layout, the cells wrap. */
+.usage-table { table-layout: fixed; }
+.usage-table th:first-child, .usage-table td:first-child { width: 30%; }
+@media (max-width: 640px) { .usage-table { font-size: 12px; } .usage-table th, .usage-table td { padding: 6px 3px; overflow-wrap: anywhere; } }
 
 /* ── Visuals & research (Phase 4) ─────────────────────────────── */
 .visual { margin: 0; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-2); padding: 12px 14px; }

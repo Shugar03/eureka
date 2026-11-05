@@ -31,7 +31,7 @@ function Row({ label, t }: { label: string; t: UsageTotals }) {
 
 function Table({ caption, first, rows }: { caption: string; first: string; rows: { key: string; label: string; t: UsageTotals }[] }) {
   return (
-    <table className="summary-table" aria-label={caption}>
+    <table className="summary-table usage-table" aria-label={caption}>
       <thead>
         <tr>
           <th>{first}</th>
