@@ -12,7 +12,8 @@ import { mkdirSync, writeFileSync, existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 export const FAKE_URL = `http://127.0.0.1:${process.env.FAKE_PORT ?? 4010}`;
-const EXE = resolve(import.meta.dirname, "../../src-tauri/target/debug/eureka.exe");
+// EUREKA_E2E_EXE: another build (a release exe with its resources next to it).
+const EXE = process.env.EUREKA_E2E_EXE ?? resolve(import.meta.dirname, "../../src-tauri/target/debug/eureka.exe");
 
 let current: ChildProcess | null = null;
 let currentEndpoint: string | null = null;

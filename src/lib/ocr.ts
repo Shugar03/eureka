@@ -56,8 +56,9 @@ export async function photoText(deps: PhotoDeps): Promise<{ text: string; via: "
       const page = await deps.ocr();
       if (isConfident(page)) return { text: page.markdown, via: "ocr" };
     }
-  } catch {
-    /* the vision model reads it instead */
+  } catch (e) {
+    // The vision model reads it instead; said, so a broken OCR path doesn't hide.
+    console.warn("OCR local falló, uso el modelo de visión:", e);
   }
   return { text: await deps.vision(), via: "vision" };
 }

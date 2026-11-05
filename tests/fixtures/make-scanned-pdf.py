@@ -1,6 +1,7 @@
 """Builds two image-only PDFs (no text layer, like a photocopy) for the OCR e2e
 tests (AC-187): tests/fixtures/fotocopia-celula.pdf (3 pages, read without
-asking) and tests/fixtures/fotocopia-larga.pdf (12 pages, asks first).
+asking) and tests/fixtures/fotocopia-larga.pdf (12 pages, asks first), plus
+tests/fixtures/foto-apunte.png, a photo of printed notes for the chat (AC-188).
 The text is written for these tests (no copyrighted material).
 
 Run: python tests/fixtures/make-scanned-pdf.py   (needs Pillow)
@@ -22,7 +23,7 @@ def page(text: str, n: int, size=(850, 1100)) -> Image.Image:
     img = Image.new("L", size, 250)
     d = ImageDraw.Draw(img)
     try:
-        font = ImageFont.truetype("DejaVuSans.ttf", 30)
+        font = ImageFont.truetype("DejaVuSans.ttf" if Path("/usr/share/fonts").exists() else "arial.ttf", 30)
     except OSError:
         font = ImageFont.load_default(size=30)
     words, lines, cur = text.split(), [], ""
@@ -47,4 +48,5 @@ if __name__ == "__main__":
     save(HERE / "fotocopia-celula.pdf", [page(t, i + 1) for i, t in enumerate(PAGES)])
     long = [page(f"Página {i + 1} del apunte largo. {PAGES[i % 3]}", i + 1, (425, 550)) for i in range(12)]
     save(HERE / "fotocopia-larga.pdf", long)
+    page("Mitocondria: produce la energía de la célula. Ribosoma: arma las proteínas.", 1, (900, 300)).convert("RGB").save(HERE / "foto-apunte.png")
     print("ok")

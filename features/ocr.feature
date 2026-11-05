@@ -16,7 +16,7 @@ Característica: PDFs escaneados y fotos leídos en esta PC
   Escenario: Con más de 10 páginas escaneadas, primero la estimación
     Cuando agrego "fotocopia-larga.pdf" (12 páginas sin texto)
     Entonces veo "Son 12 páginas escaneadas: leerlas lleva …" y no empieza hasta que toco "Leer con OCR"
-    Y veo "Leyendo página N de 12 · falta …" con una barra y "Cancelar"
+    Y veo "Leyendo página N de 12 · faltan …" con una barra y "Cancelar"
 
   @AC-187
   Escenario: Cancelar y seguir donde quedó
