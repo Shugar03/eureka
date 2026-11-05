@@ -1,0 +1,5 @@
+{
+  "_nota": "Huecos de trazabilidad que ya existían cuando se sumó CI (scripts/check-repo.mjs). Solo fallan los nuevos: al cubrir uno, sacalo de acá.",
+  "traceability": ["AC-106"],
+  "tests": ["AC-77", "AC-91", "AC-104", "AC-124"]
+}

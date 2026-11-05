@@ -17,7 +17,7 @@ Objetivo: la **máxima superficie de testeo** sin gastar tokens. Cada capa ataca
 
 | Comando | Qué corre | Ventana |
 |---|---|---|
-| `npm test` | tipos (app y tests) + Vitest + `cargo test` | — |
+| `npm test` | tipos (app y tests) + Vitest + tests de los scripts + `cargo test` | — |
 | `npm run test:coverage` | cobertura: `coverage/frontend/index.html` y `coverage/rust/html/index.html` | — |
 | `npm run test:e2e` | e2e web: flujos, bordes, tema, caminos, a11y, visual | **visible** |
 | `npm run build:debug` | compila `eureka.exe` (hace falta antes del siguiente) | — |
@@ -25,8 +25,26 @@ Objetivo: la **máxima superficie de testeo** sin gastar tokens. Cada capa ataca
 | `npm run test:all` | todo lo anterior | visible |
 | `npm run test:e2e:ci` | los dos e2e sin ventana | — |
 | `npm run test:visual:update` | regenera las capturas después de un cambio de diseño buscado | — |
+| `npm run test:scripts` | tests de los scripts (`node --test`): el changelog que arma el release | — |
+| `npm run check:repo` | higiene del repo: nombre prohibido, secretos, trazabilidad de los AC y links relativos | — |
 
 Ninguna prueba llama a un modelo real. La única excepción es opcional: `tests/e2e/agentic.e2e.ts` (`agent.act`), que se saltea si no hay `OPENROUTER_API_KEY`.
+
+## Integración continua
+
+[`.github/workflows/ci.yml`](../.github/workflows/ci.yml) corre en cada push y PR a `main`, sin secretos. Solo chequeos rápidos:
+
+| Job | Runner | Qué corre | ¿Bloquea? |
+|---|---|---|---|
+| Tipos y Vitest | Windows | `npm ci`, `npm run typecheck`, `vitest run`, `npm run test:scripts` | sí |
+| `cargo test --lib` | Windows | `cargo test --lib --locked` en `src-tauri` (incluye `token_budget`), con cache de cargo, ONNX Runtime y los modelos de OCR | sí |
+| Higiene del repo | Ubuntu | `scripts/check-repo.mjs` (ver abajo) | sí |
+| Docs y YAML | Ubuntu | markdownlint ([`.markdownlint-cli2.jsonc`](../.markdownlint-cli2.jsonc), nunca con `--fix`), YAML de `.github/` y actionlint; los links externos (lychee) se reportan sin bloquear | sí, salvo los links externos |
+| e2e web | Windows | `e2e run` sin ventana, sin `visual.e2e.ts` ni el cancelar/reanudar del OCR | no |
+
+Quedan afuera, a propósito: mutation testing, el e2e de la app real (WebView2 necesita escritorio) y las capturas visuales (se tomaron en otra PC).
+
+`check:repo` falla si aparece el nombre prohibido, si hay un archivo de secretos versionado (`auth.json`, `.env`, `*.key`) o algo con forma de API key, si un link relativo de un `.md` apunta a un archivo que no existe, o si un `AC-n` de `spec.md` no tiene fila de trazabilidad o no aparece en ninguna prueba ni `.feature`. Los huecos que ya estaban están en [`scripts/ac-allowlist.json`](../scripts/ac-allowlist.json): solo falla uno nuevo, y avisa cuando uno de la lista ya está cubierto para sacarlo. Con `--base <ref>` también avisa (sin fallar) si el cambio toca `src/` o `src-tauri/src/` pero no `docs/`, `features/` ni el `CHANGELOG.md`.
 
 ## 1. Unitarios (TDD)
 

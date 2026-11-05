@@ -1,0 +1,28 @@
+// Light Markdown lint for the docs (CI: docs job). Never run with --fix: there is no
+// formatter in this repo and the existing docs are not reformatted.
+// The disabled rules are the ones the current docs break on purpose (long lines, inline HTML,
+// compact lists under headings, tables with `|` inside code); the rest stay on and keep new
+// mistakes out (broken fragments and references, empty links, hard tabs, heading styles…).
+{
+  "config": {
+    "default": true,
+    "MD001": false, // README starts its hero block at h3
+    "MD012": false, // multiple blank lines
+    "MD013": false, // line length: one paragraph per line
+    "MD022": false, // blank line around headings
+    "MD024": { "siblings_only": true }, // «### Nuevo» repeats under each version
+    "MD026": false, // trailing punctuation in headings
+    "MD028": false, // blank line inside blockquote
+    "MD032": false, // blank line around lists
+    "MD033": false, // inline HTML (README hero, <!-- p:N --> markers)
+    "MD034": false, // bare URLs
+    "MD036": false, // emphasis used as a heading
+    "MD038": false, // spaces inside code spans (`Bearer `)
+    "MD040": false, // fenced code without a language
+    "MD041": false, // first line is not an h1 (PR template, README)
+    "MD056": false, // table column count (pipes inside code)
+    "MD058": false // blank line around tables
+  },
+  "globs": ["*.md", "docs/**/*.md", ".github/**/*.md"],
+  "ignores": ["node_modules/**", "src-tauri/target/**"]
+}

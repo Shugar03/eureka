@@ -1,0 +1,179 @@
+# Fast checks on every push and PR to main (docs/testing.md, «Integración continua»).
+# Deliberately left out: mutation testing, the desktop e2e (needs a desktop session for
+# WebView2) and the visual snapshots. No secrets are needed: no test calls a real model.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "24"
+
+jobs:
+  frontend:
+    name: Tipos y Vitest
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npx vitest run
+      - name: Tests de los scripts (changelog del release)
+        run: npm run test:scripts
+
+  rust:
+    name: cargo test --lib
+    runs-on: windows-latest
+    # Cold: tauri, candle and parakeet from scratch take a while. Warm: a few minutes.
+    timeout-minutes: 90
+    env:
+      CARGO_TERM_COLOR: always
+      CARGO_INCREMENTAL: "0"
+      # No debug info: a much smaller target dir to cache, faster links.
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_TEST_DEBUG: "0"
+      # ort-sys downloads ONNX Runtime here and links from this folder (rustc-link-search),
+      # so it is cached in the same entry as target/: they must hit or miss together.
+      ORT_CACHE_DIR: ${{ github.workspace }}/.ort-cache
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Cache de cargo, target y ONNX Runtime
+        id: cargo-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            src-tauri/target
+            ${{ env.ORT_CACHE_DIR }}
+          key: cargo-${{ runner.os }}-${{ hashFiles('src-tauri/Cargo.lock') }}-${{ hashFiles('src-tauri/build.rs') }}
+          restore-keys: |
+            cargo-${{ runner.os }}-${{ hashFiles('src-tauri/Cargo.lock') }}-
+            cargo-${{ runner.os }}-
+      # build.rs downloads the 3 OCR models (~18 MB, pinned by sha256) unless they are there.
+      - name: Cache de los modelos de OCR
+        uses: actions/cache@v4
+        with:
+          path: src-tauri/ocr-models
+          key: ocr-models-${{ hashFiles('src-tauri/build.rs') }}
+      # tauri::generate_context! looks for frontendDist (../dist); tests don't need its content.
+      - name: Carpeta dist vacía
+        shell: pwsh
+        run: if (-not (Test-Path dist)) { New-Item -ItemType Directory dist | Out-Null }
+      - name: cargo test --lib (incluye token_budget)
+        working-directory: src-tauri
+        run: cargo test --lib --locked
+      # Only main writes the cache: PR caches would evict it (10 GB per repo).
+      - name: Guardar cache de cargo
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.cargo-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            src-tauri/target
+            ${{ env.ORT_CACHE_DIR }}
+          key: ${{ steps.cargo-cache.outputs.cache-primary-key }}
+
+  hygiene:
+    name: Higiene del repo
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      # Forbidden name, secrets, AC traceability, relative links; docs staleness is a warning.
+      - name: npm run check:repo
+        run: node scripts/check-repo.mjs --base "$BASE"
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+
+  docs:
+    name: Docs y YAML
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: markdownlint (reglas en .markdownlint-cli2.jsonc, sin --fix)
+        run: npx --yes markdownlint-cli2@0.18.1
+      - name: YAML válido en .github/
+        run: |
+          python3 -m pip install --quiet pyyaml
+          python3 - <<'EOF'
+          import pathlib, sys, yaml
+          bad = 0
+          for p in sorted(pathlib.Path(".github").rglob("*.y*ml")):
+              try:
+                  yaml.safe_load(p.read_text(encoding="utf-8"))
+                  print(f"ok  {p}")
+              except yaml.YAMLError as e:
+                  bad += 1
+                  print(f"::error file={p}::{e}")
+          sys.exit(1 if bad else 0)
+          EOF
+      - name: actionlint
+        run: |
+          bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.7/scripts/download-actionlint.bash) 1.7.7
+          ./actionlint -color
+      # External links rot on their own: reported, never blocking.
+      - name: Links externos (no bloquea)
+        uses: lycheeverse/lychee-action@v2
+        continue-on-error: true
+        with:
+          args: --no-progress --max-retries 2 --timeout 20 --accept 200..=299,403,429 './*.md' './docs/**/*.md'
+          fail: false
+
+  e2e-web:
+    name: e2e web (opcional)
+    runs-on: windows-latest
+    timeout-minutes: 60
+    # Not required: browser timing on a shared runner can be flaky.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install chromium
+      # Without visual.e2e.ts (snapshots taken on the maintainer's PC) and without the OCR
+      # cancel/resume test (timing dependent). agentic.e2e.ts skips itself without a key.
+      - name: e2e run (headless)
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem tests/e2e -Filter *.e2e.ts | Where-Object Name -ne 'visual.e2e.ts' | ForEach-Object { "tests/e2e/$($_.Name)" }
+          npx e2e run @files --grep-invert "cancelar y volver a agregarlo"
+      - name: Resultados del e2e
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-web
+          path: .e2e/
+          retention-days: 7
