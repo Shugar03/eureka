@@ -367,9 +367,9 @@ pub fn proposal_schema() -> Value {
     let slot = json!({
         "type": "object",
         "properties": {
-            "weekday": { "type": "integer", "description": "1 = lunes … 7 = domingo" },
-            "start": { "type": "string", "description": "HH:MM, 24 horas" },
-            "end": { "type": "string", "description": "HH:MM, 24 horas" },
+            "weekday": { "type": "integer", "description": "1 lunes … 7 domingo" },
+            "start": { "type": "string", "description": "HH:MM (24 h)" },
+            "end": { "type": "string", "description": "HH:MM (24 h)" },
             "room": { "type": "string", "description": "Aula, si la dice" },
             "kind": { "type": "string", "enum": SLOT_KINDS }
         },
@@ -380,7 +380,7 @@ pub fn proposal_schema() -> Value {
         "properties": {
             "term": {
                 "type": "object",
-                "description": "El período (cuatrimestre, trimestre…) si lo dice o se deduce; si no, omitilo y se usa el activo.",
+                "description": "Solo si lo dice o se deduce; si no, se usa el período activo.",
                 "properties": {
                     "name": { "type": "string", "description": "Ej.: «2.º cuatrimestre 2026»" },
                     "kind": { "type": "string", "enum": TERM_KINDS },

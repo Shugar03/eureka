@@ -165,7 +165,7 @@ pub fn definitions() -> Value {
             "required": ["goal"]
           })),
         f("propose_timetable",
-          "Le propone a la persona guardar en Mi cursada su horario de clases y/o fechas importantes (parciales, TPs, finales). NO se guarda hasta que ella lo confirme con un botón. Usala cuando pegue o cuente su horario o sus fechas; resolvé días de la semana y fechas relativas con la fecha de hoy del estado.",
+          "Propone guardar en Mi cursada su horario y/o fechas (parciales, TPs, finales) cuando los pega o los cuenta; se guarda recién si lo confirma. Resolvé días y fechas relativas con la fecha de hoy del estado.",
           crate::academic::proposal_schema()),
         f("propose_exam",
           "Le propone a la persona crear su preparación de un examen o certificación (la misma que arma en «Exámenes»). NO se crea hasta que ella lo confirme con un botón. Usala cuando diga que quiere prepararse para un examen, certificación o materia, apenas sepas cuál es; la fecha, la guía y las horas son opcionales y se pueden completar después. Si la persona pegó la guía o el programa, mandalo en `guide`; si no, la tarjeta ofrece buscarla en la web o pegarla.",
@@ -246,19 +246,19 @@ pub fn definitions() -> Value {
           "Mira cómo viene la persona en la app: exámenes y fechas, tarjetas para hoy, minutos de estudio, sesiones y libros. Usala para contestar «¿cómo vengo?», «¿qué tengo para hoy?» o antes de sugerir qué estudiar. Solo lee; no cambia nada.",
           json!({ "type": "object", "properties": {} })),
         f("ui_command",
-          "EJECUTA ya un control de la app, porque la persona lo pidió en sus palabras (\"pausá el pomodoro\", \"poné el modo claro\", \"apagá el sonido\"). Si en cambio lo estás sugiriendo vos, ofrecelo con propose_action y que ella decida. command: pomodoro_start (minutes 5-90, por defecto 25), pomodoro_pause, pomodoro_resume, pomodoro_skip, pomodoro_reset, set_theme (theme), set_wallpaper (wallpaper), set_accent (accent), set_sound (enabled, tick_tock), set_reminders (stand_minutes, water_minutes; 0 los apaga), set_accessibility (text_size, spacing, reduce_motion, read_aloud, easy_reading, literal, short_steps, dictation), set_pomodoro (focus 5-120, short 1-60, long 1-90, every 2-8: duraciones en minutos y cada cuántos focos va el descanso largo), set_profile (first_name, school, career, treatment el|ella|elle|ninguno: solo lo que la persona dijo de sí).",
+          "EJECUTA ya un control de la app que la persona pidió en sus palabras (\"pausá el pomodoro\", \"modo claro\", \"apagá el sonido\"). Si lo sugerís vos, no: ofrecé un botón con propose_action. Campos por command: pomodoro_start minutes (5-90, por defecto 25); set_theme theme; set_wallpaper wallpaper; set_accent accent (\"auto\" o #rrggbb); set_sound enabled (todos los sonidos), tick_tock (tic-tac final); set_reminders stand_minutes, water_minutes (cada cuántos minutos avisar que se pare / tome agua, 10-240, 0 apaga); set_accessibility text_size, spacing, reduce_motion, read_aloud, easy_reading, literal, short_steps, dictation; set_pomodoro focus (5-120), short (1-60), long (1-90) en minutos, every (2-8 focos hasta el descanso largo); set_profile first_name, school, career, treatment: solo lo que la persona dijo de sí.",
           json!({
             "type": "object",
             "properties": {
               "command": { "type": "string", "enum": ["pomodoro_start", "pomodoro_pause", "pomodoro_resume", "pomodoro_skip", "pomodoro_reset", "set_theme", "set_wallpaper", "set_accent", "set_sound", "set_reminders", "set_accessibility", "set_pomodoro", "set_profile"] },
-              "minutes": { "type": "integer", "description": "pomodoro_start: minutos de foco (5 a 90)." },
+              "minutes": { "type": "integer" },
               "theme": { "type": "string", "enum": ["dark", "light", "system"] },
               "wallpaper": { "type": "string", "enum": ["auto", "none", "amanecer", "noche", "bosque", "atardecer", "oceano", "lavanda"] },
-              "accent": { "type": "string", "description": "\"auto\" (el color del fondo) o un color #rrggbb." },
-              "enabled": { "type": "boolean", "description": "set_sound: todos los sonidos del pomodoro." },
-              "tick_tock": { "type": "boolean", "description": "set_sound: el tic-tac de los últimos segundos." },
-              "stand_minutes": { "type": "integer", "description": "set_reminders: cada cuántos minutos avisar que se pare (10 a 240); 0 lo apaga." },
-              "water_minutes": { "type": "integer", "description": "set_reminders: cada cuántos minutos avisar que tome agua (10 a 240); 0 lo apaga." },
+              "accent": { "type": "string" },
+              "enabled": { "type": "boolean" },
+              "tick_tock": { "type": "boolean" },
+              "stand_minutes": { "type": "integer" },
+              "water_minutes": { "type": "integer" },
               "text_size": { "type": "string", "enum": ["normal", "large", "larger"] },
               "spacing": { "type": "boolean" },
               "reduce_motion": { "type": "boolean" },
@@ -267,14 +267,14 @@ pub fn definitions() -> Value {
               "literal": { "type": "boolean" },
               "short_steps": { "type": "boolean" },
               "dictation": { "type": "boolean" },
-              "focus": { "type": "integer", "description": "set_pomodoro: minutos de foco (5 a 120)." },
-              "short": { "type": "integer", "description": "set_pomodoro: minutos del descanso corto (1 a 60)." },
-              "long": { "type": "integer", "description": "set_pomodoro: minutos del descanso largo (1 a 90)." },
-              "every": { "type": "integer", "description": "set_pomodoro: cada cuántos focos va el descanso largo (2 a 8)." },
-              "first_name": { "type": "string", "description": "set_profile: su nombre de pila, como lo dijo." },
-              "school": { "type": "string", "description": "set_profile: dónde estudia." },
-              "career": { "type": "string", "description": "set_profile: qué estudia." },
-              "treatment": { "type": "string", "enum": ["el", "ella", "elle", "ninguno"], "description": "set_profile: cómo pidió que le hables." }
+              "focus": { "type": "integer" },
+              "short": { "type": "integer" },
+              "long": { "type": "integer" },
+              "every": { "type": "integer" },
+              "first_name": { "type": "string" },
+              "school": { "type": "string" },
+              "career": { "type": "string" },
+              "treatment": { "type": "string", "enum": ["el", "ella", "elle", "ninguno"], "description": "Cómo pidió que le hables." }
             },
             "required": ["command"]
           })),
@@ -712,10 +712,10 @@ pub fn definitions_for(phase: Phase) -> Value {
         // The app's controls are within reach in every phase ("pausá el pomodoro" mid-diagnosis).
         Phase::Probe => &["ask_question", "record_finding", "recall", "set_phase", "library_search", "research", "ui_command"],
         Phase::Plan => &["ask_question", "record_finding", "recall", "set_phase", "library_search", "library_read", "research", "set_plan", "update_node", "show_diagram", "ui_command"],
-        // Teach and done: everything except what only makes sense before the method starts.
-        Phase::Teach | Phase::Done => {
-            return Value::Array(definitions().as_array().unwrap().iter().filter(|d| d["function"]["name"] != "begin_learning").cloned().collect());
-        }
+        // Teach and done: what teaching uses (AC-186, docs/tokens.md). The specific
+        // proposals and `app_status` belong to the chat (chat.md is the only prompt that
+        // asks for them); `propose_action` stays as the door to every screen (AC-124).
+        Phase::Teach | Phase::Done => &["ask_question", "record_finding", "recall", "set_phase", "library_search", "library_read", "research", "set_plan", "update_node", "show_diagram", "show_demo", "show_code", "make_cards", "propose_action", "ui_command"],
     };
     Value::Array(definitions().as_array().unwrap().iter().filter(|d| keep.contains(&d["function"]["name"].as_str().unwrap_or(""))).cloned().collect())
 }
@@ -1224,7 +1224,9 @@ mod tests {
         assert_eq!(probe, ["ask_question", "record_finding", "recall", "library_search", "research", "set_phase", "ui_command"]);
         assert!(definitions_for(Phase::Plan).as_array().unwrap().iter().any(|d| d["function"]["name"] == "set_plan"));
         let teach: Vec<String> = definitions_for(Phase::Teach).as_array().unwrap().iter().map(|d| d["function"]["name"].as_str().unwrap().to_string()).collect();
-        assert!(!teach.contains(&"begin_learning".to_string()) && teach.contains(&"propose_action".to_string()) && teach.len() == definitions().as_array().unwrap().len() - 1);
+        // AC-186: teaching keeps its tools and the door to every screen; the chat's proposals stay in the chat.
+        assert_eq!(teach, ["ask_question", "record_finding", "set_plan", "update_node", "show_diagram", "show_demo", "show_code", "make_cards", "recall", "library_search", "library_read", "research", "set_phase", "propose_action", "ui_command"]);
+        assert_eq!(definitions_for(Phase::Done), definitions_for(Phase::Teach));
         let chat: Vec<String> = definitions_for(Phase::Chat).as_array().unwrap().iter().map(|d| d["function"]["name"].as_str().unwrap().to_string()).collect();
         assert_eq!(chat, ["show_diagram", "show_demo", "show_code", "make_cards", "recall", "library_search", "library_read", "research", "begin_learning", "propose_timetable", "propose_exam", "propose_deck", "propose_practice", "propose_own_problems", "propose_code", "propose_action", "app_status", "ui_command"]);
         assert!(!chat.contains(&"ask_question".to_string()) && !chat.contains(&"set_phase".to_string()), "the method's tools wait for begin_learning");

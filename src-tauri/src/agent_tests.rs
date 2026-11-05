@@ -242,7 +242,7 @@ async fn phase_change_switches_prompt_and_model_within_one_turn() {
     assert!(reqs[0]["messages"][0]["content"].as_str().unwrap().contains("Fase: MEDIR"));
     assert_eq!(reqs[0]["tools"].as_array().unwrap().len(), crate::tools::definitions_for(Phase::Probe).as_array().unwrap().len(), "probe sees only its tools");
     assert!(reqs[0]["tools"].as_array().unwrap().len() < crate::tools::definitions().as_array().unwrap().len() / 2);
-    assert_eq!(reqs[1]["tools"].as_array().unwrap().len(), crate::tools::definitions().as_array().unwrap().len() - 1, "teach sees them all but begin_learning");
+    assert_eq!(reqs[1]["tools"], crate::tools::definitions_for(Phase::Teach), "teach sees its own tools (AC-186)");
     assert_eq!(reqs[1]["model"], "t-model", "teach phase uses the teacher model");
     let sys = reqs[1]["messages"][0]["content"].as_str().unwrap();
     assert!(sys.contains("Fase: ENSEÑAR"));
