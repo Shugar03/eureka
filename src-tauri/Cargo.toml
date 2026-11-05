@@ -40,6 +40,9 @@ ruzstd = "0.9.1"
 sha1_smol = "1.0.1"
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
+# AC-191: Word, PowerPoint, EPUB and ODT to Markdown, pure Rust (Firecrawl, MIT). Its PDF
+# reader (pdf-inspector) comes along without default features: no PDFium, no OCR.
+anydoc = "0.2.4"
 
 # Desktop only: phones have one instance by design and update through their store.
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]

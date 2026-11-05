@@ -29,9 +29,9 @@ describe("composeMessage (AC-105)", () => {
 
 describe("what can be attached", () => {
   it("tells documents from photos by type or by extension", () => {
-    for (const f of [{ name: "a.pdf", type: "" }, { name: "a.TXT", type: "" }, { name: "x.md", type: "" }, { name: "x.markdown", type: "" }, { name: "sin-extension", type: "application/pdf" }, { name: "n", type: "text/plain" }]) expect(isDocument(f), f.name).toBe(true);
+    for (const f of [{ name: "a.pdf", type: "" }, { name: "a.TXT", type: "" }, { name: "x.md", type: "" }, { name: "x.markdown", type: "" }, { name: "sin-extension", type: "application/pdf" }, { name: "n", type: "text/plain" }, { name: "a.docx", type: "" }, { name: "b.PPTX", type: "" }, { name: "c.epub", type: "" }, { name: "d.odt", type: "" }]) expect(isDocument(f), f.name).toBe(true);
     for (const f of [{ name: "a.png", type: "" }, { name: "b.JPG", type: "" }, { name: "c.jpeg", type: "" }, { name: "d.webp", type: "" }, { name: "x", type: "image/png" }]) expect(isPhoto(f), f.name).toBe(true);
-    for (const f of [{ name: "a.docx", type: "" }, { name: "a.zip", type: "application/zip" }, { name: "a.gif", type: "image/gif" }]) expect(isDocument(f) || isPhoto(f), f.name).toBe(false);
+    for (const f of [{ name: "a.doc", type: "" }, { name: "a.xlsx", type: "" }, { name: "a.zip", type: "application/zip" }, { name: "a.gif", type: "image/gif" }]) expect(isDocument(f) || isPhoto(f), f.name).toBe(false);
   });
 
   it("names a book after its file", () => {

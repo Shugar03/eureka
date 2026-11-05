@@ -58,7 +58,7 @@ Cada respuesta lleva tu **confianza (1 a 5)** y, si querés, tu **razonamiento e
 - **`recall`:** el profesor consulta tu memoria antes de reenseñarte algo que ya sabés.
 
 ### 📚 Tu biblioteca, digerida en segundos
-- Subí **PDFs, .txt o .md**: se convierten a Markdown **en tu PC**, sin API y sin gastar un token. Detecta capítulos, saca encabezados y números de página, y une palabras cortadas.
+- Subí **PDFs, Word, PowerPoint, EPUB, ODT, .txt o .md**: se convierten a Markdown **en tu PC**, sin API y sin gastar un token. Detecta capítulos, saca encabezados y números de página, y une palabras cortadas.
 - **PDFs escaneados y fotocopias** se leen con OCR en tu PC: el libro aparece con las primeras páginas y se completa mientras seguís.
 - Búsqueda **BM25 local**: un libro de 500 páginas se importa, indexa y consulta en **menos de un segundo**.
 - El profesor **busca primero en tu bibliografía** y te cita **libro, sección y página**. Si una cita no salió de tu biblioteca, la app la marca como *no verificada*.

@@ -27,6 +27,7 @@ mod oauth;
 mod student;
 mod companion;
 mod library;
+mod office;
 mod llm;
 mod prompts;
 mod session;
@@ -715,6 +716,17 @@ async fn extract_session(state: State<'_, AppState>, id: String) -> CmdResult<Se
 fn import_book(state: State<'_, AppState>, title: String, file_name: String, markdown: String, pages: u32, scanned: Vec<u32>, ocr: Option<OcrImport>) -> CmdResult<library::BookSummary> {
     let ocr = ocr.map(|o| (o.hash.to_ascii_lowercase(), o.pages, o.pending));
     state.library.import(&title, &file_name, &markdown, pages, scanned, ocr).map(|b| b.summary()).map_err(err)
+}
+
+/// AC-191: a Word, PowerPoint, EPUB or ODT file as raw bytes (see `office::parse_upload`),
+/// converted to Markdown on this PC and imported like any other document.
+#[tauri::command]
+async fn import_document(state: State<'_, AppState>, request: tauri::ipc::Request<'_>) -> CmdResult<library::BookSummary> {
+    let tauri::ipc::InvokeBody::Raw(body) = request.body() else { return Err("El archivo no llegó como bytes.".into()) };
+    let (title, file_name, bytes) = office::parse_upload(body).map_err(err)?;
+    let (name, bytes) = (file_name.clone(), bytes.to_vec());
+    let markdown = tokio::task::spawn_blocking(move || office::to_markdown(&name, &bytes)).await.map_err(err)?.map_err(err)?;
+    state.library.import(&title, &file_name, &markdown, 0, vec![], None).map(|b| b.summary()).map_err(err)
 }
 
 #[derive(serde::Deserialize)]
@@ -1620,6 +1632,7 @@ pub fn run() {
             forget_source,
             import_book,
             add_ocr_pages,
+            import_document,
             ocr_available,
             ocr_page,
             ocr_cached,

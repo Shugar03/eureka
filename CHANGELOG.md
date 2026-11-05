@@ -5,6 +5,7 @@ Lo que cambia en cada versión de Eureka, de la más nueva a la más vieja. El f
 ## Sin publicar
 
 ### Nuevo
+- **Word, PowerPoint, EPUB y OpenDocument a la biblioteca** (y al «+» del chat): se convierten en tu PC, con los títulos como secciones, y el profesor los busca y los cita como a un PDF (AC-191).
 - **PDFs escaneados y fotocopias se leen en tu PC** con OCR (PaddleOCR), sin red ni tokens. Hasta 10 páginas arranca solo; si son más, te dice cuánto va a tardar y pregunta. El libro aparece con las primeras páginas y se completa mientras seguís usando Eureka; las líneas dudosas quedan marcadas con «revisar» (AC-187).
 - **Las fotos de texto impreso que adjuntás en el chat se leen primero en tu PC**; el modelo de visión se usa solo si el OCR no alcanza (AC-188).
 - **Vista «Uso»** en Ajustes → Avanzado: cuántos tokens gastó cada sesión, fase y modelo, contados en tu PC (AC-186).

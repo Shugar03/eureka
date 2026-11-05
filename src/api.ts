@@ -282,6 +282,16 @@ export const libraryApi = {
   get: (id: string) => invoke<Book>("get_book", { id }),
   import: (title: string, fileName: string, markdown: string, pages: number, scanned: number[], ocr: { hash: string; pages: OcrPageInput[]; pending: number[] } | null = null) =>
     invoke<BookSummary>("import_book", { title, fileName, markdown, pages, scanned, ocr }),
+  /** AC-191: a Word, PowerPoint, EPUB or ODT file; Rust converts it to Markdown and imports it.
+   * Raw bytes, not JSON: a u32 (LE) length, `{title, fileName}` as JSON, then the file. */
+  importDocument: (title: string, fileName: string, bytes: Uint8Array) => {
+    const head = new TextEncoder().encode(JSON.stringify({ title, fileName }));
+    const body = new Uint8Array(4 + head.length + bytes.length);
+    new DataView(body.buffer).setUint32(0, head.length, true);
+    body.set(head, 4);
+    body.set(bytes, 4 + head.length);
+    return invoke<BookSummary>("import_document", body);
+  },
   /** AC-187: the next OCR'd pages of a book being read in the background. */
   addOcrPages: (id: string, pages: OcrPageInput[], pending: number[]) => invoke<BookSummary>("add_ocr_pages", { id, pages, pending }),
   remove: (id: string) => invoke<null>("delete_book", { id }),

@@ -59,3 +59,18 @@ Característica: Biblioteca local de bibliografía
     Entonces cada cambio actualiza solo ese libro en el índice
     Y buscar da lo mismo que con el índice rearmado entero
     Y después de restaurar un respaldo, la búsqueda siguiente rearma el índice
+
+  @AC-191
+  Escenario: Word, PowerPoint y EPUB entran con sus títulos como secciones
+    Cuando agrego "apuntes-volcanes.docx" a la biblioteca
+    Entonces veo "quedó en la biblioteca (3 secciones"
+    Y el índice tiene "El cono de Tamberías"
+    Cuando agrego "clase-volcanes.pptx"
+    Entonces cada diapositiva es una sección y "La regla del semáforo" muestra "Rojo: evacuar"
+    Cuando agrego "libro-volcanes.epub" y busco "cámara magmática"
+    Entonces el primer resultado es "1.1 La cámara"
+
+  @AC-191
+  Escenario: El «+» del chat también acepta una presentación
+    Cuando adjunto "clase-volcanes.pptx" con el «+» del chat
+    Entonces queda "en tu biblioteca"
