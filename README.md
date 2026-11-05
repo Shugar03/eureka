@@ -14,7 +14,7 @@
 [![Local first](https://img.shields.io/badge/tus%20datos-en%20tu%20PC-7a52cc)](#-tus-datos-son-tuyos)
 [![Cualquier modelo](https://img.shields.io/badge/modelos-los%20que%20elijas-7a52cc)](#-traé-tu-propio-modelo)
 
-[Qué es](#-qué-es-eureka) · [Funciones](#-todo-lo-que-trae) · [Instalar](#-empezá-en-2-minutos) · [Cómo funciona](#-cómo-funciona-por-dentro) · [Contribuir](#-contribuí)
+[Qué es](#-qué-es-eureka) · [Funciones](#-todo-lo-que-trae) · [Instalar](#-empezá-en-2-minutos) · [Cómo funciona](#-cómo-funciona-por-dentro) · [Documentación](docs/README.md) · [Contribuir](#-contribuí)
 
 </div>
 
@@ -59,6 +59,7 @@ Cada respuesta lleva tu **confianza (1 a 5)** y, si querés, tu **razonamiento e
 
 ### 📚 Tu biblioteca, digerida en segundos
 - Subí **PDFs, .txt o .md**: se convierten a Markdown **en tu PC**, sin API y sin gastar un token. Detecta capítulos, saca encabezados y números de página, y une palabras cortadas.
+- **PDFs escaneados y fotocopias** se leen con OCR en tu PC: el libro aparece con las primeras páginas y se completa mientras seguís.
 - Búsqueda **BM25 local**: un libro de 500 páginas se importa, indexa y consulta en **menos de un segundo**.
 - El profesor **busca primero en tu bibliografía** y te cita **libro, sección y página**. Si una cita no salió de tu biblioteca, la app la marca como *no verificada*.
 - La carpeta se puede abrir tal cual en **Obsidian**.
@@ -69,7 +70,7 @@ Cada respuesta lleva tu **confianza (1 a 5)** y, si querés, tu **razonamiento e
 - **"¿Estoy listo?"** con tendencia y nota de aprobación, **plan hasta la fecha del examen**, **hoja de repaso** y **"¿por qué no la B?"**.
 
 ### 💻 Programación de verdad
-- **Consola** para **Python, JavaScript, TypeScript y Rust**, con editor y ejecución en tu PC.
+- **Consola** en diez lenguajes (**Python, JavaScript, TypeScript, Rust, C, C++, Java, C#, Go y SQL**), con editor y ejecución en tu PC usando los compiladores que tengas instalados.
 - Errores con su línea, chequeo de tipos de TypeScript y **"Explicar este error"**.
 - **Rutas por lenguaje**, ejercicios con pruebas ocultas, **proyectos de varios archivos** (`cargo test`, `unittest`, `node --test`) y **"Revisá mi código"** como lo haría un senior.
 
@@ -82,7 +83,7 @@ Cada respuesta lleva tu **confianza (1 a 5)** y, si querés, tu **razonamiento e
 - **Materias** con su programa, **horario de clases**, **Agenda** semanal y **recordatorios** de Windows.
 - **Exportá la agenda** (.ics) a Google Calendar u Outlook.
 - **Tarjetas** con repetición espaciada (SM-2), importación y exportación con **Anki**.
-- **PDFs escaneados y fotos** leídos en esta PC con OCR (o con visión cuando hace falta) y **respaldo completo** en un .zip.
+- **Fotos de apuntes impresos** leídas en esta PC con OCR (o con visión cuando hace falta) y **respaldo completo** en un .zip.
 
 ## 🔒 Tus datos son tuyos
 
@@ -112,12 +113,12 @@ El harness está pensado para **gastar pocos tokens**:
 
 ## 🚀 Empezá en 2 minutos
 
-> Los instaladores para Windows, macOS y Linux van a estar en **Releases**. Mientras tanto, se compila en un par de comandos.
+**En Windows:** bajá `Eureka_X_x64-setup.exe` del [último release](https://github.com/Shugar03/eureka/releases/latest) e instalalo (no pide administrador). Windows SmartScreen va a decir «editor desconocido»: *Más información → Ejecutar de todas formas*. Después, las versiones nuevas llegan solas ([detalle](docs/distribucion.md)).
 
-**Requisitos:** [Rust](https://rustup.rs) estable (MSVC en Windows), [Node](https://nodejs.org) 22.22+ o 24.8+ y una API key de algún proveedor.
+**Desde el código** (Windows, macOS o Linux): necesitás [Rust](https://rustup.rs) estable (MSVC en Windows), [Node](https://nodejs.org) 22.22+ o 24.8+ y una API key de algún proveedor. Más detalle en [CONTRIBUTING](CONTRIBUTING.md).
 
 ```bash
-git clone https://github.com/<tu-usuario>/eureka.git
+git clone https://github.com/Shugar03/eureka.git
 cd eureka
 npm install
 npm run app          # abre la app de escritorio
@@ -177,8 +178,8 @@ flowchart LR
 
 Eureka se construyó con **SDD + TDD + BDD**: cada función tiene su criterio de aceptación, su escenario en Gherkin y sus pruebas.
 
-- **Rust:** más de 160 pruebas, incluido el loop del agente contra un proveedor falso.
-- **Frontend:** más de 160 pruebas con Vitest.
+- **Rust:** más de 380 pruebas, incluido el loop del agente contra un proveedor falso y un presupuesto de tokens por fase.
+- **Frontend:** más de 400 pruebas con Vitest.
 - **E2E:** más de 100 escenarios en un navegador visible, más pruebas sobre la app de escritorio real.
 - **Ninguna prueba gasta tokens.**
 
@@ -188,26 +189,19 @@ npm run test:e2e     # e2e web en un navegador visible
 npm run test:all     # todo
 ```
 
-| Doc | Contenido |
-|---|---|
-| [docs/spec.md](docs/spec.md) | Criterios de aceptación y trazabilidad |
-| [docs/design.md](docs/design.md) | Arquitectura, loop del agente, datos e IPC |
-| [docs/auditoria-harness.md](docs/auditoria-harness.md) | Auditoría de memoria, contexto y herramientas del agente |
-| [docs/testing.md](docs/testing.md) | Cómo correr y extender las pruebas |
-| [features/](features) | Escenarios BDD en español |
+Toda la documentación, ordenada según lo que vengas a hacer, está en [docs/](docs/README.md): la especificación, la arquitectura, las pruebas y las mediciones. Los cambios de cada versión, en el [CHANGELOG](CHANGELOG.md).
 
 ## 🗺️ Lo que viene
 
-- Instaladores firmados en Releases.
-- Leer el tamaño de contexto directamente del proveedor.
-- Exportar mazos `.apkg` de Anki.
+- Word, PowerPoint y EPUB en la biblioteca.
+- Búsqueda por significado en tu PC, sin red ([plan](docs/plan-embeddings-estaticos.md)).
+- Una memoria del estudiante que no repite ideas, resuelve contradicciones y se puede ver y exportar ([plan](docs/plan-memoria-estudiante.md)).
+- La interfaz para teléfono y la versión de Android.
 - Ejecución de código aislada.
-- Investigación en segundo plano.
-- EPUB en la biblioteca.
 
 ## 🤝 Contribuí
 
-¿Encontraste un bug, tenés una idea o querés sumar un idioma? Abrí un *issue* o mandá un *pull request*. Antes de proponer una función, mirá [docs/spec.md](docs/spec.md): cada cambio entra con su criterio de aceptación y sus pruebas.
+¿Encontraste un bug, tenés una idea o querés sumar un idioma? Abrí un *issue* o mandá un *pull request*. Empezá por [CONTRIBUTING](CONTRIBUTING.md): cómo preparar el entorno y cómo entra un cambio (con su criterio de aceptación y sus pruebas). Este proyecto sigue un [código de conducta](CODE_OF_CONDUCT.md), y las vulnerabilidades se reportan en privado como dice [SECURITY](SECURITY.md).
 
 ## 🙏 Créditos
 

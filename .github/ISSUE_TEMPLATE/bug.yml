@@ -1,0 +1,61 @@
+name: Algo anda mal
+description: Un error, algo que no hace lo que dice o un texto que confunde.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ¡Gracias por avisar! Si es un problema de seguridad, no lo cuentes acá: seguí [SECURITY.md](https://github.com/Shugar03/eureka/blob/main/SECURITY.md).
+        **No pegues API keys, tokens ni datos personales** (tampoco en capturas).
+  - type: textarea
+    id: que-paso
+    attributes:
+      label: Qué pasó
+      description: Lo que viste, con el mensaje exacto si hubo uno.
+    validations:
+      required: true
+  - type: textarea
+    id: esperado
+    attributes:
+      label: Qué esperabas que pasara
+    validations:
+      required: true
+  - type: textarea
+    id: pasos
+    attributes:
+      label: Cómo reproducirlo
+      placeholder: |
+        1. Abrí Biblioteca
+        2. Agregué un PDF de 40 páginas
+        3. …
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Versión de Eureka
+      description: Ajustes → Conexión → Acerca de Eureka.
+      placeholder: "0.5.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: sistema
+    attributes:
+      label: Sistema
+      options:
+        - Windows 11
+        - Windows 10
+        - macOS
+        - Linux
+        - Android
+    validations:
+      required: true
+  - type: input
+    id: modelo
+    attributes:
+      label: Proveedor y modelo (si tiene que ver con el profesor)
+      placeholder: "OpenRouter · claude-sonnet"
+  - type: textarea
+    id: extra
+    attributes:
+      label: Capturas o algo más

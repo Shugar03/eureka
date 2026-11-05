@@ -1,0 +1,34 @@
+name: Una idea
+description: Algo que Eureka debería hacer o hacer mejor.
+labels: ["idea"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Contá el problema antes que la solución: así es más fácil encontrar la mejor forma de resolverlo.
+  - type: textarea
+    id: problema
+    attributes:
+      label: Qué problema tenés
+      description: Qué querés lograr al estudiar y qué te lo hace difícil hoy.
+      placeholder: Cuando preparo un final, tengo los apuntes en Word y no puedo subirlos a la biblioteca.
+    validations:
+      required: true
+  - type: textarea
+    id: propuesta
+    attributes:
+      label: Qué te gustaría que hiciera Eureka
+    validations:
+      required: true
+  - type: textarea
+    id: criterio
+    attributes:
+      label: Cómo sabríamos que funciona (opcional)
+      description: Si querés, escribilo como un criterio de aceptación.
+      placeholder: Al agregar un .docx a la biblioteca, queda con sus títulos como secciones y se puede buscar.
+  - type: checkboxes
+    id: aporte
+    attributes:
+      label: ¿Te gustaría hacerlo vos?
+      options:
+        - label: Sí, puedo mandar un pull request

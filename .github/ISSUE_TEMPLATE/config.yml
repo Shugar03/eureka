@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Reportar una vulnerabilidad
+    url: https://github.com/Shugar03/eureka/blob/main/SECURITY.md
+    about: En privado, nunca en un issue público.
+  - name: Documentación
+    url: https://github.com/Shugar03/eureka/blob/main/docs/README.md
+    about: Cómo se usa, cómo está hecho y cómo contribuir.
