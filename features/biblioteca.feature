@@ -43,3 +43,11 @@ Característica: Biblioteca local de bibliografía
     Cuando agrego "libro-editorial.pdf"
     Entonces se indexa en segundos con "0 tokens del modelo"
     Y en el benchmark la sección correcta está en el top 4 en al menos el 80 % de las paráfrasis
+
+  @AC-189
+  Escenario: El profesor reformula una vez antes de decir que no está
+    Dado que la biblioteca tiene un libro sobre derivadas
+    Cuando el profesor busca "derivada polinomio cociente exponente" y el mejor fragmento comparte una sola palabra
+    Entonces el resultado le pide buscar una vez más con sinónimos o como lo diría un libro
+    Y si la segunda búsqueda del mismo turno también es débil, el resultado le dice que lo diga y use research
+    Y una búsqueda que encuentra bien no agrega ningún aviso

@@ -1132,6 +1132,34 @@ async fn every_request_names_its_conversation_for_opencode_go() {
     std::fs::remove_dir_all(dir).ok();
 }
 
+#[test]
+fn a_weak_library_search_asks_for_one_reformulation_then_to_move_on() {
+    // AC-189
+    let dir = std::env::temp_dir().join(format!("la-retry-{}", uuid::Uuid::new_v4().simple()));
+    let st = AppState::new(dir.clone());
+    st.library.import("Cálculo I", "c.pdf", "# Derivadas\n\nLa pendiente de la recta tangente es la derivada de la función en ese punto.\n\n# Integrales\n\nLa integral acumula el área bajo la curva.", 0, vec![], None).unwrap();
+    let mut s = Session::new("prueba");
+    s.messages.push(Msg::user("¿qué es la derivada?".to_string(), None));
+    let search = |s: &Session, q: &str| library_search(&st, s, &json!({ "query": q }).to_string());
+
+    // A good match: no hint, nothing to retry.
+    let (text, meta) = search(&s, "pendiente recta tangente derivada");
+    assert!(!text.contains("buscá una vez más") && meta["retry"] == false, "{text}");
+    // The best passage shares 1 of 4 words: one more search, in other words.
+    let (text, meta) = search(&s, "derivada polinomio cociente exponente");
+    assert!(text.contains("Antes de concluir que no está, buscá una vez más con sinónimos"), "{text}");
+    assert_eq!(meta["retry"], true);
+    s.messages.push(Msg::tool("a", text, Some(meta)));
+    // Still weak in the same turn: say so instead of searching in circles.
+    let (text, _) = search(&s, "fotosíntesis clorofila");
+    assert!(text.starts_with("La biblioteca no tiene nada sobre «fotosíntesis clorofila»: probablemente la biblioteca no trata esto. Decilo"), "{text}");
+    // A new question starts over.
+    s.messages.push(Msg::user("¿y la fotosíntesis?".to_string(), None));
+    let (text, meta) = search(&s, "fotosíntesis clorofila");
+    assert!(text.contains("buscá una vez más") && meta["retry"] == true, "{text}");
+    std::fs::remove_dir_all(dir).ok();
+}
+
 /// NF-22: the library benchmark, retrieval half. Indexes the Markdown the
 /// conversion benchmark wrote (`bookText.bench.test.ts`) and asks every
 /// question in two phrasings, measuring what the teacher would receive.
@@ -1153,32 +1181,63 @@ fn editorial_benchmark() {
     let s = Session::new("benchmark");
     let squash = |x: &str| x.split_whitespace().collect::<Vec<_>>().join(" ");
 
+    // AC-189: one fixed reformulation per hard question and negative, as the teacher would
+    // write it after the hint (generic synonyms, never the book's invented names). Used only
+    // when the first result carries the hint, which the teacher sees; never from the answer key.
+    let retry: Value = serde_json::from_str(&std::fs::read_to_string(fix.join("libro-editorial.retry.json")).unwrap()).unwrap();
     let mut report = serde_json::Map::new();
     let mut lines = vec![format!("importar {import_ms:.1} ms · indexar {index_ms:.1} ms · tokens del modelo al indexar: 0")];
     for (mode, set, field) in [("search", "questions", "search"), ("question", "questions", "question"), ("hard", "hard", "question")] {
         let (mut top1, mut top4, mut answer_in, mut page_ok, mut rr, mut tokens, mut ms) = (0, 0, 0, 0, 0.0, 0usize, 0.0);
+        let (mut asked, mut top1_r, mut top4_r, mut answer_r, mut tokens_r) = (0, 0, 0, 0, 0usize);
         let qs = q[set].as_array().unwrap();
         for item in qs {
             let t = Instant::now();
             let hits = st.library.search(item[field].as_str().unwrap(), crate::agent::LIBRARY_HITS);
             ms += t.elapsed().as_secs_f64() * 1000.0;
-            let (text, _) = crate::agent::library_search(&st, &s, &json!({ "query": item[field] }).to_string());
-            tokens += crate::context::estimate_tokens(&[Msg::tool("x", text, None)]);
+            let (text, meta) = crate::agent::library_search(&st, &s, &json!({ "query": item[field] }).to_string());
+            let cost = crate::context::estimate_tokens(&[Msg::tool("x", text.clone(), None)]);
+            tokens += cost;
             let want = item["section"].as_str().unwrap();
             let answer = squash(item["answer"].as_str().unwrap());
-            if let Some(rank) = hits.iter().position(|h| h.section.ends_with(want)) {
+            let rank = hits.iter().position(|h| h.section.ends_with(want));
+            if let Some(rank) = rank {
                 top4 += 1;
                 rr += 1.0 / (rank as f64 + 1.0);
                 if rank == 0 {
                     top1 += 1;
                 }
             }
+            let has_answer = |hs: &[crate::library::Hit]| hs.iter().any(|h| squash(&h.text).contains(&answer));
             if let Some(h) = hits.iter().find(|h| squash(&h.text).contains(&answer)) {
                 answer_in += 1;
                 let page = item["page"].as_u64().unwrap() as u32;
                 if h.page.is_some_and(|p| p == page || p + 1 == page) {
                     page_ok += 1;
                 }
+            }
+            // With the hint the teacher searches once more and sees both results.
+            let mut again: Vec<crate::library::Hit> = vec![];
+            tokens_r += cost;
+            if meta["retry"] == true {
+                asked += 1;
+                if let Some(r) = retry[set][item[field].as_str().unwrap()].as_str() {
+                    again = st.library.search(r, crate::agent::LIBRARY_HITS);
+                    let mut s2 = s.clone();
+                    s2.messages.push(Msg::tool("x", text, Some(meta)));
+                    let (text2, _) = crate::agent::library_search(&st, &s2, &json!({ "query": r }).to_string());
+                    tokens_r += crate::context::estimate_tokens(&[Msg::tool("y", text2, None)]);
+                }
+            }
+            let rank2 = again.iter().position(|h| h.section.ends_with(want));
+            if rank.is_some() || rank2.is_some() {
+                top4_r += 1;
+            }
+            if if again.is_empty() { rank == Some(0) } else { rank2 == Some(0) } {
+                top1_r += 1;
+            }
+            if has_answer(&hits) || has_answer(&again) {
+                answer_r += 1;
             }
         }
         let n = qs.len() as f64;
@@ -1191,18 +1250,36 @@ fn editorial_benchmark() {
             "page_right": page_ok as f64 / n,
             "tokens_per_query": tokens as f64 / n,
             "query_ms": ms / n,
+            "retry_hint": asked as f64 / n,
         });
         lines.push(format!(
-            "{mode:>8}: sección@1 {:.0}% · sección@4 {:.0}% · MRR {:.2} · respuesta en lo enviado {:.0}% · página {:.0}% · {:.0} tokens/consulta · {:.2} ms",
+            "{mode:>8}: sección@1 {:.0}% · sección@4 {:.0}% · MRR {:.2} · respuesta en lo enviado {:.0}% · página {:.0}% · {:.0} tokens/consulta · {:.2} ms · pide reformular {:.0}%",
             m["section_at_1"].as_f64().unwrap() * 100.0,
             m["section_at_4"].as_f64().unwrap() * 100.0,
             m["mrr"].as_f64().unwrap(),
             m["answer_in_passages"].as_f64().unwrap() * 100.0,
             m["page_right"].as_f64().unwrap() * 100.0,
             m["tokens_per_query"].as_f64().unwrap(),
-            m["query_ms"].as_f64().unwrap()
+            m["query_ms"].as_f64().unwrap(),
+            m["retry_hint"].as_f64().unwrap() * 100.0
         ));
         report.insert(mode.into(), m);
+        if mode == "hard" {
+            let r = json!({
+                "section_at_1": top1_r as f64 / n,
+                "section_at_4": top4_r as f64 / n,
+                "answer_in_passages": answer_r as f64 / n,
+                "tokens_per_query": tokens_r as f64 / n,
+            });
+            lines.push(format!(
+                "hard + 1 reformulación (simulada): sección@1 {:.0}% · sección@4 {:.0}% · respuesta en lo enviado {:.0}% · {:.0} tokens/consulta",
+                r["section_at_1"].as_f64().unwrap() * 100.0,
+                r["section_at_4"].as_f64().unwrap() * 100.0,
+                r["answer_in_passages"].as_f64().unwrap() * 100.0,
+                r["tokens_per_query"].as_f64().unwrap()
+            ));
+            report.insert("hard_reformulated".into(), r);
+        }
     }
     let negatives: Vec<Value> = q["negative"]
         .as_array()
@@ -1210,7 +1287,8 @@ fn editorial_benchmark() {
         .iter()
         .map(|n| {
             let hits = st.library.search(n["search"].as_str().unwrap(), 4);
-            json!({ "query": n["search"], "hits": hits.len(), "all_weak": hits.iter().all(|h| h.weak) })
+            let again = st.library.search(retry["negative"][n["search"].as_str().unwrap()].as_str().unwrap(), 4);
+            json!({ "query": n["search"], "hits": hits.len(), "all_weak": hits.iter().all(|h| h.weak), "reformulated_all_weak": again.iter().all(|h| h.weak) })
         })
         .collect();
     lines.push(format!("negativas (el libro no las responde): {negatives:?}"));
@@ -1226,7 +1304,9 @@ fn editorial_benchmark() {
     assert!(report["search"]["answer_in_passages"].as_f64().unwrap() >= 0.9, "{lines:?}");
     assert!(report["question"]["section_at_4"].as_f64().unwrap() >= 0.75, "{lines:?}");
     assert!(report["hard"]["section_at_4"].as_f64().unwrap() >= 0.8, "paraphrases: {lines:?}");
-    assert!(negatives.iter().all(|n| n["all_weak"] == true), "what the book doesn't answer reads as weak: {negatives:?}");
+    assert!(negatives.iter().all(|n| n["all_weak"] == true && n["reformulated_all_weak"] == true), "what the book doesn't answer reads as weak, also in other words: {negatives:?}");
+    assert_eq!(report["search"]["retry_hint"], 0.0, "keyword searches that work don't ask to reformulate");
+    assert!(report["hard_reformulated"]["section_at_4"].as_f64().unwrap() >= report["hard"]["section_at_4"].as_f64().unwrap(), "{lines:?}");
     std::fs::remove_dir_all(dir).ok();
 }
 // ── Acompañamiento (AC-82..88) ─────────────────────────────────────────────

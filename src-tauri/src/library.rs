@@ -318,6 +318,15 @@ pub fn terms(text: &str) -> Vec<String> {
     concepts(text).into_iter().flat_map(|c| std::iter::once(c.stem).chain(c.root)).collect()
 }
 
+/// How many different meaningful words a query has (AC-189: a top passage
+/// matching fewer than half of them is a partial match).
+pub fn query_words(query: &str) -> usize {
+    let mut stems: Vec<String> = concepts(query).into_iter().map(|c| c.stem).collect();
+    stems.sort();
+    stems.dedup();
+    stems.len()
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 struct Concept {
     stem: String,

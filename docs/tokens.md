@@ -281,6 +281,10 @@ de manuscritos, diagramas o borrosas siguen yendo al modelo de visión, y el hor
 problemas propios también (ahí importa la estructura). No hay número medido por proveedor todavía: Ajustes → Avanzado
 → Uso muestra cuántas llamadas «lectura de fotos» quedan.
 
+## Reformular en la biblioteca (AC-189)
+
+`library_search` agrega **una línea (~10 tokens)** solo cuando el resultado es débil: le pide al profesor otra búsqueda con sinónimos, y la segunda vez del mismo turno, que lo diga y siga. La descripción de la tool y los prompts no cambiaron, y la sesión guionada no tiene biblioteca, así que **`token_budget` no se movió (delta 0) y la línea base no se actualizó**. El costo real es la búsqueda extra: en el benchmark de la biblioteca ([metricas-biblioteca.md](metricas-biblioteca.md)) se pide en 0 de 36 búsquedas que andan y en 6 de 12 paráfrasis, que pasan de ~1.150 a ~1.800 tokens por pregunta de promedio, a cambio de subir la sección correcta en 1.º lugar de 50 % a 92 % (simulado).
+
 ## Línea base y presupuesto
 
 `token_budget` compara cada número (por turno, por llamada, por tool y por prompt) con

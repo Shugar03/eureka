@@ -1,0 +1,21 @@
+{
+  "_rule": "One reformulation per query, as the teacher would write it after a weak or empty result (AC-189): generic synonyms and general knowledge only. Never the book's invented names (Quispe, Tolar-7, Condori, tres lunas, achira, Pucará, molle…) nor words copied from the answer that a model could not know.",
+  "hard": {
+    "¿Cómo sé si una bebida de maíz ya está madura para tomar?": "chicha maíz madurez punto fermentación lista servir",
+    "¿Qué sustancia protege a los hongos del congelamiento?": "levaduras frío heladas resistencia protección congelación",
+    "¿Cuánto tiempo extra necesita el maíz cuando cocino en la montaña?": "altura altitud fermentación maíz días tiempo adicional",
+    "¿Qué olor me obliga a tirar la preparación?": "olor descartar fermento señal peligro",
+    "¿Qué color en la superficie indica que se echó a perder?": "contaminación superficie color señal fermento arruinado",
+    "¿Cuánto tiempo se deja brotar el grano antes de secarlo?": "germinar maíz germinado días secado",
+    "¿Cuánto tiempo pasa la papa en el agua corriente?": "papa sumergida río agua días semanas remojo",
+    "¿Cuánto dura guardada la papa deshidratada sin perder su almidón?": "papa seca deshidratada conservación almidón años duración",
+    "¿Por qué se mastica la mandioca para la bebida amazónica?": "yuca masticar saliva bebida fermentada amazonía",
+    "¿Por qué la vasija de arcilla enfría la bebida?": "recipiente barro tinaja enfriamiento evaporación",
+    "¿Cómo se prepara un cántaro nuevo antes de usarlo?": "tinaja vasija barro nueva curar preparar primer uso",
+    "¿Cómo se le quita lo amargo a la quinua?": "quinua amargor saponina eliminar remojo lavado"
+  },
+  "negative": {
+    "mundial fútbol 1986 ganador": "copa del mundo fútbol campeón 1986 selección",
+    "derivada polinomio cálculo regla potencia": "derivar polinomios exponente reglas de derivación"
+  }
+}
