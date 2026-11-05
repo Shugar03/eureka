@@ -2,9 +2,11 @@
 //
 //   node scripts/release.cjs [patch|minor|major|1.2.3] ["Qué trae esta versión"]
 //
-// 1. Bumps the version (package.json, Cargo.toml, tauri.conf.json), commits and tags it.
+// 1. Bumps the version (package.json, Cargo.toml, tauri.conf.json), moves the «Sin publicar»
+//    section of CHANGELOG.md into «## [X] - fecha» (scripts/changelog.cjs), commits and tags it.
 // 2. Builds the signed installer (NSIS) with the update source built in.
 // 3. Creates the GitHub release with the installer and latest.json, which the app reads.
+//    Without the notes argument, the release notes are the moved CHANGELOG section.
 //
 // Needs, outside the repo: %USERPROFILE%\.tauri\eureka.key, the signing key
 // (tauri signer generate), and `gh` logged in with write access to the repo.
@@ -13,6 +15,7 @@ const { spawnSync } = require("node:child_process");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
+const { releaseChangelog, localDate } = require("./changelog.cjs");
 
 const REPO = "Shugar03/eureka";
 const ROOT = path.resolve(__dirname, "..");
@@ -57,13 +60,23 @@ if (run("git", ["status", "--porcelain"], { capture: true })) die("hay cambios s
 const conf = JSON.parse(fs.readFileSync(path.join(ROOT, "src-tauri/tauri.conf.json"), "utf8"));
 const current = conf.version;
 const version = nextVersion(current, process.argv[2] || "patch");
-const notes = process.argv[3] || `Eureka ${version}`;
+// Checked before touching anything (version already there, no «Sin publicar»), written with the bumps.
+const CHANGELOG = path.join(ROOT, "CHANGELOG.md");
+let changelog;
+try {
+  changelog = releaseChangelog(fs.readFileSync(CHANGELOG, "utf8"), version, localDate(), REPO);
+} catch (e) {
+  die(e.message);
+}
+if (!process.argv[3] && !changelog.notes) console.warn(`«Sin publicar» está vacía en CHANGELOG.md: las notas van a decir solo «Eureka ${version}».`);
+const notes = process.argv[3] || changelog.notes || `Eureka ${version}`;
 console.log(`\nPublicando Eureka ${current} → ${version}\n`);
 
 // ── 1. Version, commit and tag ────────────────────────────────────────────
 replaceIn("package.json", /"version": "[^"]+"/, `"version": "${version}"`);
 replaceIn("src-tauri/tauri.conf.json", /"version": "[^"]+"/, `"version": "${version}"`);
 replaceIn("src-tauri/Cargo.toml", /^version = "[^"]+"/m, `version = "${version}"`);
+fs.writeFileSync(CHANGELOG, changelog.text);
 // Cargo.lock follows Cargo.toml.
 run("cargo", ["update", "--manifest-path", "src-tauri/Cargo.toml", "-p", "eureka", "--offline"]);
 
@@ -86,7 +99,7 @@ if (!installer) die(`no encontré el instalador de la ${version} en ${nsis}`);
 const signature = fs.readFileSync(path.join(nsis, `${installer}.sig`), "utf8").trim();
 
 // Only now, with the installer built, is the version committed.
-run("git", ["add", "package.json", "package-lock.json", "src-tauri/tauri.conf.json", "src-tauri/Cargo.toml", "src-tauri/Cargo.lock"]);
+run("git", ["add", "package.json", "package-lock.json", "src-tauri/tauri.conf.json", "src-tauri/Cargo.toml", "src-tauri/Cargo.lock", "CHANGELOG.md"]);
 run("git", ["commit", "-m", `Eureka ${version}`]);
 run("git", ["tag", `v${version}`]);
 run("git", ["push", "origin", "HEAD", `v${version}`]);

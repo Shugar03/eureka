@@ -21,9 +21,9 @@ Con todo commiteado:
 npm run release -- patch "Qué trae esta versión"
 ```
 
-(`minor`, `major` o un número `1.2.3` en vez de `patch`.) El script sube la versión en `package.json`, `Cargo.toml` y `tauri.conf.json`, compila el instalador firmado (en `D:\dev-cache\eureka-release-target`, para no trabar el `target` de los tests), commitea `Eureka X`, crea el tag `vX`, hace push y publica el release con el instalador y `latest.json`.
+(`minor`, `major` o un número `1.2.3` en vez de `patch`.) El script sube la versión en `package.json`, `Cargo.toml` y `tauri.conf.json`, pasa la sección «Sin publicar» del [CHANGELOG](../CHANGELOG.md) a «## [X] - fecha» (deja una «Sin publicar» vacía arriba y suma el link al release), compila el instalador firmado (en `D:\dev-cache\eureka-release-target`, para no trabar el `target` de los tests), commitea `Eureka X`, crea el tag `vX`, hace push y publica el release con el instalador y `latest.json`. Sin el texto entre comillas, las notas del release son esa sección del CHANGELOG.
 
-Si la compilación falla, la versión queda subida en esos tres archivos sin commitear: descartá esos cambios (`git checkout -- package.json src-tauri/Cargo.toml src-tauri/tauri.conf.json src-tauri/Cargo.lock`) y volvé a correrlo.
+Si la compilación falla, la versión queda subida en esos archivos sin commitear: descartá esos cambios (`git checkout -- package.json src-tauri/Cargo.toml src-tauri/tauri.conf.json src-tauri/Cargo.lock CHANGELOG.md`) y volvé a correrlo.
 
 ## La primera instalación
 
