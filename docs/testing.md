@@ -36,7 +36,7 @@ Ninguna prueba llama a un modelo real. La única excepción es opcional: `tests/
 
 | Job | Runner | Qué corre | ¿Bloquea? |
 |---|---|---|---|
-| Tipos y Vitest | Windows | `npm ci`, `npm run typecheck`, `vitest run`, `npm run test:scripts` | sí |
+| Tipos y Vitest | Windows | `npm ci`, los tipos de `npm run typecheck`, `vitest run`, `npm run test:scripts` | sí (los tipos de `tests/` todavía no: tienen errores viejos contra los tipos del paquete `e2e`) |
 | `cargo test --lib` | Windows | `cargo test --lib --locked` en `src-tauri` (incluye `token_budget`), con cache de cargo, ONNX Runtime y los modelos de OCR | sí |
 | Higiene del repo | Ubuntu | `scripts/check-repo.mjs` (ver abajo) | sí |
 | Docs y YAML | Ubuntu | markdownlint ([`.markdownlint-cli2.jsonc`](../.markdownlint-cli2.jsonc), nunca con `--fix`), YAML de `.github/` y actionlint; los links externos (lychee) se reportan sin bloquear | sí, salvo los links externos |
