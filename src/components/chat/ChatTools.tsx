@@ -5,7 +5,7 @@ import { imageRgba, imageToDataUrl } from "../../lib/images";
 import { photoText } from "../../lib/ocr";
 import { addPdf } from "../../lib/scanned";
 import { OcrProgress } from "../OcrProgress";
-import { isDocument, isPhoto, titleOf, type Attachment } from "../../lib/attachments";
+import { isDocument, isOfficeDocument, isPhoto, LIBRARY_FILES, titleOf, type Attachment } from "../../lib/attachments";
 import { useDictation } from "../a11y/useDictation";
 import { Icon } from "../Icon";
 import { systemDictation } from "../../lib/platform";
@@ -33,7 +33,7 @@ export function useAttachments() {
       });
       return { id: `${file.name}-${Date.now()}`, kind: "image", label: file.name, detail: via === "ocr" ? "texto leído en esta PC" : "texto leído de la imagen", text };
     }
-    if (!isDocument(file)) throw `${file.name}: por ahora acepto PDF, texto, Markdown o fotos (PNG, JPG, WEBP).`;
+    if (!isDocument(file)) throw `${file.name}: por ahora acepto PDF, Word, PowerPoint, EPUB, ODT, texto, Markdown o fotos (PNG, JPG, WEBP).`;
     setWorking(`Guardando ${file.name} en tu biblioteca…`);
     if (/\.pdf$/i.test(file.name) || file.type === "application/pdf") {
       const added = await addPdf(file, titleOf(file.name), {
@@ -50,6 +50,10 @@ export function useAttachments() {
           ),
       });
       return { id: added.book.id, kind: "book", label: added.book.title, detail: added.ocr === "started" ? "en tu biblioteca · leyendo con OCR" : "en tu biblioteca" };
+    }
+    if (isOfficeDocument(file)) {
+      const saved = await libraryApi.importDocument(titleOf(file.name), file.name, new Uint8Array(await file.arrayBuffer()));
+      return { id: saved.id, kind: "book", label: saved.title, detail: "en tu biblioteca" };
     }
     const markdown = /\.(md|markdown)$/i.test(file.name) ? await file.text() : textToMarkdown(await file.text());
     const saved = await libraryApi.import(titleOf(file.name), file.name, markdown, 0, []);
@@ -77,7 +81,7 @@ export function AttachButton({ onFiles, disabled }: { onFiles: (f: FileList | nu
   const input = useRef<HTMLInputElement>(null);
   return (
     <>
-      <button type="button" className="icon-btn" aria-label="Adjuntar archivos" title="Adjuntar: PDF, texto, Markdown o foto de apuntes" disabled={disabled} onClick={() => input.current?.click()}>
+      <button type="button" className="icon-btn" aria-label="Adjuntar archivos" title="Adjuntar: PDF, Word, PowerPoint, EPUB, texto o foto de apuntes" disabled={disabled} onClick={() => input.current?.click()}>
         <Icon name="plus" size={18} />
       </button>
       <input
@@ -86,7 +90,7 @@ export function AttachButton({ onFiles, disabled }: { onFiles: (f: FileList | nu
         multiple
         hidden
         data-testid="attach-input"
-        accept=".pdf,.txt,.md,.markdown,image/png,image/jpeg,image/webp"
+        accept={`${LIBRARY_FILES},image/png,image/jpeg,image/webp`}
         onChange={(e) => {
           onFiles(e.target.files);
           e.target.value = "";

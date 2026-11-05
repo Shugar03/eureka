@@ -3,6 +3,7 @@ import { api, errorText, libraryApi } from "../api";
 import type { Book, BookSummary, LibraryHit } from "../types";
 import { textToMarkdown } from "../lib/bookText";
 import { addPdf } from "../lib/scanned";
+import { isOfficeDocument, LIBRARY_FILES } from "../lib/attachments";
 import { Markdown } from "./Markdown";
 import { OcrProgress, useOcrJobs } from "./OcrProgress";
 import { ReadAloud } from "./a11y/ReadAloud";
@@ -96,7 +97,9 @@ export function LibraryScreen({ onOpenSession }: Props) {
         });
       const added = isPdf
         ? await addPdf(file, title, { onStatus: setProgress, confirm })
-        : { book: await libraryApi.import(title, file.name, /\.md$/i.test(file.name) ? await file.text() : textToMarkdown(await file.text()), 0, []), unread: 0, ocr: "none" as const };
+        : isOfficeDocument(file)
+          ? { book: await libraryApi.importDocument(title, file.name, new Uint8Array(await file.arrayBuffer())), unread: 0, ocr: "none" as const }
+          : { book: await libraryApi.import(title, file.name, /\.md$/i.test(file.name) ? await file.text() : textToMarkdown(await file.text()), 0, []), unread: 0, ocr: "none" as const };
       const saved = added.book;
       setBooks(await libraryApi.list());
       const secs = ((performance.now() - started) / 1000).toFixed(1);
@@ -188,10 +191,10 @@ export function LibraryScreen({ onOpenSession }: Props) {
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar en la biblioteca…" aria-label="Buscar en la biblioteca" />
         </form>
         <label className={`btn small primary file-pick ${progress ? "is-disabled" : ""}`}>
-          {progress ? "Leyendo…" : "Agregar PDF o texto"}
+          {progress ? "Leyendo…" : "Agregar documento"}
           <input
             type="file"
-            accept=".pdf,.txt,.md,application/pdf,text/plain,text/markdown"
+            accept={LIBRARY_FILES}
             aria-label="Agregar un documento a la biblioteca"
             disabled={!!progress}
             onChange={(e) => {

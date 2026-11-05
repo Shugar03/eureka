@@ -43,3 +43,35 @@ Característica: Biblioteca local de bibliografía
     Cuando agrego "libro-editorial.pdf"
     Entonces se indexa en segundos con "0 tokens del modelo"
     Y en el benchmark la sección correcta está en el top 4 en al menos el 80 % de las paráfrasis
+
+  @AC-189
+  Escenario: El profesor reformula una vez antes de decir que no está
+    Dado que la biblioteca tiene un libro sobre derivadas
+    Cuando el profesor busca "derivada polinomio cociente exponente" y el mejor fragmento comparte una sola palabra
+    Entonces el resultado le pide buscar una vez más con sinónimos o como lo diría un libro
+    Y si la segunda búsqueda del mismo turno no encuentra nada o es toda débil, el resultado le dice que lo diga y use research
+    Y si la segunda búsqueda solo coincide en parte, no le dice que se rinda
+    Y una búsqueda que encuentra bien no agrega ningún aviso
+
+  @AC-190
+  Escenario: Agregar un libro no rearma toda la biblioteca
+    Dado que la biblioteca tiene 50 libros y ya se buscó una vez
+    Cuando agrego un libro, el OCR le suma páginas a otro y quito un tercero
+    Entonces cada cambio actualiza solo ese libro en el índice
+    Y buscar da lo mismo que con el índice rearmado entero
+    Y después de restaurar un respaldo, la búsqueda siguiente rearma el índice
+
+  @AC-191
+  Escenario: Word, PowerPoint y EPUB entran con sus títulos como secciones
+    Cuando agrego "apuntes-volcanes.docx" a la biblioteca
+    Entonces veo "quedó en la biblioteca (3 secciones"
+    Y el índice tiene "El cono de Tamberías"
+    Cuando agrego "clase-volcanes.pptx"
+    Entonces cada diapositiva es una sección y "La regla del semáforo" muestra "Rojo: evacuar"
+    Cuando agrego "libro-volcanes.epub" y busco "cámara magmática"
+    Entonces el primer resultado es "1.1 La cámara"
+
+  @AC-191
+  Escenario: El «+» del chat también acepta una presentación
+    Cuando adjunto "clase-volcanes.pptx" con el «+» del chat
+    Entonces queda "en tu biblioteca"

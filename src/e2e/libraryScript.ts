@@ -98,3 +98,23 @@ export function search(books: Book[], query: string, limit: number): LibraryHit[
     }
   return hits.sort((a, b) => b.score - a.score).slice(0, limit);
 }
+
+/** AC-191: what `office::to_markdown` gives for the test fixtures (the real conversion is Rust's, tested there). */
+const OFFICE: Record<string, string> = {
+  "apuntes-volcanes.docx":
+    "# Volcanes de la Puna\n\nLa Puna tiene volcanes altos y secos, con cráteres que guardan lagunas saladas.\n\n## El cono de Tamberías\n\nEl cono de Tamberías creció con tres erupciones cortas; su ceniza blanca cubre el salar vecino.\n\n## Fumarolas y azufre\n\nLas fumarolas del cerro Aguila sueltan vapor con azufre que se deposita en cristales amarillos.",
+  "clase-volcanes.pptx":
+    "## Clase 3: volcanes\n\nQué es un volcán\n\nPartes: cámara, chimenea, cráter\n\n## Tipos de erupción\n\nEfusiva: lava que corre\n\nExplosiva: ceniza y bombas\n\n## La regla del semáforo\n\nVerde: calma\n\nAmarillo: temblores\n\nRojo: evacuar",
+  "libro-volcanes.epub":
+    "# Capítulo 1: El fuego de abajo\n\nEl magma sube por grietas cuando la presión del gas vence a la roca.\n\n## 1.1 La cámara\n\nLa cámara magmática del volcán Ojos Quietos está a nueve kilómetros de profundidad.\n\n# Capítulo 2: Vivir cerca\n\nLos pueblos de la Puna aprovechan el suelo volcánico para cultivar papa andina.",
+};
+OFFICE["apuntes-volcanes.odt"] = OFFICE["apuntes-volcanes.docx"];
+
+/** Unpacks `libraryApi.importDocument`'s body and converts it like the Rust command would. */
+export function officeImport(body: Uint8Array): { title: string; fileName: string; markdown: string } {
+  const n = new DataView(body.buffer, body.byteOffset, 4).getUint32(0, true);
+  const head = JSON.parse(new TextDecoder().decode(body.subarray(4, 4 + n))) as { title: string; fileName: string };
+  const markdown = OFFICE[head.fileName];
+  if (markdown === undefined) throw `No pude leer ${head.fileName}: parece dañado o no es lo que dice su extensión.`;
+  return { ...head, markdown };
+}

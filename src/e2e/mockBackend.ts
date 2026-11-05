@@ -1106,6 +1106,15 @@ export function install() {
         store.bookMarkdown.set(b.id, markdown);
         return lib.summary(b);
       }
+      case "import_document": {
+        // Raw bytes like the real command (AC-191): the head with title and name, then the file.
+        const { title, fileName, markdown } = lib.officeImport(args as unknown as Uint8Array);
+        await sleep(DELAY);
+        const b: Book = { id: nid(), title, file_name: fileName, created_at: new Date(++clock).toISOString(), pages: 0, scanned: [], sections: lib.sections(markdown), ocr: null };
+        store.books.set(b.id, b);
+        store.bookMarkdown.set(b.id, markdown);
+        return lib.summary(b);
+      }
       case "add_ocr_pages": {
         const b = store.books.get(args.id as string);
         if (!b) throw "Ese libro ya no está en la biblioteca.";

@@ -13,8 +13,14 @@ export interface Attachment {
   text?: string;
 }
 
-/** Documents the library reads: PDF, plain text and Markdown. */
-export const isDocument = (f: { name: string; type: string }) => f.type === "application/pdf" || /\.(pdf|txt|md|markdown)$/i.test(f.name) || f.type === "text/plain" || f.type === "text/markdown";
+/** AC-191: Word, PowerPoint, EPUB and OpenDocument text, converted to Markdown on this PC (Rust). */
+export const isOfficeDocument = (f: { name: string }) => /\.(docx|pptx|epub|odt)$/i.test(f.name);
+
+/** What the library's file pickers accept. */
+export const LIBRARY_FILES = ".pdf,.txt,.md,.markdown,.docx,.pptx,.epub,.odt,application/pdf,text/plain,text/markdown";
+
+/** Documents the library reads: PDF, plain text, Markdown, Word, PowerPoint, EPUB and ODT. */
+export const isDocument = (f: { name: string; type: string }) => f.type === "application/pdf" || /\.(pdf|txt|md|markdown)$/i.test(f.name) || f.type === "text/plain" || f.type === "text/markdown" || isOfficeDocument(f);
 
 export const isPhoto = (f: { name: string; type: string }) => /^image\/(png|jpe?g|webp)$/.test(f.type) || /\.(png|jpe?g|webp)$/i.test(f.name);
 

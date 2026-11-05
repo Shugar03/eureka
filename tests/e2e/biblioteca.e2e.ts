@@ -90,3 +90,27 @@ test("NF-22 un libro de 28 páginas se indexa en segundos, sin tokens, y se encu
   await expect(hits.first()).toBeVisible();
   console.log("[NF-22] resultados:", JSON.stringify(await hits.allTextContents()));
 });
+
+test("AC-191 Word, PowerPoint y EPUB entran a la biblioteca con sus títulos como secciones", async ({ app, screen, browser }) => {
+  await addFile(app, screen, browser, "apuntes-volcanes.docx");
+  await expect(screen.getByText("Listo: «apuntes volcanes» quedó en la biblioteca (3 secciones", { exact: false })).toBeVisible({ timeout: 20_000 });
+  await expect(toc(screen).getByRole("button", "El cono de Tamberías", { exact: false })).toBeVisible();
+
+  await browser.locator('input[aria-label="Agregar un documento a la biblioteca"]').setInputFiles("tests/fixtures/clase-volcanes.pptx");
+  await expect(screen.getByText("Listo: «clase volcanes» quedó en la biblioteca (3 secciones", { exact: false })).toBeVisible({ timeout: 20_000 });
+  await toc(screen).getByRole("button", "La regla del semáforo", { exact: false }).click();
+  await expect(reader(screen)).toContainText("Rojo: evacuar");
+
+  await browser.locator('input[aria-label="Agregar un documento a la biblioteca"]').setInputFiles("tests/fixtures/libro-volcanes.epub");
+  await expect(toc(screen).getByRole("button", "1.1 La cámara", { exact: false })).toBeVisible({ timeout: 20_000 });
+  await screen.getByLabel("Buscar en la biblioteca").fill("cámara magmática");
+  await screen.getByLabel("Buscar en la biblioteca").press("Enter");
+  await expect(screen.getByRole("region", "Resultados").getByRole("listitem").first()).toContainText("1.1 La cámara");
+});
+
+test("AC-191 el «+» del chat también deja una presentación en la biblioteca", async ({ app, screen, browser }) => {
+  await app.open("/");
+  await browser.locator('[data-testid="attach-input"]').setInputFiles("tests/fixtures/clase-volcanes.pptx");
+  await expect(screen.getByText("en tu biblioteca")).toBeVisible({ timeout: 20_000 });
+  await expect(screen.getByText("clase volcanes")).toBeVisible();
+});

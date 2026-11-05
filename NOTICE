@@ -35,3 +35,11 @@ Software linked into Eureka for local speech:
   ONNX Runtime, Copyright (c) Microsoft Corporation. MIT License.
   parakeet-rs, by altunenes. MIT OR Apache-2.0.
   candle, by Hugging Face. MIT OR Apache-2.0.
+
+Software linked into Eureka for reading Word, PowerPoint, EPUB and OpenDocument
+files in the library (src-tauri/src/office.rs):
+  anydoc, Copyright (c) 2026 Sideguide Technologies Inc. (Firecrawl). MIT License.
+  https://github.com/firecrawl/anydoc
+  pdf-inspector (Firecrawl, MIT), lopdf (MIT) and cfb (MIT) come along as anydoc's
+  dependencies; Eureka doesn't use their PDF reading (PDFs go through pdf.js) and
+  builds pdf-inspector without its PDFium and OCR features.

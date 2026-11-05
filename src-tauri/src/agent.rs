@@ -334,6 +334,24 @@ fn clip(text: &str, max: usize) -> String {
     format!("{}…", &text[..cut])
 }
 
+/// AC-189: a library search earlier in this turn already asked for a reformulation.
+fn reformulated_this_turn(s: &Session) -> bool {
+    let turn = s.messages.iter().rposition(|m| m.role == "user").map_or(0, |i| i + 1);
+    s.messages[turn..].iter().filter_map(|m| m.meta.as_ref()).any(|meta| meta["kind"] == "library" && meta["retry"] == true)
+}
+
+/// AC-189: one line after a weak or empty search. The first time it asks for one
+/// more search in other words (measured in NF-22). After that, only a search that
+/// found nothing or only weak matches says to give up: a reformulation full of
+/// synonyms often matches under half of its words and still has the answer.
+fn retry_hint(s: &Session, what: &str, hopeless: bool) -> Option<String> {
+    match (reformulated_this_turn(s), hopeless) {
+        (true, true) => Some(format!("{what}: probablemente la biblioteca no trata esto. Decilo y, si hace falta, usá research.")),
+        (true, false) => None,
+        (false, _) => Some(format!("{what}. Antes de concluir que no está, buscá una vez más con sinónimos o como lo diría un libro.")),
+    }
+}
+
 /// AC-72: BM25 over the learner's books; each passage gets a session-wide ref.
 pub fn library_search(state: &AppState, s: &Session, args: &str) -> (String, serde_json::Value) {
     let a: serde_json::Value = serde_json::from_str(args).unwrap_or_default();
@@ -346,9 +364,12 @@ pub fn library_search(state: &AppState, s: &Session, args: &str) -> (String, ser
     if index.titles().is_empty() {
         return ("La biblioteca del aprendiz está vacía. Si necesitás fuentes, usá research.".into(), none);
     }
+    // `retry` in the meta: this result asked for a reformulation (AC-189).
+    let first_try = !reformulated_this_turn(s);
     let hits = index.search(&query, LIBRARY_HITS);
     if hits.is_empty() {
-        return (format!("La biblioteca no tiene nada sobre «{query}». Probá con otras palabras o, si hace falta, usá research."), none);
+        let text = retry_hint(s, &format!("La biblioteca no tiene nada sobre «{query}»"), true).unwrap_or_default();
+        return (text, serde_json::json!({ "kind": "library", "query": query, "refs": [], "retry": first_try }));
     }
     let first = library_refs(s).len() + 1;
     let mut text = format!("Biblioteca — «{query}»:\n");
@@ -361,13 +382,19 @@ pub fn library_search(state: &AppState, s: &Session, args: &str) -> (String, ser
         text.push_str(&format!("\n[L{n}] «{}» · {}{page}{fit}\n{}\n", h.book_title, h.section, clip(&h.text, PASSAGE_CHARS)));
         refs.push(serde_json::json!({ "n": n, "book_id": h.book_id, "book_title": h.book_title, "section_id": h.section_id, "section": h.section, "page": h.page }));
     }
-    if hits.iter().all(|h| h.weak) {
-        text.push_str("\nTodas las coincidencias son débiles: probablemente la biblioteca no trata esto. Si no responde la pregunta, decilo y usá research.\n");
+    // AC-189: all weak, or the best passage shares under half of the query's words
+    // (in NF-22 that flags 6 of the 12 paraphrases and none of the 36 keyword questions).
+    let all_weak = hits.iter().all(|h| h.weak);
+    let partial = hits[0].matched.len() * 2 < crate::library::query_words(&query);
+    let hint = if all_weak || partial { retry_hint(s, if all_weak { "Todas las coincidencias son débiles" } else { "El primer fragmento comparte pocas palabras con la búsqueda" }, all_weak) } else { None };
+    let retry = hint.is_some() && first_try;
+    if let Some(hint) = hint {
+        text.push_str(&format!("\n{hint}\n"));
     }
     text.push_str("\nCitá lo que uses con su número, ej.: [L1]. No cites lo que no esté acá. Para la sección completa: library_read.");
     // NF-22: what this search adds to the teacher's context, for the transcript.
     let tokens = crate::context::estimate_tokens(&[Msg::tool("", text.clone(), None)]);
-    (text, serde_json::json!({ "kind": "library", "query": query, "refs": refs, "tokens": tokens }))
+    (text, serde_json::json!({ "kind": "library", "query": query, "refs": refs, "tokens": tokens, "retry": retry }))
 }
 
 /// The whole section a cited passage came from.
