@@ -4,6 +4,8 @@ Lo que cambia en cada versión de Eureka, de la más nueva a la más vieja. El f
 
 ## Sin publicar
 
+## [0.6.0] - 2026-11-05
+
 ### Nuevo
 - **Word, PowerPoint, EPUB y OpenDocument a la biblioteca** (y al «+» del chat): se convierten en tu PC, con los títulos como secciones, y el profesor los busca y los cita como a un PDF (AC-191).
 - **PDFs escaneados y fotocopias se leen en tu PC** con OCR (PaddleOCR), sin red ni tokens. Hasta 10 páginas arranca solo; si son más, te dice cuánto va a tardar y pregunta. El libro aparece con las primeras páginas y se completa mientras seguís usando Eureka; las líneas dudosas quedan marcadas con «revisar» (AC-187).
@@ -70,6 +72,7 @@ Primera versión pública.
 - Consola de código en diez lenguajes.
 - Actualizaciones automáticas firmadas.
 
+[0.6.0]: https://github.com/Shugar03/eureka/releases/tag/v0.6.0
 [0.5.0]: https://github.com/Shugar03/eureka/releases/tag/v0.5.0
 [0.4.0]: https://github.com/Shugar03/eureka/releases/tag/v0.4.0
 [0.3.0]: https://github.com/Shugar03/eureka/releases/tag/v0.3.0
