@@ -135,6 +135,16 @@ fn q(id: &str, question: &str, purpose: &str, of: u8) -> Value {
     tool(9, id, "ask_question", json!({ "question": question, "purpose": purpose, "of": of }))
 }
 
+/// Six turns in a row of a session past the window.
+const LONG_TURNS: [&str; 6] = ["11-sesion-larga-a", "12-sesion-larga-b", "13-sesion-larga-c", "14-sesion-larga-d", "15-sesion-larga-e", "16-sesion-larga-f"];
+
+/// Share of the long session's input that repeats the previous turn (turns b–f).
+fn long_session_repeat(turns: &[(String, Vec<Value>)]) -> f64 {
+    let reqs: Vec<&Value> = LONG_TURNS.iter().map(|n| &turns.iter().find(|(t, _)| t == n).unwrap().1[0]).collect();
+    let (shared, total) = reqs.windows(2).fold((0, 0), |(s, t), w| (s + common_prefix(w[0], w[1]), t + parts(w[1]).total));
+    shared as f64 / total as f64
+}
+
 const PARA: &str = "La integral definida suma infinitos rectángulos muy finos bajo la curva; cuanto más finos, más se acerca al área exacta. ";
 
 /// A demo the size a real one has (~3.5 KB of HTML).
@@ -190,6 +200,10 @@ async fn scripted() -> (Vec<(String, Vec<Value>)>, Value) {
         Reply::Sse(vec![knowledge(&[("a", "La derivada es la pendiente de la tangente"), ("b", "La tangente es el límite de las secantes")], &[(&["b"], "a")])]),
         // a long session, two turns in a row: the history window slides
         // (answers as long as a real explanation, so each turn pushes old messages out)
+        Reply::Sse(vec![text(&PARA.repeat(9))]),
+        Reply::Sse(vec![text(&PARA.repeat(9))]),
+        Reply::Sse(vec![text(&PARA.repeat(9))]),
+        Reply::Sse(vec![text(&PARA.repeat(9))]),
         Reply::Sse(vec![text(&PARA.repeat(9))]),
         Reply::Sse(vec![text(&PARA.repeat(9))]),
         // practice: one forced call
@@ -249,7 +263,7 @@ async fn scripted() -> (Vec<(String, Vec<Value>)>, Value) {
         long.messages.push(crate::llm::Msg { role: "assistant".into(), content: Some(format!("Respuesta {i}: {}", para.repeat(9))), tool_calls: None, tool_call_id: None, meta: None });
     }
     st.sessions.save(&mut long).unwrap();
-    for name in ["11-sesion-larga-a", "12-sesion-larga-b"] {
+    for name in LONG_TURNS {
         let mut l = st.sessions.load(&long.id).unwrap();
         l.messages.push(crate::llm::Msg::user("¿y la primitiva?", None));
         st.sessions.save(&mut l).unwrap();
@@ -367,6 +381,8 @@ async fn token_budget() {
     let (turns, defs) = scripted().await;
     let now = report(&turns, &defs);
     print(&now);
+    println!("
+Sesión larga, turnos b–f: {:.0} % de la entrada repite el turno anterior", 100.0 * long_session_repeat(&turns));
     let path = baseline_path();
     if std::env::var_os("TOKEN_BASELINE_UPDATE").is_some() {
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
@@ -394,6 +410,9 @@ async fn the_static_prefix_is_byte_stable_between_steps() {
             assert_eq!(a[..a.len() - 1], b[..a.len() - 1], "{name}: the history before the state repeats unchanged");
         }
     }
+    // AC-186: a long session past the window repeats its prefix turn after turn (the cut moves in blocks).
+    let shared = long_session_repeat(&turns);
+    assert!(shared > 0.75, "long session: only {:.0} % repeated", shared * 100.0);
     // Across turns too: same system prompt and tools for the same phase, every time.
     let mut by_phase: BTreeMap<String, (Value, Value)> = BTreeMap::new();
     for r in turns.iter().filter(|(n, _)| !n.starts_with("09-") && !n.starts_with("10-")).flat_map(|(_, r)| r) {

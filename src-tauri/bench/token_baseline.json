@@ -302,19 +302,111 @@
         {
           "system": 2563,
           "tools": 4374,
-          "history": 32713,
+          "history": 21748,
           "state": 180,
-          "total": 39830
+          "total": 28865
         }
       ],
       "turn": {
         "system": 2563,
         "tools": 4374,
-        "history": 32713,
+        "history": 21748,
         "state": 180,
-        "total": 39830
+        "total": 28865
       },
       "cached_prefix": 6953
+    },
+    "13-sesion-larga-c": {
+      "phases": [
+        "teach"
+      ],
+      "calls": 1,
+      "per_call": [
+        {
+          "system": 2563,
+          "tools": 4374,
+          "history": 22031,
+          "state": 180,
+          "total": 29148
+        }
+      ],
+      "turn": {
+        "system": 2563,
+        "tools": 4374,
+        "history": 22031,
+        "state": 180,
+        "total": 29148
+      },
+      "cached_prefix": 28685
+    },
+    "14-sesion-larga-d": {
+      "phases": [
+        "teach"
+      ],
+      "calls": 1,
+      "per_call": [
+        {
+          "system": 2563,
+          "tools": 4374,
+          "history": 22314,
+          "state": 180,
+          "total": 29431
+        }
+      ],
+      "turn": {
+        "system": 2563,
+        "tools": 4374,
+        "history": 22314,
+        "state": 180,
+        "total": 29431
+      },
+      "cached_prefix": 28968
+    },
+    "15-sesion-larga-e": {
+      "phases": [
+        "teach"
+      ],
+      "calls": 1,
+      "per_call": [
+        {
+          "system": 2563,
+          "tools": 4374,
+          "history": 22597,
+          "state": 180,
+          "total": 29714
+        }
+      ],
+      "turn": {
+        "system": 2563,
+        "tools": 4374,
+        "history": 22597,
+        "state": 180,
+        "total": 29714
+      },
+      "cached_prefix": 29251
+    },
+    "16-sesion-larga-f": {
+      "phases": [
+        "teach"
+      ],
+      "calls": 1,
+      "per_call": [
+        {
+          "system": 2563,
+          "tools": 4374,
+          "history": 22880,
+          "state": 180,
+          "total": 29997
+        }
+      ],
+      "turn": {
+        "system": 2563,
+        "tools": 4374,
+        "history": 22880,
+        "state": 180,
+        "total": 29997
+      },
+      "cached_prefix": 29534
     }
   },
   "tools": {

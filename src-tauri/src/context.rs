@@ -13,6 +13,9 @@ use serde_json::Value;
 pub const DEFAULT_BUDGET: usize = 64_000;
 /// Start dropping old messages above this share of the budget.
 pub const WINDOW_SHARE: f64 = 0.6;
+/// Old messages leave in blocks of about this share (AC-186): the cut stays
+/// put for several turns, so the history stays a cacheable prefix.
+pub const BLOCK_SHARE: f64 = 0.2;
 const CODE_KEEP_LINES: usize = 20;
 
 /// ~3.5 characters per token: rough, but enough to stay far from the limit.
@@ -98,6 +101,10 @@ fn stub(args: &mut Value, field: &str, what: &str) -> bool {
 /// M2: keeps the first message (the goal) and the most recent messages that
 /// fit in `share` of the budget. The cut never separates an assistant message
 /// from its tool results. Returns the messages and how many were left out.
+///
+/// AC-186: the cut only lands on fixed block marks (every ~`BLOCK_SHARE` of
+/// the budget, counted from the start of the history), so it moves once per
+/// block instead of every turn, and the «Se omitieron N» note with it.
 pub fn window(messages: Vec<Msg>, budget: usize) -> (Vec<Msg>, usize) {
     let limit = (budget as f64 * WINDOW_SHARE) as usize;
     if messages.len() <= 2 || estimate_tokens(&messages) <= limit {
@@ -118,6 +125,10 @@ pub fn window(messages: Vec<Msg>, budget: usize) -> (Vec<Msg>, usize) {
     while start < messages.len() && messages[start].role == "tool" {
         start += 1;
     }
+    // The first block mark at or after the cut that fits; none: the tight cut.
+    if let Some(mark) = block_marks(&messages, budget).into_iter().find(|&m| m >= start) {
+        start = mark;
+    }
     let dropped = start - 1;
     if dropped == 0 {
         return (messages, 0);
@@ -125,6 +136,24 @@ pub fn window(messages: Vec<Msg>, budget: usize) -> (Vec<Msg>, usize) {
     let mut out = vec![first, Msg::user(format!("<nota_app>Se omitieron {dropped} mensajes anteriores de esta sesión para no exceder el contexto. El plan, el diagnóstico y «Lo que pasó antes» en el estado resumen lo importante.</nota_app>"), None)];
     out.extend(messages.into_iter().skip(start));
     (out, dropped)
+}
+
+/// Safe cut points (never a tool result, never the last message) each time the
+/// history since the goal passes another `BLOCK_SHARE` of the budget. They
+/// depend only on what comes before them, so new messages never move them.
+fn block_marks(messages: &[Msg], budget: usize) -> Vec<usize> {
+    let block = ((budget as f64 * BLOCK_SHARE) as usize).max(1);
+    let mut marks = Vec::new();
+    let mut acc = 0;
+    let mut next = block;
+    for i in 1..messages.len() {
+        if acc >= next && messages[i].role != "tool" {
+            marks.push(i);
+            next = acc + block;
+        }
+        acc += estimate_tokens(std::slice::from_ref(&messages[i]));
+    }
+    marks
 }
 
 /// Re-summarize only once this many new messages left the window.
@@ -245,6 +274,32 @@ mod tests {
         assert_eq!(out[2].role, "assistant", "never starts with an orphan tool result");
         assert!(estimate_tokens(&out) <= (total as f64 * 0.62) as usize);
         assert_eq!(window(msgs.clone(), total * 10).1, 0, "fits: nothing dropped");
+    }
+
+    #[test]
+    fn the_window_moves_in_blocks_so_consecutive_turns_share_the_prefix() {
+        let mut msgs = vec![Msg::user("Quiero entender: x", None)];
+        let budget = 20_000;
+        let limit = (budget as f64 * WINDOW_SHARE) as usize;
+        let mut cuts = Vec::new();
+        for i in 0..200 {
+            msgs.push(Msg::user(format!("pregunta {i} {}", "p".repeat(200)), None));
+            msgs.push(assistant(vec![call(&format!("c{i}"), "record_finding", json!({ "concept": "z".repeat(600) }))]));
+            msgs.push(Msg::tool(&format!("c{i}"), "ok", None));
+            let (out, dropped) = window(msgs.clone(), budget);
+            assert!(estimate_tokens(&out) <= limit + 100, "the 60 % ceiling holds");
+            assert_ne!(out[2].role, "tool", "still cut at a safe boundary");
+            cuts.push(dropped);
+        }
+        let moves = cuts.windows(2).filter(|w| w[0] != w[1]).count();
+        let tight = cuts.iter().filter(|&&d| d > 0).count();
+        assert!(moves * 8 < tight, "the cut moves once per block ({moves} moves in {tight} turns over budget)");
+        // Between moves, the kept history is the same prefix plus the new messages.
+        let (a, da) = window(msgs[..msgs.len() - 3].to_vec(), budget);
+        let (b, db) = window(msgs.clone(), budget);
+        if da == db {
+            assert_eq!(serde_json::to_string(&a).unwrap(), serde_json::to_string(&b[..a.len()]).unwrap());
+        }
     }
 
     #[test]
