@@ -43,6 +43,14 @@ export function LibraryScreen({ onOpenSession }: Props) {
   /** AC-187: more than OCR_AUTO_PAGES scanned pages: the estimate, waiting for an OK. */
   const [ask, setAsk] = useState<{ text: string; answer: (yes: boolean) => void } | null>(null);
   const jobs = useOcrJobs();
+  /** The book whose import notice describes a reading still in progress. */
+  const [noticeBook, setNoticeBook] = useState<string | null>(null);
+  useEffect(() => {
+    if (noticeBook && jobs.some((j) => j.bookId === noticeBook && j.state === "done")) {
+      setNotice(null);
+      setNoticeBook(null);
+    }
+  }, [jobs, noticeBook]);
 
   useEffect(() => {
     libraryApi.list().then(setBooks).catch((e) => setError(errorText(e)));
@@ -75,6 +83,7 @@ export function LibraryScreen({ onOpenSession }: Props) {
     if (!file) return;
     setError(null);
     setNotice(null);
+    setNoticeBook(null);
     const started = performance.now();
     try {
       const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
@@ -94,7 +103,14 @@ export function LibraryScreen({ onOpenSession }: Props) {
       const scanned = added.unread ? ` ${added.unread} páginas escaneadas no tienen texto y no se pueden buscar.` : "";
       const ocr = added.ocr === "started" ? " Las páginas escaneadas se leen con OCR en esta PC: el libro se completa solo mientras seguís." : "";
       const tokens = Math.ceil(saved.chars / 3.5);
-      setNotice(`Listo: «${saved.title}» quedó en la biblioteca (${saved.sections} secciones, ${secs} s, 0 tokens del modelo; el texto equivale a ~${tokens.toLocaleString("es-AR")} tokens).${scanned}${ocr}`);
+      const sections = `${saved.sections} ${saved.sections === 1 ? "sección" : "secciones"}`;
+      // While OCR is still reading, the size is partial: the progress bar tells the rest.
+      setNotice(
+        added.ocr === "started"
+          ? `Listo: «${saved.title}» quedó en la biblioteca con sus primeras páginas (${secs} s, 0 tokens del modelo).${ocr}`
+          : `Listo: «${saved.title}» quedó en la biblioteca (${sections}, ${secs} s, 0 tokens del modelo; el texto equivale a ~${tokens.toLocaleString("es-AR")} tokens).${scanned}`,
+      );
+      if (added.ocr === "started") setNoticeBook(saved.id);
       await openBook(saved.id);
     } catch (e) {
       setError(typeof e === "string" ? e : `No se pudo leer ${file.name}: ${errorText(e)}`);
@@ -233,7 +249,7 @@ export function LibraryScreen({ onOpenSession }: Props) {
                     <strong>{b.title}</strong>
                     <span className="muted small">
                       {b.pages ? `${b.pages} págs · ` : ""}
-                      {b.sections} secciones · {kb(b.chars)} caracteres
+                      {b.sections} {b.sections === 1 ? "sección" : "secciones"} · {kb(b.chars)} caracteres
                       {b.scanned && !b.ocr ? ` · ${b.scanned} escaneadas` : ""}
                       {b.ocr ? ` · leído con OCR${b.ocr.pending.length ? ` (faltan ${b.ocr.pending.length} págs)` : ""}` : ""}
                     </span>

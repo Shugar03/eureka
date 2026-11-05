@@ -17,8 +17,8 @@ async function library(app: App, screen: Screen, query = "") {
 test("AC-187 un PDF escaneado corto se lee con OCR solo y se puede buscar y citar por página", async ({ app, screen, browser }) => {
   await library(app, screen);
   await pick(browser, "fotocopia-celula.pdf");
-  await expect(screen.getByText("Listo: «fotocopia celula» quedó en la biblioteca", { exact: false })).toBeVisible({ timeout: 30_000 });
-  await expect(reader(screen)).toContainText("Leído con OCR: puede tener errores");
+  // The import notice goes away once the reading ends, so the reader is what's checked.
+  await expect(reader(screen)).toContainText("Leído con OCR: puede tener errores", { timeout: 30_000 });
   await expect(reader(screen)).toContainText("La célula es la unidad básica de la vida");
   // The rest arrives in the background; then every page is there, with its number.
   await expect(screen.getByText("terminé de leerlo con OCR.", { exact: false })).toBeVisible({ timeout: 30_000 });
