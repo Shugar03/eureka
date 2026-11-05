@@ -122,7 +122,7 @@ export async function walk(seed: number, { app, screen, browser }: Fixtures, tur
         // The theme lives in Ajustes → Mi espacio; the palette switches it from any screen.
         await screen.getByRole("button", "Buscar o ejecutar").click();
         const box = screen.getByLabel("Buscar comando");
-        await box.fill(a.which.replace("Tema ", "Tema: "));
+        await box.fill(a.which === "Tema sistema" ? "Tema: según el sistema" : a.which.replace("Tema ", "Tema: "));
         await box.press("Enter");
         await expect(screen.getByRole("dialog", "Paleta de comandos")).toBeHidden();
         break;

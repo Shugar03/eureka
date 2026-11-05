@@ -4,7 +4,7 @@ import { test } from "@e2e-dev/web";
 import { expect } from "e2e";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { answer, finishProbe, pending, phase, startSession } from "../e2e/helpers.ts";
+import { answer, finishProbe, goTo, pending, phase, startSession } from "../e2e/helpers.ts";
 import { dataDir, fakeProvider } from "./launch.ts";
 
 const ledger = () => {
@@ -33,7 +33,7 @@ test("D-11 terminar una sesión la extrae al grafo y el profesor lo usa en la si
   await screen.getByTestId("graph-banner").getByRole("button", "Volver a extraer").click();
   await expect(screen.getByTestId("graph-banner")).toContainText("Guardado", { timeout: 15_000 });
   expect(ledger().length).toBe(2); // history kept…
-  await screen.getByRole("navigation", "Navegación").getByRole("button", "Grafo").click();
+  await goTo(screen, "Grafo");
   await expect(screen.getByTestId("graph-counts")).toHaveText("4 ideas · 2 cadenas"); // …but no duplicates
 
   // AC-20: a new related session gets the graph in its state block.
@@ -53,7 +53,7 @@ test("D-11 terminar una sesión la extrae al grafo y el profesor lo usa en la si
 test("D-12 importar notas en la app real", async ({ app, screen }) => {
   await fakeProvider.reset();
   await app.open("/");
-  await screen.getByRole("navigation", "Navegación").getByRole("button", "Grafo").click();
+  await goTo(screen, "Grafo");
   await screen.getByRole("button", "Importar notas").click();
   await screen.getByLabel("Título de las notas").fill("Apuntes de física");
   await screen.getByLabel("Texto de las notas").fill("- La velocidad es la derivada de la posición\n- La aceleración es la derivada de la velocidad");
@@ -65,7 +65,7 @@ test("D-12 importar notas en la app real", async ({ app, screen }) => {
 test("D-13 una extracción fallida deja el grafo intacto", async ({ app, screen }) => {
   await fakeProvider.reset();
   await app.open("/");
-  await screen.getByRole("navigation", "Navegación").getByRole("button", "Grafo").click();
+  await goTo(screen, "Grafo");
   await screen.getByRole("button", "Importar notas").click();
   await screen.getByLabel("Título de las notas").fill("x");
   await screen.getByLabel("Texto de las notas").fill("una idea");

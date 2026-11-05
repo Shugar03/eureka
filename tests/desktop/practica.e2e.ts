@@ -4,7 +4,7 @@ import { test } from "@e2e-dev/web";
 import { expect } from "e2e";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { answer } from "../e2e/helpers.ts";
+import { answer, goTo } from "../e2e/helpers.ts";
 import { dataDir, fakeProvider } from "./launch.ts";
 
 const nav = (s: import("e2e").Screen) => s.getByRole("navigation", "Navegación");
@@ -13,7 +13,7 @@ test("D-14 práctica completa contra el loop real", async ({ app, screen }) => {
   await fakeProvider.reset();
   await app.open("/");
   // Seed the graph through the real extractor (notes import).
-  await nav(screen).getByRole("button", "Grafo").click();
+  await goTo(screen, "Grafo");
   await screen.getByRole("button", "Importar notas").click();
   await screen.getByLabel("Título de las notas").fill("Apuntes");
   await screen.getByLabel("Texto de las notas").fill("La derivada es la pendiente de la recta tangente\nUn límite describe a qué valor se acerca algo");
@@ -49,7 +49,7 @@ test("D-14 práctica completa contra el loop real", async ({ app, screen }) => {
 test("D-15 un corrector caído no pierde la respuesta", async ({ app, screen }) => {
   await fakeProvider.reset();
   await app.open("/");
-  await nav(screen).getByRole("button", "Grafo").click();
+  await goTo(screen, "Grafo");
   await screen.getByRole("button", "Importar notas").click();
   await screen.getByLabel("Título de las notas").fill("x");
   await screen.getByLabel("Texto de las notas").fill("La derivada es la pendiente de la recta tangente");
