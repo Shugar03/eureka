@@ -42,6 +42,8 @@ Ninguna prueba llama a un modelo real. La única excepción es opcional: `tests/
 | Docs y YAML | Ubuntu | markdownlint ([`.markdownlint-cli2.jsonc`](../.markdownlint-cli2.jsonc), nunca con `--fix`), YAML de `.github/` y actionlint; los links externos (lychee) se reportan sin bloquear | sí, salvo los links externos |
 | e2e web | Windows | `e2e run` sin ventana, sin `visual.e2e.ts` ni el cancelar/reanudar del OCR | no |
 
+Si el cambio toca solo documentación (`docs/`, `features/`, los `.md` de la raíz, las plantillas de `.github/` o `LICENSE`), el job «¿Cambió código?» saltea Tipos y Vitest, `cargo test` y el e2e: la corrida baja de unos 15 minutos a uno o dos. Higiene y Docs corren siempre. Los prompts de `src-tauri/prompts/*.md` cuentan como código (entran al binario). Un job salteado cuenta como aprobado si después se lo marca como obligatorio.
+
 Quedan afuera, a propósito: mutation testing, el e2e de la app real (WebView2 necesita escritorio) y las capturas visuales (se tomaron en otra PC).
 
 `check:repo` falla si aparece el nombre prohibido, si hay un archivo de secretos versionado (`auth.json`, `.env`, `*.key`) o algo con forma de API key, si un link relativo de un `.md` apunta a un archivo que no existe, o si un `AC-n` de `spec.md` no tiene fila de trazabilidad o no aparece en ninguna prueba ni `.feature`. Los huecos que ya estaban están en [`scripts/ac-allowlist.json`](../scripts/ac-allowlist.json): solo falla uno nuevo, y avisa cuando uno de la lista ya está cubierto para sacarlo. Con `--base <ref>` también avisa (sin fallar) si el cambio toca `src/` o `src-tauri/src/` pero no `docs/`, `features/` ni el `CHANGELOG.md`.

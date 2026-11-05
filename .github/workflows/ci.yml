@@ -22,8 +22,36 @@ env:
   NODE_VERSION: "24"
 
 jobs:
+  # Docs-only pushes skip the slow jobs (Rust, Vitest, e2e). A skipped job counts as
+  # passed for a required check, so this stays safe if those checks become required.
+  # Only these paths count as docs: src-tauri/prompts/*.md is code (include_str!).
+  changes:
+    name: ¿Cambió código?
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - id: diff
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ] || [ -z "$BASE" ] || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            echo "code=true" >> "$GITHUB_OUTPUT"; echo "Sin base comparable: corre todo."; exit 0
+          fi
+          files=$(git diff --name-only "$BASE" HEAD)
+          echo "$files"
+          code=$(echo "$files" | grep -vE '^(docs/|features/|\.github/ISSUE_TEMPLATE/|[^/]+\.md$|\.github/PULL_REQUEST_TEMPLATE\.md$|LICENSE$)' | grep -c . || true)
+          if [ "$code" -gt 0 ]; then echo "code=true" >> "$GITHUB_OUTPUT"; else echo "code=false" >> "$GITHUB_OUTPUT"; echo "Solo documentación: se saltean Rust, Vitest y e2e."; fi
+
   frontend:
     name: Tipos y Vitest
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: windows-latest
     timeout-minutes: 20
     steps:
@@ -41,6 +69,8 @@ jobs:
 
   rust:
     name: cargo test --lib
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: windows-latest
     # Cold: tauri, candle and parakeet from scratch take a while. Warm: a few minutes.
     timeout-minutes: 90
@@ -153,6 +183,8 @@ jobs:
 
   e2e-web:
     name: e2e web (opcional)
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: windows-latest
     timeout-minutes: 60
     # Not required: browser timing on a shared runner can be flaky.
