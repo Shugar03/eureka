@@ -183,27 +183,9 @@ async fn stream_completions(
     on_text: impl FnMut(&str),
     cancelled: impl Fn() -> bool,
 ) -> Result<Completion> {
-    let mut wire = vec![json!({ "role": "system", "content": system })];
-    wire.extend(messages.iter().map(Msg::wire));
-
-    let mut body = json!({
-        "model": ep.model,
-        "messages": wire,
-        "tools": tools,
-        "stream": true,
-    });
     // AC-186: the last chunk carries the usage (OpenAI and compatibles only send it when asked).
     let ask_usage = !NO_STREAM_OPTIONS.lock().unwrap().contains(&ep.base_url);
-    if ask_usage {
-        body["stream_options"] = json!({ "include_usage": true });
-    }
-    if let Some(choice) = tool_choice {
-        body["tool_choice"] = choice.clone();
-    }
-    // Plain chat (no tools): some providers reject an empty "tools" list.
-    if tools.as_array().is_some_and(|a| a.is_empty()) {
-        body.as_object_mut().unwrap().remove("tools");
-    }
+    let mut body = completions_body(ep, system, messages, tools, tool_choice, ask_usage);
 
     let send = |body: &Value| {
         client().map(|c| {
@@ -234,6 +216,67 @@ async fn stream_completions(
     let mut parser = SseParser::default();
     pump(resp, &mut parser, on_text, cancelled).await?;
     Ok(parser.finish())
+}
+
+/// The `/chat/completions` request. Byte for byte what every provider got
+/// before AC-186, plus `stream_options`, plus the cache marks only for Claude
+/// through OpenRouter (see [`mark_cache`]).
+pub fn completions_body(ep: &Endpoint, system: &str, messages: &[Msg], tools: &Value, tool_choice: Option<&Value>, ask_usage: bool) -> Value {
+    let mut wire = vec![json!({ "role": "system", "content": system })];
+    wire.extend(messages.iter().map(Msg::wire));
+
+    let mut body = json!({
+        "model": ep.model,
+        "messages": wire,
+        "tools": tools,
+        "stream": true,
+    });
+    if ask_usage {
+        body["stream_options"] = json!({ "include_usage": true });
+    }
+    if let Some(choice) = tool_choice {
+        body["tool_choice"] = choice.clone();
+    }
+    // Plain chat (no tools): some providers reject an empty "tools" list.
+    if tools.as_array().is_some_and(|a| a.is_empty()) {
+        body.as_object_mut().unwrap().remove("tools");
+    }
+    if claude_via_openrouter(ep) {
+        mark_cache(&mut body);
+    }
+    body
+}
+
+/// Claude caches only what is marked; through OpenRouter that is `cache_control`
+/// on a content block. Every other provider caches by itself (or not at all).
+pub fn claude_via_openrouter(ep: &Endpoint) -> bool {
+    let model = ep.model.to_lowercase();
+    crate::usage::host(&ep.base_url).ends_with("openrouter.ai") && (model.starts_with("anthropic/") || model.starts_with("~anthropic/") || model.contains("claude"))
+}
+
+/// AC-186: two breakpoints (Anthropic allows four). One closes the static part
+/// (tools come before the system prompt, so it covers both); the other closes
+/// the stable history, right before the state message that changes every step.
+fn mark_cache(body: &mut Value) {
+    let Some(msgs) = body["messages"].as_array_mut() else { return };
+    let is_state = |m: &Value| m["role"] == "user" && m["content"].as_str().is_some_and(|c| c.starts_with("<estado_app>"));
+    let history_end = match msgs.last() {
+        Some(last) if is_state(last) && msgs.len() >= 3 => Some(msgs.len() - 2),
+        _ => None,
+    };
+    mark_block(&mut msgs[0]);
+    // The last message of the history that carries text (an assistant turn with only tool calls has none).
+    if let Some(end) = history_end {
+        if let Some(i) = (1..=end).rev().find(|&i| msgs[i]["content"].as_str().is_some_and(|c| !c.is_empty())) {
+            mark_block(&mut msgs[i]);
+        }
+    }
+}
+
+fn mark_block(m: &mut Value) {
+    if let Some(text) = m["content"].as_str().map(String::from) {
+        m["content"] = json!([{ "type": "text", "text": text, "cache_control": { "type": "ephemeral" } }]);
+    }
 }
 
 /// A subscription account: the provider's own backend, Responses API shape.
@@ -340,6 +383,8 @@ pub fn responses_body(ep: &Endpoint, system: &str, messages: &[Msg], tools: &Val
         "input": input,
         "store": false,
         "stream": true,
+        // AC-186: same key for the whole conversation, so its calls land on the same prompt cache.
+        "prompt_cache_key": ep.session,
     });
     // Same rule as chat-completions: no tools means no "tools" key at all.
     if let Some(list) = tools.as_array().filter(|a| !a.is_empty()) {
@@ -873,6 +918,51 @@ mod tests {
         assert_eq!((u.input, u.output, u.cached, u.reasoning, u.cost), (Some(3200), Some(90), Some(3072), Some(64), None));
         let bare = responses_sse(&[json!({ "type": "response.completed" })]);
         assert!(run_responses(&bare, 8).1.usage.is_none());
+    }
+
+    fn endpoint(base_url: &str, model: &str) -> Endpoint {
+        Endpoint { base_url: base_url.into(), api_key: "k".into(), model: model.into(), context_tokens: 64_000, session: "eureka-s1".into(), subscription: None, usage: Default::default() }
+    }
+
+    fn turn() -> Vec<Msg> {
+        vec![
+            Msg::user("Quiero entender: x", None),
+            Msg { role: "assistant".into(), content: None, tool_calls: Some(vec![ToolCall { id: "c1".into(), kind: "function".into(), function: FunctionCall { name: "recall".into(), arguments: "{}".into() } }]), tool_call_id: None, meta: None },
+            Msg::tool("c1", "nada", None),
+            Msg::user("<estado_app>\nfase\n</estado_app>", None),
+        ]
+    }
+
+    #[test]
+    fn claude_through_openrouter_gets_two_cache_breakpoints() {
+        let tools = json!([{ "type": "function", "function": { "name": "recall" } }]);
+        let body = completions_body(&endpoint("https://openrouter.ai/api/v1", "anthropic/claude-sonnet-5.5"), "sos un tutor", &turn(), &tools, None, true);
+        let m = body["messages"].as_array().unwrap();
+        assert_eq!(m[0]["content"], json!([{ "type": "text", "text": "sos un tutor", "cache_control": { "type": "ephemeral" } }]), "closes tools + system");
+        assert_eq!(m[3]["content"][0]["cache_control"]["type"], "ephemeral", "closes the stable history: the last tool result");
+        assert!(m[2]["content"].is_null(), "an assistant turn with only tool calls stays as it was");
+        assert!(m[4]["content"].is_string(), "the state, which changes every step, is never marked");
+        assert_eq!(body.to_string().matches("cache_control").count(), 2);
+        // A forced call (no state): only the static part.
+        let one = completions_body(&endpoint("https://openrouter.ai/api/v1", "anthropic/claude-haiku-5.5"), "s", &[Msg::user("x", None)], &tools, None, true);
+        assert_eq!(one.to_string().matches("cache_control").count(), 1);
+    }
+
+    #[test]
+    fn other_providers_get_exactly_the_body_they_got_before() {
+        let tools = json!([{ "type": "function", "function": { "name": "recall" } }]);
+        for (base, model) in [("https://openrouter.ai/api/v1", "openai/gpt-6"), ("https://api.anthropic.com/v1", "claude-sonnet-5.5"), ("https://api.deepseek.com", "deepseek-v4"), ("https://opencode.ai/zen/go/v1", "deepseek-v4.1-flash")] {
+            let body = completions_body(&endpoint(base, model), "sos un tutor", &turn(), &tools, None, true);
+            let mut wire = vec![json!({ "role": "system", "content": "sos un tutor" })];
+            wire.extend(turn().iter().map(Msg::wire));
+            assert_eq!(body, json!({ "model": model, "messages": wire, "tools": tools, "stream": true, "stream_options": { "include_usage": true } }), "{base}");
+        }
+    }
+
+    #[test]
+    fn responses_body_has_a_stable_prompt_cache_key() {
+        let ep = subscription_endpoint();
+        assert_eq!(responses_body(&ep, "s", &[Msg::user("x", None)], &json!([]), None)["prompt_cache_key"], "eureka-1");
     }
 
     #[test]
