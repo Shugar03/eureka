@@ -49,7 +49,8 @@ Característica: Biblioteca local de bibliografía
     Dado que la biblioteca tiene un libro sobre derivadas
     Cuando el profesor busca "derivada polinomio cociente exponente" y el mejor fragmento comparte una sola palabra
     Entonces el resultado le pide buscar una vez más con sinónimos o como lo diría un libro
-    Y si la segunda búsqueda del mismo turno también es débil, el resultado le dice que lo diga y use research
+    Y si la segunda búsqueda del mismo turno no encuentra nada o es toda débil, el resultado le dice que lo diga y use research
+    Y si la segunda búsqueda solo coincide en parte, no le dice que se rinda
     Y una búsqueda que encuentra bien no agrega ningún aviso
 
   @AC-190

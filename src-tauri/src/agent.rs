@@ -341,12 +341,14 @@ fn reformulated_this_turn(s: &Session) -> bool {
 }
 
 /// AC-189: one line after a weak or empty search. The first time it asks for one
-/// more search in other words (measured in NF-22); after that, to say so and move on.
-fn retry_hint(s: &Session, what: &str) -> String {
-    if reformulated_this_turn(s) {
-        format!("{what}: probablemente la biblioteca no trata esto. Decilo y, si hace falta, usá research.")
-    } else {
-        format!("{what}. Antes de concluir que no está, buscá una vez más con sinónimos o como lo diría un libro.")
+/// more search in other words (measured in NF-22). After that, only a search that
+/// found nothing or only weak matches says to give up: a reformulation full of
+/// synonyms often matches under half of its words and still has the answer.
+fn retry_hint(s: &Session, what: &str, hopeless: bool) -> Option<String> {
+    match (reformulated_this_turn(s), hopeless) {
+        (true, true) => Some(format!("{what}: probablemente la biblioteca no trata esto. Decilo y, si hace falta, usá research.")),
+        (true, false) => None,
+        (false, _) => Some(format!("{what}. Antes de concluir que no está, buscá una vez más con sinónimos o como lo diría un libro.")),
     }
 }
 
@@ -362,38 +364,34 @@ pub fn library_search(state: &AppState, s: &Session, args: &str) -> (String, ser
     if index.titles().is_empty() {
         return ("La biblioteca del aprendiz está vacía. Si necesitás fuentes, usá research.".into(), none);
     }
+    // `retry` in the meta: this result asked for a reformulation (AC-189).
+    let first_try = !reformulated_this_turn(s);
     let hits = index.search(&query, LIBRARY_HITS);
     if hits.is_empty() {
-        let text = retry_hint(s, &format!("La biblioteca no tiene nada sobre «{query}»"));
-        return (text, serde_json::json!({ "kind": "library", "query": query, "refs": [], "retry": true }));
+        let text = retry_hint(s, &format!("La biblioteca no tiene nada sobre «{query}»"), true).unwrap_or_default();
+        return (text, serde_json::json!({ "kind": "library", "query": query, "refs": [], "retry": first_try }));
     }
     let first = library_refs(s).len() + 1;
-    let mut text = format!("Biblioteca — «{query}»:
-");
+    let mut text = format!("Biblioteca — «{query}»:\n");
     let mut refs = Vec::new();
     for (i, h) in hits.iter().enumerate() {
         let n = first + i;
         let page = h.page.map(|p| format!(" · p. {p}")).unwrap_or_default();
         // NF-22: say which words matched, so a one-word match reads as weak.
         let fit = if h.weak { format!(" · coincidencia débil (solo: {})", h.matched.join(", ")) } else { format!(" · coincide: {}", h.matched.join(", ")) };
-        text.push_str(&format!("
-[L{n}] «{}» · {}{page}{fit}
-{}
-", h.book_title, h.section, clip(&h.text, PASSAGE_CHARS)));
+        text.push_str(&format!("\n[L{n}] «{}» · {}{page}{fit}\n{}\n", h.book_title, h.section, clip(&h.text, PASSAGE_CHARS)));
         refs.push(serde_json::json!({ "n": n, "book_id": h.book_id, "book_title": h.book_title, "section_id": h.section_id, "section": h.section, "page": h.page }));
     }
     // AC-189: all weak, or the best passage shares under half of the query's words
     // (in NF-22 that flags 6 of the 12 paraphrases and none of the 36 keyword questions).
     let all_weak = hits.iter().all(|h| h.weak);
     let partial = hits[0].matched.len() * 2 < crate::library::query_words(&query);
-    let retry = all_weak || partial;
-    if retry {
-        text.push('\n');
-        text.push_str(&retry_hint(s, if all_weak { "Todas las coincidencias son débiles" } else { "El primer fragmento comparte pocas palabras con la búsqueda" }));
-        text.push('\n');
+    let hint = if all_weak || partial { retry_hint(s, if all_weak { "Todas las coincidencias son débiles" } else { "El primer fragmento comparte pocas palabras con la búsqueda" }, all_weak) } else { None };
+    let retry = hint.is_some() && first_try;
+    if let Some(hint) = hint {
+        text.push_str(&format!("\n{hint}\n"));
     }
-    text.push_str("
-Citá lo que uses con su número, ej.: [L1]. No cites lo que no esté acá. Para la sección completa: library_read.");
+    text.push_str("\nCitá lo que uses con su número, ej.: [L1]. No cites lo que no esté acá. Para la sección completa: library_read.");
     // NF-22: what this search adds to the teacher's context, for the transcript.
     let tokens = crate::context::estimate_tokens(&[Msg::tool("", text.clone(), None)]);
     (text, serde_json::json!({ "kind": "library", "query": query, "refs": refs, "tokens": tokens, "retry": retry }))

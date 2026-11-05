@@ -60,12 +60,13 @@ Cuando el resultado es débil, `library_search` le pide al profesor **una** bús
 | Disparador | Pide reformular: search / question / hard | hard: sección 1.º | hard: top 4 | Respuesta dentro de lo enviado |
 |---|---|---|---|---|
 | Sin reformular (antes) | — | 50 % | 83 % | 75 % |
-| Solo «todas débiles» o nada | 0 % / 0 % / 25 % | 67 % | 92 % | — |
+| Solo «todas débiles» o nada (de una corrida de diagnóstico; `bench:library` no lo regenera) | 0 % / 0 % / 25 % | 67 % | 92 % | — |
 | **Todas débiles, nada, o el 1.º comparte menos de la mitad de las palabras (elegido)** | **0 % / 0 % / 50 %** | **92 %** | **92 %** | **92 %** |
 
 - **Cómo se simula el modelo:** `tests/fixtures/libro-editorial.retry.json` tiene una reformulación fija por paráfrasis y por negativa, escrita como la escribiría el profesor: sinónimos y conocimiento general («mandioca» → «yuca», «cántaro» → «tinaja vasija barro»), **nunca** los nombres inventados del libro (Quispe, Tolar-7, Condori…). El benchmark la usa solo si el primer resultado trae el aviso, y cuenta como acierto si la sección está en cualquiera de las dos búsquedas (el profesor ve las dos); el 1.º es el de la segunda.
 - **Es un techo, no una medición con modelo:** las reformulaciones las escribió alguien que conoce el libro y las respuestas. Un modelo real puede reformular peor, o no hacerlo. Lo que sí está medido sin trampa es **cuándo** se pide: 6 de 12 paráfrasis y 0 de 36 preguntas que ya andaban.
 - **Lo que no se arregla:** «¿Cuánto tiempo pasa la papa en el agua corriente?» comparte 4 de 6 palabras con otra sección (no dispara el aviso) y la sección correcta no aparece. Para eso hace falta buscar por significado (ver [plan-embeddings-estaticos.md](plan-embeddings-estaticos.md)).
+- **El 0 de 36 es optimista:** esas búsquedas usan el vocabulario del libro. Las 12 reformulaciones, que son listas de sinónimos, piden reformular **2 de 12 (17 %)** si se las hace solas: coinciden en menos de la mitad de sus palabras aunque traigan la sección. Por eso la segunda búsqueda del turno solo dice «no trata esto» si no encontró nada o todo es débil; el benchmark exige que nunca lo diga cuando la sección está entre lo enviado (0 de 12).
 - **Negativas:** reformuladas siguen llegando todas débiles (lo exige el benchmark).
 - **Tokens:** el aviso son ~10 tokens y solo aparece cuando hace falta (0 en las búsquedas que andan). La reformulación es otra búsqueda: en el juego hard, de ~1.150 a **~1.800 tokens por pregunta** de promedio (+650, porque la mitad reformula). Las tools y los prompts no cambiaron: `token_budget` da igual.
 - **Por qué no reformula el backend solo:** un diccionario de sinónimos armado a mano solo «aprendería» este libro, y expandir la búsqueda con las palabras de los primeros fragmentos (*pseudo-relevance feedback*) parte de fragmentos que justo son los equivocados. El modelo ya sabe sinónimos; pedírselo una vez cuesta una línea.

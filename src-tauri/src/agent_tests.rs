@@ -1150,6 +1150,10 @@ fn a_weak_library_search_asks_for_one_reformulation_then_to_move_on() {
     assert!(text.contains("Antes de concluir que no está, buscá una vez más con sinónimos"), "{text}");
     assert_eq!(meta["retry"], true);
     s.messages.push(Msg::tool("a", text, Some(meta)));
+    // The reformulation, full of synonyms, matches under half of its words but found it: no line.
+    let (text, meta) = search(&s, "pendiente tangente inclinación declive gradiente");
+    assert!(text.contains("[L") && !text.contains("no trata esto") && !text.contains("buscá una vez más"), "{text}");
+    assert_eq!(meta["retry"], false);
     // Still weak in the same turn: say so instead of searching in circles.
     let (text, _) = search(&s, "fotosíntesis clorofila");
     assert!(text.starts_with("La biblioteca no tiene nada sobre «fotosíntesis clorofila»: probablemente la biblioteca no trata esto. Decilo"), "{text}");
@@ -1193,6 +1197,9 @@ fn editorial_benchmark() {
     for (mode, set, field) in [("search", "questions", "search"), ("question", "questions", "question"), ("hard", "hard", "question")] {
         let (mut top1, mut top4, mut answer_in, mut page_ok, mut rr, mut tokens, mut ms) = (0, 0, 0, 0, 0.0, 0usize, 0.0);
         let (mut asked, mut top1_r, mut top4_r, mut answer_r, mut tokens_r) = (0, 0, 0, 0, 0usize);
+        // Reformulations that would get the hint themselves, and second searches that found
+        // the section but told the teacher to give up (must be 0).
+        let (mut synonyms_hint, mut gave_up_on_found) = (0, 0);
         let qs = q[set].as_array().unwrap();
         for item in qs {
             let t = Instant::now();
@@ -1222,6 +1229,10 @@ fn editorial_benchmark() {
             // With the hint the teacher searches once more and sees both results.
             let mut again: Vec<crate::library::Hit> = vec![];
             tokens_r += cost;
+            if let Some(r) = retry[set][item[field].as_str().unwrap()].as_str() {
+                let (_, alone) = crate::agent::library_search(&st, &s, &json!({ "query": r }).to_string());
+                synonyms_hint += (alone["retry"] == true) as usize;
+            }
             if meta["retry"] == true {
                 asked += 1;
                 if let Some(r) = retry[set][item[field].as_str().unwrap()].as_str() {
@@ -1229,6 +1240,9 @@ fn editorial_benchmark() {
                     let mut s2 = s.clone();
                     s2.messages.push(Msg::tool("x", text, Some(meta)));
                     let (text2, _) = crate::agent::library_search(&st, &s2, &json!({ "query": r }).to_string());
+                    if again.iter().any(|h| h.section.ends_with(want)) && text2.contains("no trata esto") {
+                        gave_up_on_found += 1;
+                    }
                     tokens_r += crate::context::estimate_tokens(&[Msg::tool("y", text2, None)]);
                 }
             }
@@ -1273,14 +1287,18 @@ fn editorial_benchmark() {
                 "section_at_4": top4_r as f64 / n,
                 "answer_in_passages": answer_r as f64 / n,
                 "tokens_per_query": tokens_r as f64 / n,
+                "reformulations_with_hint": synonyms_hint as f64 / n,
+                "gave_up_on_found": gave_up_on_found,
             });
             lines.push(format!(
-                "hard + 1 reformulación (simulada): sección@1 {:.0}% · sección@4 {:.0}% · respuesta en lo enviado {:.0}% · {:.0} tokens/consulta",
+                "hard + 1 reformulación (simulada): sección@1 {:.0}% · sección@4 {:.0}% · respuesta en lo enviado {:.0}% · {:.0} tokens/consulta · las reformulaciones solas piden reformular {:.0}% · «no trata esto» con la sección encontrada: {gave_up_on_found}",
                 r["section_at_1"].as_f64().unwrap() * 100.0,
                 r["section_at_4"].as_f64().unwrap() * 100.0,
                 r["answer_in_passages"].as_f64().unwrap() * 100.0,
-                r["tokens_per_query"].as_f64().unwrap()
+                r["tokens_per_query"].as_f64().unwrap(),
+                r["reformulations_with_hint"].as_f64().unwrap() * 100.0
             ));
+            assert_eq!(gave_up_on_found, 0, "a reformulation that found the section never says to give up: {lines:?}");
             report.insert("hard_reformulated".into(), r);
         }
     }
