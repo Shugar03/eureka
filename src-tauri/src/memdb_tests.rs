@@ -270,3 +270,123 @@ fn real_data_migration() {
     println!("live observations {obs}, topics {topics}, open contradictions {open}, by kind {by_kind:?}, db {size} bytes");
     assert_eq!(again.created + again.merged, 0);
 }
+
+/// Plan section 8, measured on scripted sessions: ideas and statuses repeated
+/// across sessions and contradictions, before (the old files keep every entry
+/// unless the normalized text is identical) and after (this store).
+#[test]
+fn measure_duplicates_and_contradictions_on_scripted_sessions() {
+    use Kind::*;
+    // (concept, kind, title, session, days ago, verified)
+    let script: &[(&str, Kind, &str, &str, i64, bool)] = &[
+        ("cadena", LeCuesta, "la regla de la cadena", "s1", 10, false),
+        ("cadena", LeCuesta, "las reglas de la cadena", "s2", 8, false),
+        ("cadena", Domina, "Regla de la cadena", "practica", 3, true),
+        ("derivada", Confusion, "La derivada", "s1", 10, false),
+        ("derivada", Confusion, "las derivadas", "s3", 6, false),
+        ("derivada", Domina, "Derivadas", "s4", 2, false),
+        ("limite", Domina, "Límites", "practica", 9, true),
+        ("limite", LeCuesta, "los límites", "s5", 1, false),
+        ("fraccion", Pendiente, "las fracciones", "s2", 8, false),
+        ("fraccion", Pendiente, "Fracciones", "s4", 2, false),
+        ("ejemplos", Preferencia, "con ejemplos numéricos", "s1", 10, false),
+        ("ejemplos", Preferencia, "Con ejemplos numéricos.", "s2", 8, false),
+        ("ejemplos", Preferencia, "con un ejemplo numérico", "s5", 1, false),
+        ("tangente", Idea, "La derivada es la pendiente de la recta tangente", "s1", 10, false),
+        ("tangente", Idea, "la pendiente de la recta tangente es la derivada", "s3", 6, false),
+        ("tangente", Idea, "La derivada es la pendiente de la recta tangente.", "s4", 2, false),
+        ("limite-idea", Idea, "Un límite describe a qué valor se acerca una función", "s2", 8, false),
+        ("cadena-idea", Idea, "La regla de la cadena deriva funciones compuestas", "s1", 10, false),
+        ("cadena-idea", Idea, "Las reglas de la cadena derivan funciones compuestas", "s5", 1, false),
+    ];
+    let positive = |k: Kind| k == Domina;
+    let negative = |k: Kind| matches!(k, LeCuesta | Confusion);
+    let concepts = |rows: &[(&str, Kind)]| -> (usize, usize) {
+        // A duplicate: another entry of the same concept and kind.
+        let dups = rows.len() - rows.iter().map(|(c, k)| (*c, *k)).collect::<HashSet<_>>().len();
+        let by: HashMap<&str, Vec<Kind>> = rows.iter().fold(HashMap::new(), |mut m, (c, k)| {
+            m.entry(*c).or_default().push(*k);
+            m
+        });
+        let contra = by.values().filter(|ks| ks.iter().any(|k| positive(*k)) && ks.iter().any(|k| negative(*k))).count();
+        (dups, contra)
+    };
+
+    // Before: one entry per (kind, normalized text), every status kept.
+    let mut before: Vec<(&str, Kind)> = Vec::new();
+    let mut seen: HashSet<(Kind, String)> = HashSet::new();
+    for (c, k, title, ..) in script {
+        if seen.insert((*k, normalize(title))) {
+            before.push((c, *k));
+        }
+    }
+    let (dup_before, contra_before) = concepts(&before);
+
+    // After: through the store, then the daily hygiene.
+    let (db, dir) = db();
+    let mut counts = Counts::default();
+    for (c, k, title, s, days, verified) in script {
+        let mut n = Note::new(*k, title, title, &format!("{s}#{c}"), &format!("Sesión: {s}"), ago(*days));
+        n.verified = *verified;
+        counts.add(&db.note(n).unwrap());
+    }
+    db.hygiene(Utc::now()).unwrap();
+    let live = db.list().unwrap();
+    let after: Vec<(&str, Kind)> = live.iter().map(|o| (script.iter().find(|x| o.evidence.iter().any(|e| e.source.ends_with(&format!("#{}", x.0)))).unwrap().0, o.kind)).collect();
+    let (dup_after, contra_after) = concepts(&after);
+    let open = db.stats().unwrap().2;
+    println!("scripted: {} entries; before: {} kept, {dup_before} duplicates, {contra_before} contradictions", script.len(), before.len());
+    println!("after: {} live, {dup_after} duplicates, {contra_after} contradictions ({open} waiting for the model); {counts:?}", live.len());
+    assert!(dup_after < dup_before && contra_after < contra_before);
+    assert_eq!(open, 1, "límites: verified but older against newer: the model decides");
+    std::fs::remove_dir_all(dir).ok();
+}
+
+/// Plan section 8: recall over past sessions, the old exact-word search against
+/// FTS5 with the library's stemming, with plurals and paraphrases.
+#[test]
+fn measure_recall_on_past_sessions() {
+    let sessions: &[(&str, &str, &[&str])] = &[
+        ("geometría", "Vimos el triángulo equilátero, la fórmula de su altura y por qué sus ángulos miden 60 grados.", &["confundió la altura con el lado"]),
+        ("derivadas", "Vimos la derivada como pendiente de la recta tangente y la regla de la cadena.", &["practicar la regla del producto"]),
+        ("fotosíntesis", "Repasamos cómo las plantas producen oxígeno y glucosa con la luz del sol.", &[]),
+        ("revolución de mayo", "Vimos las causas de la Revolución de Mayo de 1810 y el primer gobierno patrio.", &[]),
+        ("límites", "Vimos qué es un límite y cómo se calcula factorizando.", &["las indeterminaciones cero sobre cero"]),
+        ("probabilidad", "Vimos eventos independientes y la regla de Laplace con dados.", &[]),
+    ];
+    let questions: &[(&str, &str)] = &[
+        ("triángulos equiláteros", "geometría"),
+        ("rectas tangentes", "derivadas"),
+        ("la regla del producto", "derivadas"),
+        ("cómo calcular límites", "límites"),
+        ("indeterminación", "límites"),
+        ("probabilidades con un dado", "probabilidad"),
+        ("independencia de los eventos", "probabilidad"),
+        ("gobiernos patrios de 1810", "revolución de mayo"),
+        // Paraphrases: other words for the same thing.
+        ("qué producen las plantas con luz solar", "fotosíntesis"),
+        ("las alturas de un triángulo", "geometría"),
+    ];
+    let (db, dir) = db();
+    let mut old: Vec<crate::session::Session> = Vec::new();
+    for (title, summary, struggled) in sessions {
+        let m = SessionMemory { summary: summary.to_string(), pending: vec![], struggled: struggled.iter().map(|s| s.to_string()).collect(), messages: 6, at: ago(1) };
+        let mut s = crate::session::Session::new_chat(title);
+        s.memory = Some(m.clone());
+        db.record_session(&s.id, title, &m).unwrap();
+        old.push(s);
+    }
+    let (mut hit_old, mut hit_new) = (0, 0);
+    for (q, want) in questions {
+        let o = crate::memory::recall(&old, q, "otra");
+        if o.first().is_some_and(|l| l.contains(&format!("«{want}»"))) {
+            hit_old += 1;
+        }
+        if db.search_sessions(q, "otra", 3).unwrap().first().is_some_and(|r| r.title == *want) {
+            hit_new += 1;
+        }
+    }
+    println!("recall@1 over {} questions: exact words {hit_old}, FTS5 + stemming {hit_new}", questions.len());
+    assert!(hit_new > hit_old);
+    std::fs::remove_dir_all(dir).ok();
+}

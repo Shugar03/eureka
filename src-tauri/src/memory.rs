@@ -274,7 +274,9 @@ fn line(s: &Session) -> String {
     out
 }
 
-/// `recall` kind "sesiones": past sessions whose memory mentions the query.
+/// The old `recall` kind "sesiones" (exact words): kept as the baseline the
+/// FTS5 search of `memdb` is measured against (AC-198).
+#[cfg(test)]
 pub fn recall(sessions: &[Session], query: &str, current_id: &str) -> Vec<String> {
     let words: Vec<String> = crate::graph::normalize(query).split_whitespace().filter(|w| w.len() > 3).map(String::from).collect();
     let mut hits: Vec<&Session> = sessions
