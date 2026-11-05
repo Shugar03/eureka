@@ -500,13 +500,14 @@ fn delete_session(state: State<'_, AppState>, id: String, forget: Option<bool>) 
             }
             let label = format!("Sesión: {}", s.title);
             let _ = state.memdb.forget_source(&Source::Session { id: s.id.clone(), title: s.title.clone() }.key(), Some(&label), None);
-            let _ = state.memdb.forget_session(&s.id);
             let _ = state.learner.update(|p| {
                 p.misconceptions.retain(|m| m.source != label);
                 p.preferences.retain(|x| x.source != label);
             });
         }
     }
+    // Its memory (summary, pending, what was hard) lived in the session file: it goes with it.
+    let _ = state.memdb.forget_session(&id);
     state.sessions.delete(&id).map_err(err)
 }
 
@@ -658,9 +659,10 @@ fn memory_edit(state: State<'_, AppState>, id: i64, title: String, content: Stri
 fn memory_delete(state: State<'_, AppState>, id: i64) -> CmdResult<Vec<memdb::Observation>> {
     if let Some(o) = state.memdb.get(id).map_err(err)? {
         let _ = state.learner.update(|p| match o.kind {
-            memdb::Kind::Confusion => p.misconceptions.retain(|m| memdb::topic(memdb::Kind::Confusion, &m.concept) != o.topic),
-            memdb::Kind::Preferencia => p.preferences.retain(|x| memdb::topic(memdb::Kind::Preferencia, &x.text) != o.topic),
-            _ => {}
+            memdb::Kind::Preferencia => p.preferences.retain(|x| !memdb::same_topic(&memdb::topic(memdb::Kind::Preferencia, &x.text), &o.topic)),
+            memdb::Kind::Idea => {}
+            // A status of a concept: its confusions leave the old profile too (the whole topic goes).
+            _ => p.misconceptions.retain(|m| !memdb::same_topic(&memdb::topic(memdb::Kind::Confusion, &m.concept), &o.topic)),
         });
     }
     state.memdb.delete(id).map_err(err)?;

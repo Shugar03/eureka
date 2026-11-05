@@ -267,17 +267,18 @@ pub fn model(state: &AppState, today: NaiveDate) -> StudentModel {
 /// The student's word over the computed signals: their own observations set
 /// the status of a topic; what they deleted leaves (unless newer evidence came).
 fn apply_overrides(topics: &mut Vec<TopicState>, preferences: &mut Vec<String>, pending: &mut Vec<Pending>, mine: &[crate::memdb::Observation], gone: &[(String, crate::memdb::Kind, DateTime<Utc>)]) {
-    use crate::memdb::{topic, Kind};
+    use crate::memdb::{same_topic, topic, Kind};
     let concept = |name: &str| topic(Kind::LeCuesta, name);
+    // Deleting an observation takes its whole topic out of Mi progreso (whatever the status).
     for (t, kind, at) in gone {
         match kind {
-            Kind::Preferencia => preferences.retain(|p| &topic(Kind::Preferencia, p) != t),
+            Kind::Preferencia => preferences.retain(|p| !same_topic(&topic(Kind::Preferencia, p), t)),
             Kind::Idea => {}
             Kind::Pendiente => {
-                pending.retain(|p| !(&concept(&p.item) == t && p.at <= *at));
-                topics.retain(|x| !(x.status == Status::Pendiente && &concept(&x.name) == t && x.at <= *at));
+                pending.retain(|p| !(same_topic(&concept(&p.item), t) && p.at <= *at));
+                topics.retain(|x| !(x.status == Status::Pendiente && same_topic(&concept(&x.name), t) && x.at <= *at));
             }
-            _ => topics.retain(|x| !(&concept(&x.name) == t && x.at <= *at)),
+            _ => topics.retain(|x| !(same_topic(&concept(&x.name), t) && x.at <= *at)),
         }
     }
     for o in mine {
@@ -286,7 +287,7 @@ fn apply_overrides(topics: &mut Vec<TopicState>, preferences: &mut Vec<String>, 
             Kind::LeCuesta | Kind::Confusion => Status::LeCuesta,
             Kind::Pendiente => Status::Pendiente,
             Kind::Preferencia => {
-                if !preferences.iter().any(|p| topic(Kind::Preferencia, p) == o.topic) {
+                if !preferences.iter().any(|p| same_topic(&topic(Kind::Preferencia, p), &o.topic)) {
                     preferences.insert(0, o.title.clone());
                 }
                 continue;
@@ -294,8 +295,8 @@ fn apply_overrides(topics: &mut Vec<TopicState>, preferences: &mut Vec<String>, 
             Kind::Idea => continue,
         };
         let evidence = if o.content.is_empty() || o.content == o.title { "lo corregiste vos".to_string() } else { format!("lo corregiste vos: {}", o.content.chars().take(100).collect::<String>()) };
-        topics.retain(|x| concept(&x.name) != o.topic || x.status == status);
-        match topics.iter_mut().find(|x| concept(&x.name) == o.topic) {
+        topics.retain(|x| !same_topic(&concept(&x.name), &o.topic) || x.status == status);
+        match topics.iter_mut().find(|x| same_topic(&concept(&x.name), &o.topic)) {
             Some(x) => {
                 x.name = o.title.clone();
                 x.evidence.insert(0, evidence);

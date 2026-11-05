@@ -123,6 +123,22 @@ fn deleting_leaves_a_tombstone_that_old_evidence_cannot_cross() {
 }
 
 #[test]
+fn a_near_topic_is_matched_everywhere_it_is_recomputed() {
+    let (db, dir) = db();
+    db.note(n(Kind::Confusion, "la regla de la cadena", "a", ago(3))).unwrap();
+    db.note(n(Kind::Confusion, "la regla de la cadena compuesta", "b", ago(2))).unwrap();
+    let rows = db.list().unwrap();
+    assert_eq!(rows.len(), 1, "filed under the existing topic");
+    assert!(same_topic(&topic(Kind::Confusion, "la regla de la cadena compuesta"), &rows[0].topic));
+    assert!(!same_topic(&topic(Kind::Idea, "regla cadena compuesta"), &rows[0].topic), "only concepts are near");
+    db.repair("la regla de la cadena compuesta").unwrap();
+    assert_eq!(db.list().unwrap()[0].state, "reparada");
+    db.forget_topic(Kind::Confusion, "la regla de la cadena compuesta").unwrap();
+    assert!(db.list().unwrap().is_empty());
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[test]
 fn forgetting_a_source_removes_only_its_evidence() {
     let (db, dir) = db();
     db.note(n(Kind::Idea, "La derivada es una pendiente", "session:s1", ago(2))).unwrap();
@@ -388,5 +404,13 @@ fn measure_recall_on_past_sessions() {
     }
     println!("recall@1 over {} questions: exact words {hit_old}, FTS5 + stemming {hit_new}", questions.len());
     assert!(hit_new > hit_old);
+    // Every question above shares at least one root with its session. With no
+    // shared word at all, neither finds it: that is what embeddings (phase 4) are for.
+    let none = "cómo se alimentan los vegetales";
+    let old_top = crate::memory::recall(&old, none, "otra");
+    let new_top = db.search_sessions(none, "otra", 3).unwrap();
+    assert!(!old_top.first().is_some_and(|l| l.contains("«fotosíntesis»")), "the old one only matches «cómo»: {old_top:?}");
+    assert!(new_top.first().is_none_or(|r| r.title != "fotosíntesis"));
+    println!("zero-overlap paraphrase «{none}»: both miss (old returns {} false hits on «cómo», new {})", old_top.len(), new_top.len());
     std::fs::remove_dir_all(dir).ok();
 }

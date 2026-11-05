@@ -229,6 +229,19 @@ fn near(a: &str, b: &str) -> bool {
     big > 0 && wa.intersection(&wb).count() * 2 > big
 }
 
+/// The same topic as stored: equal, or a concept evidently the same (the way
+/// `note` files a near topic under the existing one). Use this, never `==`,
+/// when matching a recomputed `topic()` against stored ones.
+pub fn same_topic(a: &str, b: &str) -> bool {
+    a == b || (a.starts_with("concepto:") && b.starts_with("concepto:") && near(a, b))
+}
+
+/// Ids of the observations of `kind` filed under a topic matching `t`.
+fn ids_of(tx: &Transaction, t: &str, kind: Kind) -> Result<Vec<i64>> {
+    let rows: Vec<(i64, String)> = tx.prepare("SELECT id, topic FROM observations WHERE kind = ?1")?.query_map([kind.as_str()], |r| Ok((r.get(0)?, r.get(1)?)))?.collect::<rusqlite::Result<_>>()?;
+    Ok(rows.into_iter().filter(|(_, x)| same_topic(x, t)).map(|(id, _)| id).collect())
+}
+
 /// FTS5 query from free text: each stemmed term (and root) quoted, OR'ed.
 /// Quoting keeps words like AND, NOT or a stray `:` from being syntax.
 fn fts_query(text: &str) -> Option<String> {
@@ -458,9 +471,7 @@ impl MemoryDb {
     /// Tombstones the observation of a topic (the old profile's "Olvidar").
     pub fn forget_topic(&self, kind: Kind, title: &str) -> Result<()> {
         self.tx(|tx| {
-            let t = topic(kind, title);
-            let ids: Vec<i64> = tx.prepare("SELECT id FROM observations WHERE topic = ?1 AND kind = ?2")?.query_map(params![t, kind.as_str()], |r| r.get(0))?.collect::<rusqlite::Result<_>>()?;
-            for id in ids {
+            for id in ids_of(tx, &topic(kind, title), kind)? {
                 tombstone(tx, id, Utc::now())?;
             }
             Ok(())
@@ -745,7 +756,9 @@ fn tombstone(tx: &Transaction, id: i64, now: DateTime<Utc>) -> Result<()> {
 }
 
 fn set_state(tx: &Transaction, topic: &str, kind: Kind, state: &str, at: DateTime<Utc>) -> Result<()> {
-    tx.execute("UPDATE observations SET state = ?3, updated_at = ?4 WHERE topic = ?1 AND kind = ?2 AND state = 'activa' AND by_student = 0", params![topic, kind.as_str(), state, ts(at)])?;
+    for id in ids_of(tx, topic, kind)? {
+        tx.execute("UPDATE observations SET state = ?2, updated_at = ?3 WHERE id = ?1 AND state = 'activa' AND by_student = 0", params![id, state, ts(at)])?;
+    }
     Ok(())
 }
 
