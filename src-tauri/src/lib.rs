@@ -33,6 +33,7 @@ mod settings;
 mod study;
 mod tools;
 mod update;
+mod usage;
 mod vision;
 
 use agent::AgentEvent;
@@ -89,6 +90,8 @@ pub struct AppState {
     opened: Mutex<Option<PathBuf>>,
     /// AC-169: research running in the background.
     pub research: research::Background,
+    /// AC-186: what each model call spent, only on this PC.
+    pub usage: Arc<usage::UsageLog>,
 }
 
 impl AppState {
@@ -119,6 +122,7 @@ impl AppState {
             ui: Mutex::new(String::new()),
             opened: Mutex::new(None),
             research: research::Background::default(),
+            usage: Arc::new(usage::UsageLog::new(&data_dir)),
         }
     }
 
@@ -645,7 +649,8 @@ async fn send_message(
             state.sessions.save(&mut s)?;
             let _ = on_event.send(AgentEvent::Session { session: Box::new(s) });
         }
-        agent::run_turn(&state, &id, &on_event, cancel).await
+        // AC-186: calls made inside the turn (summary, research) count for this session.
+        usage::in_session(&id, agent::run_turn(&state, &id, &on_event, cancel)).await
     }
     .await;
     state.running.lock().unwrap().remove(&id);
@@ -947,7 +952,8 @@ async fn generate_code_exercise(state: State<'_, AppState>, lang: runner::Lang, 
 
 /// One plain answer from the teacher (no tools) with the given prompt.
 async fn teacher_answer(state: &AppState, prompt: &str, input: String) -> CmdResult<String> {
-    let ep = agent::endpoint_for(state, agent::Role::Teacher).await.map_err(err)?;
+    let mut ep = agent::endpoint_for(state, agent::Role::Teacher).await.map_err(err)?;
+    ep.usage.purpose = prompt.into();
     let system = state.prompts.get(prompt).map_err(err)?;
     // Code help and speaking feedback are read by the learner (AC-75).
     let input = practice::with_access(state, input);
@@ -1263,8 +1269,17 @@ async fn chatgpt_models(state: State<'_, AppState>) -> CmdResult<Vec<llm::ModelI
         context_tokens: 0,
         session: llm::app_session(),
         subscription: Some(llm::Subscription { account_id: account.account_id, originator: account.originator }),
+        usage: Default::default(),
     };
     llm::list_chatgpt_models(&ep).await.map_err(err)
+}
+
+// ── Token usage (AC-186): read here, never sent anywhere ──
+
+#[tauri::command]
+fn usage_summary(state: State<'_, AppState>) -> usage::Summary {
+    let titles = state.sessions.list().into_iter().map(|s| (s.id, s.title)).collect();
+    usage::summarize(&state.usage.all(), chrono::Local::now().date_naive(), &titles)
 }
 
 // ── Study log (AC-49) ──
@@ -1476,6 +1491,7 @@ pub fn run() {
             chatgpt_connect,
             chatgpt_disconnect,
             chatgpt_models,
+            usage_summary,
             update_session_meta,
             student_model,
             student_today,

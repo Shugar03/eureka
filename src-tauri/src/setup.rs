@@ -156,7 +156,8 @@ pub async fn run(state: &AppState, raw_key: &str, provider: Option<&str>) -> Res
     }
     let mut last = None;
     for m in ranked.iter().take(3) {
-        let ep = Endpoint { base_url: p.base_url.clone(), api_key: key.clone(), model: m.id.clone(), context_tokens: crate::context::DEFAULT_BUDGET, session: llm::app_session(), subscription: None };
+        let usage = crate::usage::Tag::new(state.usage.clone(), "teacher").purpose("setup_test");
+        let ep = Endpoint { base_url: p.base_url.clone(), api_key: key.clone(), model: m.id.clone(), context_tokens: crate::context::DEFAULT_BUDGET, session: llm::app_session(), subscription: None, usage };
         match tool_check(&ep).await {
             Ok(tools_ok) => {
                 let teacher = ModelRef { provider_id: provider_id.clone(), model: m.id.clone(), context_k: context_k(m) };

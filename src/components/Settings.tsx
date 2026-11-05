@@ -6,6 +6,7 @@ import { DEFAULT_LOCAL_SPEECH, LOCAL_SPEECH, type Accessibility, type LearnerPro
 import { langLabel } from "../lib/code";
 import { speechModelWarning } from "../lib/speechModel";
 import { LocalSpeech } from "./settings/LocalSpeech";
+import { UsageSection } from "./settings/UsageSection";
 import { loadReminderSettings, saveReminderSettings } from "./Reminders";
 import type { ReminderSettings } from "../lib/reminders";
 import { validReminders } from "../lib/reminders";
@@ -536,6 +537,8 @@ function ModelsTab() {
       </section>
 
       <RuntimesSection />
+
+      <UsageSection />
 
       <p className="muted small">Lo que Eureka sabe de vos y lo que recuerda de tus sesiones está en «Mi progreso».</p>
 

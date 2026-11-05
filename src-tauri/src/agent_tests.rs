@@ -1789,3 +1789,61 @@ async fn subscription_question_pauses_turn_until_the_learner_answers() {
     assert!(input.iter().any(|i| i["type"] == "function_call_output" && i["call_id"] == "q1"));
     std::fs::remove_dir_all(dir).ok();
 }
+
+#[tokio::test]
+async fn every_model_call_is_counted_with_its_turn_step_and_session() {
+    // AC-186: the usage chunk is asked for and read; a call without one is counted as unknown.
+    let usage = json!({ "choices": [], "usage": { "prompt_tokens": 1000, "completion_tokens": 20, "prompt_tokens_details": { "cached_tokens": 900 } } });
+    let f = fake(vec![Reply::Sse(vec![tool(0, "c1", "recall", json!({ "query": "derivada" })), usage]), Reply::Sse(vec![text("Listo.")])]).await;
+    let (st, dir) = state(&f, true, "");
+    let id = new_session(&st);
+    run(&st, &id).await.0.unwrap();
+    let reqs = f.requests.lock().unwrap();
+    assert_eq!(reqs[0]["stream_options"], json!({ "include_usage": true }));
+    let events = st.usage.all();
+    assert_eq!(events.len(), 2);
+    let (a, b) = (&events[0], &events[1]);
+    assert_eq!((a.known, a.input, a.output, a.cached), (true, Some(1000), Some(20), Some(900)));
+    assert_eq!((a.purpose.as_str(), a.phase.as_deref(), a.step, a.session_id.as_deref()), ("turn", Some("probe"), Some(0), Some(id.as_str())));
+    assert_eq!((a.role.as_str(), a.model.as_str()), ("prober", "t-model"));
+    assert!(a.provider.starts_with("127.0.0.1:"), "the host only, never the path or the key");
+    assert_eq!((b.known, b.input, b.step), (false, None, Some(1)));
+    let raw = std::fs::read_to_string(dir.join(crate::usage::FILE)).unwrap();
+    assert!(!raw.contains("derivada") && !raw.contains("sk-fake"), "counts only: no text, no key");
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[tokio::test]
+async fn a_provider_that_rejects_stream_options_still_answers() {
+    // AC-186: degrade, never break: asked again without the option, and not asked again after that.
+    let f = fake(vec![
+        Reply::Status(400, r#"{"error":{"message":"Unrecognized request argument supplied: stream_options"}}"#),
+        Reply::Sse(vec![text("Hola.")]),
+    ])
+    .await;
+    let (st, dir) = state(&f, true, "");
+    let id = new_session(&st);
+    run(&st, &id).await.0.unwrap();
+    run(&st, &id).await.0.unwrap();
+    let reqs = f.requests.lock().unwrap();
+    assert_eq!(reqs.len(), 3);
+    assert!(reqs[0].get("stream_options").is_some());
+    assert!(reqs[1].get("stream_options").is_none() && reqs[2].get("stream_options").is_none());
+    assert_eq!(st.sessions.load(&id).unwrap().messages.last().unwrap().content.as_deref(), Some("Hola."));
+    assert!(st.usage.all().iter().all(|e| !e.known));
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[tokio::test]
+async fn forced_calls_are_counted_by_their_prompt() {
+    let f = fake(vec![Reply::Sse(vec![tool(0, "s1", crate::context::SUMMARY_TOOL, json!({ "summary": "- algo" })), json!({ "choices": [], "usage": { "prompt_tokens": 50, "completion_tokens": 5, "cost": 0.001 } })])]).await;
+    let (st, dir) = state(&f, true, "");
+    let r = crate::usage::in_session("s-x", crate::practice::forced_valid(&st, Role::Extractor, "summarize_history", crate::context::summary_tool(), crate::context::SUMMARY_TOOL, "x".into(), crate::context::parse_summary)).await;
+    r.unwrap();
+    let e = &st.usage.all()[0];
+    assert_eq!((e.purpose.as_str(), e.role.as_str(), e.session_id.as_deref(), e.cost), ("summarize_history", "extractor", Some("s-x"), Some(0.001)));
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[path = "token_bench.rs"]
+mod token_bench;

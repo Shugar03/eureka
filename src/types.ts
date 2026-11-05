@@ -1079,3 +1079,32 @@ export interface LearnerProfile {
   misconceptions: { concept: string; wrong_idea: string; fixed: boolean; source: string; at: string }[];
   preferences: { text: string; source: string; at: string }[];
 }
+
+/** AC-186: what the model calls spent, as the providers reported it (only on this PC). */
+export interface UsageTotals {
+  calls: number;
+  /** Calls the provider reported usage for. */
+  known: number;
+  input: number;
+  output: number;
+  /** null: no call said how much was cached. */
+  cached: number | null;
+  reasoning: number | null;
+  /** null: no provider reported a cost. */
+  cost: number | null;
+  ms: number;
+}
+
+export interface UsageGroup {
+  key: string;
+  label: string;
+  totals: UsageTotals;
+}
+
+export interface UsageSummary {
+  today: UsageTotals;
+  week: UsageTotals;
+  by_role: UsageGroup[];
+  sessions: UsageGroup[];
+  keep_days: number;
+}

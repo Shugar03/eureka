@@ -106,7 +106,9 @@ pub async fn transcribe(state: &AppState, audio: Vec<u8>, mime: &str, language: 
         bail!("La grabación está vacía o es demasiado larga.");
     }
     let ext = audio_ext(mime).ok_or_else(|| anyhow!("Formato de audio no soportado ({mime})."))?;
-    let ep = endpoint_for(state, Role::Speech).await?;
+    let mut ep = endpoint_for(state, Role::Speech).await?;
+    ep.usage.purpose = "speech".into();
+    let started = std::time::Instant::now();
     let part = reqwest::multipart::Part::bytes(audio).file_name(format!("grabacion.{ext}")).mime_str(mime.split(';').next().unwrap_or("audio/webm"))?;
     let mut form = reqwest::multipart::Form::new().text("model", ep.model.clone()).part("file", part);
     if let Some(code) = iso_code(language) {
@@ -125,6 +127,8 @@ pub async fn transcribe(state: &AppState, audio: Vec<u8>, mime: &str, language: 
     if !status.is_success() {
         bail!("el servicio de voz respondió {status}: {}", v.pointer("/error/message").and_then(Value::as_str).unwrap_or(""));
     }
+    // AC-186: token-billed models say `usage.type: "tokens"`; billed by time, it stays unknown.
+    ep.usage.record(&ep.model, &ep.base_url, started.elapsed().as_millis() as u64, v.get("usage").and_then(crate::usage::parse));
     parse_transcription(&v)
 }
 

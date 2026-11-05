@@ -85,6 +85,7 @@ pub fn parse_text(v: &Value) -> Result<String> {
 }
 
 async fn call(ep: &Endpoint, body: &Value) -> Result<String> {
+    let started = std::time::Instant::now();
     let resp = crate::llm::client()?
         .post(format!("{}/chat/completions", ep.base_url.trim_end_matches('/')))
         .bearer_auth(&ep.api_key)
@@ -103,12 +104,15 @@ async fn call(ep: &Endpoint, body: &Value) -> Result<String> {
         let msg = v.pointer("/error/message").and_then(Value::as_str).unwrap_or("");
         bail!("el proveedor respondió {status}: {msg} (¿el modelo del Profesor acepta imágenes?)");
     }
+    // AC-186: not streamed, so the usage is in the answer itself.
+    ep.usage.record(&ep.model, &ep.base_url, started.elapsed().as_millis() as u64, v.get("usage").and_then(crate::usage::parse));
     parse_text(&v)
 }
 
 pub async fn read(state: &AppState, images: &[String], purpose: &str) -> Result<String> {
     validate(images)?;
-    let ep = endpoint_for(state, Role::Teacher).await?;
+    let mut ep = endpoint_for(state, Role::Teacher).await?;
+    ep.usage.purpose = "vision_transcribe".into();
     // The subscription backend only speaks the Responses API, which this
     // request shape (image parts on /chat/completions) does not reach.
     if ep.subscription.is_some() {

@@ -488,6 +488,8 @@ impl CompanionStore {
 async fn model_reply(state: &AppState, conv: &Conversation, text: &str) -> Result<(String, bool)> {
     let mut ep = endpoint_for(state, Role::Teacher).await?;
     ep.session = "eureka-companion".into();
+    // AC-186: counted like any call, but the journal's words never reach the log.
+    ep.usage.purpose = "companion".into();
     let system = state.prompts.get("companion")?;
     let mut msgs: Vec<Msg> = conv
         .turns

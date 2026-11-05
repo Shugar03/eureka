@@ -4,7 +4,8 @@ import userEvent from "@testing-library/user-event";
 import { Settings } from "./Settings";
 import { install } from "../e2e/mockBackend";
 import { AccessibilityProvider } from "./a11y/AccessibilityContext";
-import { accessibilityApi } from "../api";
+import { accessibilityApi, usageApi } from "../api";
+import { cachedShare, costText } from "./settings/UsageSection";
 
 beforeAll(() => install());
 
@@ -238,5 +239,41 @@ describe("Settings › Conexión", () => {
     await userEvent.type(screen.getByLabelText("Modelo"), "algo");
     await userEvent.click(screen.getByRole("button", { name: "Guardar" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Pegá tu clave");
+  });
+});
+
+describe("Settings › Avanzado › Uso (AC-186)", () => {
+  const zero = { calls: 0, known: 0, input: 0, output: 0, cached: null, reasoning: null, cost: null, ms: 0 };
+
+  it("shows today, the last 7 days, the cached share, the tasks and the sessions", async () => {
+    render(<Settings onBack={() => {}} initialTab="models" />);
+    const uso = await screen.findByRole("region", { name: "Uso" });
+    const totals = await within(uso).findByRole("table", { name: "Totales" });
+    const today = within(totals).getByRole("row", { name: /Hoy/ });
+    expect(today).toHaveTextContent("98.400");
+    expect(today).toHaveTextContent("63 %");
+    expect(today).toHaveTextContent("US$ 0,0213");
+    expect(within(uso).getByTestId("usage-unknown")).toHaveTextContent("2 llamadas de los últimos 7 días sin datos del proveedor");
+    expect(within(within(uso).getByRole("table", { name: "Por tarea" })).getByRole("row", { name: /Diagnóstico/ })).toHaveTextContent("52.400");
+    expect(within(uso).getByRole("table", { name: "Por sesión" })).toHaveTextContent("qué es una derivada");
+    expect(within(uso).getByText(/solo en esta PC/)).toBeInTheDocument();
+  });
+
+  it("says when nothing was recorded yet, and never invents a cost or a cache share", async () => {
+    const spy = vi.spyOn(usageApi, "summary").mockResolvedValueOnce({ today: zero, week: zero, by_role: [], sessions: [], keep_days: 90 });
+    render(<Settings onBack={() => {}} initialTab="models" />);
+    expect(await screen.findByText("Todavía no hay llamadas registradas.")).toBeInTheDocument();
+    expect(cachedShare({ ...zero, input: 100 })).toBe("—");
+    expect(costText(zero)).toBe("—");
+    expect(cachedShare({ ...zero, input: 1000, cached: 0 })).toBe("0 %");
+    spy.mockRestore();
+  });
+
+  it("a failing read does not break the rest of the tab", async () => {
+    const spy = vi.spyOn(usageApi, "summary").mockRejectedValueOnce("sin acceso");
+    render(<Settings onBack={() => {}} initialTab="models" />);
+    expect(await screen.findByText("No pude leer el uso: sin acceso")).toBeInTheDocument();
+    expect(screen.getByLabelText("API key de OpenRouter")).toBeInTheDocument();
+    spy.mockRestore();
   });
 });

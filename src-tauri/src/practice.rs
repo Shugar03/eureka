@@ -659,7 +659,8 @@ async fn call_tool(ep: &llm::Endpoint, system: &str, msgs: &[Msg], tools: &Value
 /// result doesn't validate, the model sees its call and the concrete error
 /// and gets ONE chance to correct it.
 pub async fn forced_valid<T>(state: &AppState, role: Role, prompt: &str, tool: Value, name: &str, input: String, validate: impl Fn(&str) -> Result<T>) -> Result<T> {
-    let ep = endpoint_for(state, role).await?;
+    let mut ep = endpoint_for(state, role).await?;
+    ep.usage.purpose = prompt.into();
     let system = state.prompts.get(prompt)?;
     let tools = json!([tool]);
     let input = if LEARNER_FACING.contains(&prompt) { with_access(state, input) } else { input };

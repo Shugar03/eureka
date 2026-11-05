@@ -254,7 +254,8 @@ pub async fn search(base_url: &str, key: &str, query: &str, raw: bool) -> Result
 }
 
 async fn summarize(state: &AppState, question: &str, hits: &[Hit]) -> Result<(String, Vec<SourceRef>)> {
-    let ep = endpoint_for(state, Role::Researcher).await?;
+    let mut ep = endpoint_for(state, Role::Researcher).await?;
+    ep.usage.purpose = "research".into();
     let system = state.prompts.get("research")?;
     let choice = json!({ "type": "function", "function": { "name": SUMMARY_TOOL } });
     let c = llm::stream_chat(&ep, &system, &[Msg::user(summarize_input(question, hits), None)], &json!([summary_tool()]), Some(&choice), |_| {}, || false).await?;

@@ -1473,6 +1473,22 @@ ${text}`);
         store.projects.set(p.id, p);
         return clone(p);
       }
+      // AC-186: scripted numbers (the scripted teacher reports no usage of its own).
+      case "usage_summary": {
+        const t = (calls: number, known: number, input: number, output: number, cached: number | null, cost: number | null) => ({ calls, known, input, output, cached, reasoning: null, cost, ms: calls * 1800 });
+        return {
+          today: t(14, 14, 98_400, 3_120, 61_500, 0.0213),
+          week: t(52, 50, 401_200, 12_870, 236_700, 0.0874),
+          by_role: [
+            { key: "teacher", label: "Profesor en la sesión", totals: t(30, 30, 288_000, 8_100, 190_000, 0.061) },
+            { key: "prober", label: "Diagnóstico", totals: t(8, 8, 52_400, 1_900, 31_200, 0.012) },
+            { key: "memory", label: "Memoria e ideas", totals: t(6, 6, 33_800, 1_500, 0, 0.0084) },
+            { key: "practice", label: "Práctica y código", totals: t(8, 6, 27_000, 1_370, 15_500, 0.006) },
+          ],
+          sessions: [{ key: "demo", label: "qué es una derivada", totals: t(22, 22, 171_300, 5_400, 118_000, 0.0371) }],
+          keep_days: 90,
+        };
+      }
       case "create_backup":
         return "C:\\Users\\demo\\Downloads\\Eureka-respaldo-20261027-1530.zip";
       case "restore_backup": {

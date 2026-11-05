@@ -102,6 +102,20 @@ pub enum Role {
     Speech,
 }
 
+impl Role {
+    /// Its name in the usage log (AC-186).
+    pub fn name(self) -> &'static str {
+        match self {
+            Role::Prober => "prober",
+            Role::Teacher => "teacher",
+            Role::Extractor => "extractor",
+            Role::Practice => "practice",
+            Role::Researcher => "researcher",
+            Role::Speech => "speech",
+        }
+    }
+}
+
 pub async fn endpoint_for(state: &AppState, role: Role) -> Result<Endpoint> {
     let settings = state.settings.load();
     let keys = state.settings.keys();
@@ -142,7 +156,8 @@ pub async fn endpoint_for(state: &AppState, role: Role) -> Result<Endpoint> {
             (provider.base_url.clone(), api_key.clone(), None)
         }
     };
-    Ok(Endpoint { base_url, api_key: access, model: chosen.model.clone(), context_tokens: context_tokens(chosen), session: crate::llm::app_session(), subscription })
+    let usage = crate::usage::Tag::new(state.usage.clone(), role.name());
+    Ok(Endpoint { base_url, api_key: access, model: chosen.model.clone(), context_tokens: context_tokens(chosen), session: crate::llm::app_session(), subscription, usage })
 }
 
 /// OpenAI rotates the refresh token on every use, so two refreshes racing with
@@ -177,6 +192,9 @@ pub fn context_tokens(m: &ModelRef) -> usize {
 async fn endpoint(state: &AppState, s: &Session) -> Result<Endpoint> {
     let mut ep = endpoint_for(state, if s.phase == Phase::Probe { Role::Prober } else { Role::Teacher }).await?;
     ep.session = format!("eureka-{}", s.id);
+    ep.usage.purpose = "turn".into();
+    ep.usage.phase = Some(format!("{:?}", s.phase).to_lowercase());
+    ep.usage.session_id = Some(s.id.clone());
     Ok(ep)
 }
 
@@ -421,7 +439,8 @@ pub async fn run_turn(state: &AppState, session_id: &str, ch: &Channel<AgentEven
             return Ok(());
         }
         // Rebuilt every step: a tool call may have changed the phase.
-        let ep = endpoint(state, &s).await?;
+        let mut ep = endpoint(state, &s).await?;
+        ep.usage.step = Some(step as u32);
         let defs = tools::definitions_for(s.phase);
         // AC-20: while measuring and planning, show what the graph already holds.
         let view = if matches!(s.phase, Phase::Probe | Phase::Plan) { state.graph.view() } else { Default::default() };

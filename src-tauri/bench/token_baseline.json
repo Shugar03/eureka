@@ -1,0 +1,381 @@
+{
+  "turns": {
+    "01-chat": {
+      "phases": [
+        "chat"
+      ],
+      "calls": 1,
+      "per_call": [
+        {
+          "system": 3611,
+          "tools": 3984,
+          "history": 16,
+          "state": 118,
+          "total": 7729
+        }
+      ],
+      "turn": {
+        "system": 3611,
+        "tools": 3984,
+        "history": 16,
+        "state": 118,
+        "total": 7729
+      },
+      "cached_prefix": 0
+    },
+    "02-chat-a-diagnostico": {
+      "phases": [
+        "chat",
+        "probe"
+      ],
+      "calls": 2,
+      "per_call": [
+        {
+          "system": 3611,
+          "tools": 3984,
+          "history": 67,
+          "state": 118,
+          "total": 7780
+        },
+        {
+          "system": 2609,
+          "tools": 1513,
+          "history": 158,
+          "state": 66,
+          "total": 4346
+        }
+      ],
+      "turn": {
+        "system": 6220,
+        "tools": 5497,
+        "history": 225,
+        "state": 184,
+        "total": 12126
+      },
+      "cached_prefix": 7611
+    },
+    "03-diagnostico": {
+      "phases": [
+        "probe"
+      ],
+      "calls": 1,
+      "per_call": [
+        {
+          "system": 2609,
+          "tools": 1513,
+          "history": 281,
+          "state": 66,
+          "total": 4469
+        }
+      ],
+      "turn": {
+        "system": 2609,
+        "tools": 1513,
+        "history": 281,
+        "state": 66,
+        "total": 4469
+      },
+      "cached_prefix": 4280
+    },
+    "04-diagnostico-a-plan": {
+      "phases": [
+        "probe",
+        "plan"
+      ],
+      "calls": 2,
+      "per_call": [
+        {
+          "system": 2609,
+          "tools": 1513,
+          "history": 464,
+          "state": 78,
+          "total": 4664
+        },
+        {
+          "system": 2106,
+          "tools": 1886,
+          "history": 612,
+          "state": 98,
+          "total": 4702
+        }
+      ],
+      "turn": {
+        "system": 4715,
+        "tools": 3399,
+        "history": 1076,
+        "state": 176,
+        "total": 9366
+      },
+      "cached_prefix": 4403
+    },
+    "05-ensenar-diagrama-demo": {
+      "phases": [
+        "plan",
+        "teach"
+      ],
+      "calls": 2,
+      "per_call": [
+        {
+          "system": 2106,
+          "tools": 1886,
+          "history": 913,
+          "state": 236,
+          "total": 5141
+        },
+        {
+          "system": 2563,
+          "tools": 4374,
+          "history": 992,
+          "state": 236,
+          "total": 8165
+        }
+      ],
+      "turn": {
+        "system": 4669,
+        "tools": 6260,
+        "history": 1905,
+        "state": 472,
+        "total": 13306
+      },
+      "cached_prefix": 4604
+    },
+    "06-ensenar-chequeo": {
+      "phases": [
+        "teach"
+      ],
+      "calls": 1,
+      "per_call": [
+        {
+          "system": 2563,
+          "tools": 4374,
+          "history": 1327,
+          "state": 236,
+          "total": 8500
+        }
+      ],
+      "turn": {
+        "system": 2563,
+        "tools": 4374,
+        "history": 1327,
+        "state": 236,
+        "total": 8500
+      },
+      "cached_prefix": 7929
+    },
+    "07-ensenar-a-cierre": {
+      "phases": [
+        "teach",
+        "done"
+      ],
+      "calls": 2,
+      "per_call": [
+        {
+          "system": 2563,
+          "tools": 4374,
+          "history": 1576,
+          "state": 237,
+          "total": 8750
+        },
+        {
+          "system": 1924,
+          "tools": 4374,
+          "history": 1800,
+          "state": 236,
+          "total": 8334
+        }
+      ],
+      "turn": {
+        "system": 4487,
+        "tools": 8748,
+        "history": 3376,
+        "state": 473,
+        "total": 17084
+      },
+      "cached_prefix": 8264
+    },
+    "08-cierre": {
+      "phases": [
+        "done"
+      ],
+      "calls": 1,
+      "per_call": [
+        {
+          "system": 1924,
+          "tools": 4374,
+          "history": 1845,
+          "state": 236,
+          "total": 8379
+        }
+      ],
+      "turn": {
+        "system": 1924,
+        "tools": 4374,
+        "history": 1845,
+        "state": 236,
+        "total": 8379
+      },
+      "cached_prefix": 8098
+    },
+    "09-memoria-en-segundo-plano": {
+      "phases": [
+        "forced:remember_session",
+        "forced:record_knowledge"
+      ],
+      "calls": 2,
+      "per_call": [
+        {
+          "system": 346,
+          "tools": 136,
+          "history": 602,
+          "state": 0,
+          "total": 1084
+        },
+        {
+          "system": 493,
+          "tools": 260,
+          "history": 602,
+          "state": 0,
+          "total": 1355
+        }
+      ],
+      "turn": {
+        "system": 839,
+        "tools": 396,
+        "history": 1204,
+        "state": 0,
+        "total": 2439
+      },
+      "cached_prefix": 0
+    },
+    "10-practica": {
+      "phases": [
+        "forced:set_problems"
+      ],
+      "calls": 1,
+      "per_call": [
+        {
+          "system": 481,
+          "tools": 150,
+          "history": 110,
+          "state": 0,
+          "total": 741
+        }
+      ],
+      "turn": {
+        "system": 481,
+        "tools": 150,
+        "history": 110,
+        "state": 0,
+        "total": 741
+      },
+      "cached_prefix": 0
+    },
+    "11-sesion-larga-a": {
+      "phases": [
+        "teach"
+      ],
+      "calls": 1,
+      "per_call": [
+        {
+          "system": 2563,
+          "tools": 4374,
+          "history": 32430,
+          "state": 180,
+          "total": 39547
+        }
+      ],
+      "turn": {
+        "system": 2563,
+        "tools": 4374,
+        "history": 32430,
+        "state": 180,
+        "total": 39547
+      },
+      "cached_prefix": 0
+    },
+    "12-sesion-larga-b": {
+      "phases": [
+        "teach"
+      ],
+      "calls": 1,
+      "per_call": [
+        {
+          "system": 2563,
+          "tools": 4374,
+          "history": 32713,
+          "state": 180,
+          "total": 39830
+        }
+      ],
+      "turn": {
+        "system": 2563,
+        "tools": 4374,
+        "history": 32713,
+        "state": 180,
+        "total": 39830
+      },
+      "cached_prefix": 6953
+    }
+  },
+  "tools": {
+    "app_status": 86,
+    "ask_question": 192,
+    "begin_learning": 179,
+    "library_read": 78,
+    "library_search": 128,
+    "make_cards": 163,
+    "propose_action": 417,
+    "propose_code": 151,
+    "propose_deck": 171,
+    "propose_exam": 331,
+    "propose_own_problems": 187,
+    "propose_practice": 145,
+    "propose_timetable": 506,
+    "recall": 161,
+    "record_finding": 101,
+    "research": 59,
+    "set_phase": 68,
+    "set_plan": 137,
+    "show_code": 181,
+    "show_demo": 161,
+    "show_diagram": 87,
+    "ui_command": 808,
+    "update_node": 75
+  },
+  "prompts": {
+    "academic_parse": 583,
+    "cards_generate": 280,
+    "career_parse": 384,
+    "chat": 1755,
+    "class_notes": 338,
+    "code_exercise": 622,
+    "code_explain": 193,
+    "code_project": 782,
+    "code_review": 224,
+    "companion": 995,
+    "companion_entry": 405,
+    "done": 68,
+    "exam_cheat_sheet": 267,
+    "exam_check": 158,
+    "exam_explain": 202,
+    "exam_guide": 282,
+    "exam_questions": 337,
+    "exam_syllabus": 292,
+    "extract": 493,
+    "lang_listening": 235,
+    "lang_path": 370,
+    "lang_speaking": 273,
+    "plan": 250,
+    "practice_generate": 481,
+    "practice_grade": 384,
+    "practice_hint": 289,
+    "practice_own": 404,
+    "probe": 753,
+    "remember_session": 346,
+    "research": 128,
+    "shared": 1854,
+    "summarize_history": 251,
+    "teach": 707,
+    "vision_transcribe": 211
+  }
+}

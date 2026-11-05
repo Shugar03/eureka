@@ -2,6 +2,7 @@
 // through here, so tests can swap the backend with @tauri-apps/api/mocks.
 import { Channel, invoke } from "@tauri-apps/api/core";
 import type {
+  UsageSummary,
   ClassRecord,
   ClassSummary,
   BreakInput,
@@ -295,6 +296,11 @@ export const careerApi = {
 /** AC-63: transcribes photos or scanned pages (data URLs) with the teacher's model. */
 export const visionApi = {
   read: (images: string[], purpose: "guide" | "notes" | "timetable" | "curriculum" | "problems") => invoke<string>("read_images", { images, purpose }),
+};
+
+/** AC-186: tokens spent per call, kept only on this PC. */
+export const usageApi = {
+  summary: () => invoke<UsageSummary>("usage_summary"),
 };
 
 /** Backup of all learning data (never the API keys). */

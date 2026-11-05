@@ -79,6 +79,8 @@ pub struct Endpoint {
     /// not expose `/chat/completions` to subscriber tokens, it speaks the
     /// Responses API on its own backend. `None` is every API-key provider.
     pub subscription: Option<Subscription>,
+    /// Who is calling and why, and where the call is counted (AC-186).
+    pub usage: crate::usage::Tag,
 }
 
 /// What a subscription endpoint needs on every request, beyond the token.
@@ -99,6 +101,8 @@ pub fn app_session() -> String {
 pub struct Completion {
     pub text: String,
     pub tool_calls: Vec<ToolCall>,
+    /// What the provider said this call spent; `None` when it said nothing.
+    pub usage: Option<crate::usage::Usage>,
 }
 
 fn url(base: &str, path: &str) -> String {
@@ -147,10 +151,27 @@ pub async fn stream_chat(
     on_text: impl FnMut(&str),
     cancelled: impl Fn() -> bool,
 ) -> Result<Completion> {
-    match &ep.subscription {
+    let started = std::time::Instant::now();
+    let done = match &ep.subscription {
         Some(sub) => stream_responses(ep, sub, system, messages, tools, tool_choice, on_text, cancelled).await,
         None => stream_completions(ep, system, messages, tools, tool_choice, on_text, cancelled).await,
+    };
+    // AC-186: every answered call is counted here, once (retries count again: they cost again).
+    if let Ok(c) = &done {
+        ep.usage.record(&ep.model, &ep.base_url, started.elapsed().as_millis() as u64, c.usage.clone());
     }
+    done
+}
+
+/// Providers that answered 4xx to `stream_options` (by base URL): asked
+/// without it from then on, and their usage stays unknown unless they send it anyway.
+static NO_STREAM_OPTIONS: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
+
+/// A 400/422 that names the option itself, nothing broader (a bad key or
+/// model must still fail once, with its own message).
+pub fn rejects_stream_options(status: u16, body: &str) -> bool {
+    let b = body.to_lowercase();
+    matches!(status, 400 | 422) && (b.contains("stream_options") || b.contains("include_usage"))
 }
 
 async fn stream_completions(
@@ -171,6 +192,11 @@ async fn stream_completions(
         "tools": tools,
         "stream": true,
     });
+    // AC-186: the last chunk carries the usage (OpenAI and compatibles only send it when asked).
+    let ask_usage = !NO_STREAM_OPTIONS.lock().unwrap().contains(&ep.base_url);
+    if ask_usage {
+        body["stream_options"] = json!({ "include_usage": true });
+    }
     if let Some(choice) = tool_choice {
         body["tool_choice"] = choice.clone();
     }
@@ -179,19 +205,32 @@ async fn stream_completions(
         body.as_object_mut().unwrap().remove("tools");
     }
 
-    let resp = client()?
-        .post(url(&ep.base_url, "chat/completions"))
-        .bearer_auth(&ep.api_key)
-        // OpenRouter attribution headers; ignored by other providers.
-        .header("HTTP-Referer", "https://github.com/eureka")
-        .header("X-Title", "Eureka")
-        .header("x-opencode-session", &ep.session)
-        .json(&body)
-        .send()
-        .await
-        .context("no se pudo conectar con el proveedor")?;
-
-    let resp = check_status(resp).await?;
+    let send = |body: &Value| {
+        client().map(|c| {
+            c.post(url(&ep.base_url, "chat/completions"))
+                .bearer_auth(&ep.api_key)
+                // OpenRouter attribution headers; ignored by other providers.
+                .header("HTTP-Referer", "https://github.com/eureka")
+                .header("X-Title", "Eureka")
+                .header("x-opencode-session", &ep.session)
+                .json(body)
+                .send()
+        })
+    };
+    let resp = send(&body)?.await.context("no se pudo conectar con el proveedor")?;
+    let resp = if resp.status().is_success() || !ask_usage {
+        check_status(resp).await?
+    } else {
+        let status = resp.status();
+        let text = resp.text().await.unwrap_or_default();
+        if !rejects_stream_options(status.as_u16(), &text) {
+            bail!("el proveedor respondió {status}: {text}");
+        }
+        // Degrade: the call goes on without usage, never breaks for it.
+        NO_STREAM_OPTIONS.lock().unwrap().push(ep.base_url.clone());
+        body.as_object_mut().unwrap().remove("stream_options");
+        check_status(send(&body)?.await.context("no se pudo conectar con el proveedor")?).await?
+    };
     let mut parser = SseParser::default();
     pump(resp, &mut parser, on_text, cancelled).await?;
     Ok(parser.finish())
@@ -340,6 +379,9 @@ pub struct SseParser {
     text: String,
     // Tool calls arrive fragmented, keyed by index.
     calls: Vec<ToolCall>,
+    /// The last non-null `usage` seen (OpenAI: a final chunk with `choices: []`;
+    /// DeepSeek: on the `finish_reason` chunk).
+    usage: Option<crate::usage::Usage>,
     pub done: bool,
 }
 
@@ -369,6 +411,10 @@ impl SseParser {
         let Ok(v) = serde_json::from_str::<Value>(data) else { return Ok(None) };
         if let Some(err) = v.get("error") {
             return Err(anyhow!("error del proveedor: {err}"));
+        }
+        // Before the delta: the usage chunk may have no choices at all.
+        if let Some(u) = v.get("usage").and_then(crate::usage::parse) {
+            self.usage = Some(u);
         }
         let Some(delta) = v.pointer("/choices/0/delta") else { return Ok(None) };
         if let Some(tcs) = delta.get("tool_calls").and_then(Value::as_array) {
@@ -411,7 +457,7 @@ impl SseParser {
             let _ = self.line(rest.trim());
         }
         normalize_calls(&mut self.calls);
-        Completion { text: self.text, tool_calls: self.calls }
+        Completion { text: self.text, tool_calls: self.calls, usage: self.usage }
     }
 }
 
@@ -450,6 +496,7 @@ pub struct ResponsesParser {
     buf: Vec<u8>,
     text: String,
     calls: Vec<PendingCall>,
+    usage: Option<crate::usage::Usage>,
     pub done: bool,
 }
 
@@ -527,6 +574,8 @@ impl ResponsesParser {
                 Ok(None)
             }
             "response.completed" => {
+                // AC-186: the whole call's usage rides on the completed event.
+                self.usage = v.pointer("/response/usage").and_then(crate::usage::parse);
                 self.done = true;
                 Ok(None)
             }
@@ -568,7 +617,7 @@ impl ResponsesParser {
         }
         let mut calls: Vec<ToolCall> = self.calls.into_iter().map(|p| p.call).collect();
         normalize_calls(&mut calls);
-        Completion { text: self.text, tool_calls: calls }
+        Completion { text: self.text, tool_calls: calls, usage: self.usage }
     }
 }
 
@@ -769,6 +818,64 @@ mod tests {
     }
 
     #[test]
+    fn openai_usage_arrives_in_a_final_chunk_without_choices() {
+        let bytes = sse(&[
+            json!({ "choices": [{ "delta": { "content": "hola" } }], "usage": null }),
+            json!({ "choices": [{ "delta": {}, "finish_reason": "stop" }], "usage": null }),
+            json!({ "choices": [], "usage": { "prompt_tokens": 1500, "completion_tokens": 7, "prompt_tokens_details": { "cached_tokens": 1280 }, "completion_tokens_details": { "reasoning_tokens": 0 } } }),
+        ]);
+        let (_, c) = run(&bytes, 11);
+        assert_eq!(c.text, "hola");
+        let u = c.usage.unwrap();
+        assert_eq!((u.input, u.output, u.cached, u.reasoning), (Some(1500), Some(7), Some(1280), Some(0)));
+    }
+
+    #[test]
+    fn deepseek_usage_rides_on_the_finish_reason_chunk() {
+        let bytes = sse(&[
+            text_ev("ok"),
+            json!({ "choices": [{ "index": 0, "delta": { "content": "" }, "finish_reason": "stop" }],
+                "usage": { "prompt_tokens": 900, "completion_tokens": 3, "total_tokens": 903, "prompt_cache_hit_tokens": 768, "prompt_cache_miss_tokens": 132,
+                    "prompt_tokens_details": { "cached_tokens": 768 }, "completion_tokens_details": { "reasoning_tokens": 120 } } }),
+        ]);
+        let u = run(&bytes, 4).1.usage.unwrap();
+        assert_eq!((u.input, u.cached, u.reasoning), (Some(900), Some(768), Some(120)));
+    }
+
+    #[test]
+    fn openrouter_usage_brings_the_cost() {
+        let bytes = sse(&[text_ev("x"), json!({ "choices": [{ "delta": {}, "finish_reason": "stop" }], "usage": { "prompt_tokens": 40, "completion_tokens": 2, "total_tokens": 42, "cost": 0.0000123 } })]);
+        assert_eq!(run(&bytes, 64).1.usage.unwrap().cost, Some(0.0000123));
+    }
+
+    #[test]
+    fn a_provider_that_sends_no_usage_leaves_it_unknown() {
+        let (_, c) = run(&sse(&[text_ev("sin datos")]), 5);
+        assert_eq!(c.text, "sin datos");
+        assert!(c.usage.is_none(), "unknown, never zero");
+    }
+
+    #[test]
+    fn only_a_complaint_about_stream_options_degrades() {
+        assert!(rejects_stream_options(400, r#"{"error":{"message":"Unrecognized request argument supplied: stream_options"}}"#));
+        assert!(rejects_stream_options(422, "include_usage is not allowed"));
+        assert!(!rejects_stream_options(401, "stream_options"), "a bad key fails as before");
+        assert!(!rejects_stream_options(400, "model not found"));
+    }
+
+    #[test]
+    fn responses_usage_comes_with_the_completed_event() {
+        let bytes = responses_sse(&[
+            json!({ "type": "response.output_text.delta", "delta": "ok" }),
+            json!({ "type": "response.completed", "response": { "id": "r1", "usage": { "input_tokens": 3200, "input_tokens_details": { "cached_tokens": 3072 }, "output_tokens": 90, "output_tokens_details": { "reasoning_tokens": 64 }, "total_tokens": 3290 } } }),
+        ]);
+        let u = run_responses(&bytes, 13).1.usage.unwrap();
+        assert_eq!((u.input, u.output, u.cached, u.reasoning, u.cost), (Some(3200), Some(90), Some(3072), Some(64), None));
+        let bare = responses_sse(&[json!({ "type": "response.completed" })]);
+        assert!(run_responses(&bare, 8).1.usage.is_none());
+    }
+
+    #[test]
     fn wire_format_strips_meta() {
         let m = Msg::tool("call_1", "ok", Some(json!({ "kind": "answer" })));
         let w = m.wire();
@@ -785,6 +892,7 @@ mod tests {
             context_tokens: 100_000,
             session: "eureka-1".into(),
             subscription: Some(Subscription { account_id: "acc".into(), originator: "eureka".into() }),
+            usage: Default::default(),
         }
     }
 
