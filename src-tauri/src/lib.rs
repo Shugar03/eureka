@@ -650,6 +650,10 @@ fn memory_list(state: State<'_, AppState>) -> CmdResult<Vec<memdb::Observation>>
 #[tauri::command]
 fn memory_edit(state: State<'_, AppState>, id: i64, title: String, content: String, kind: String) -> CmdResult<Vec<memdb::Observation>> {
     let kind = memdb::Kind::parse(&kind).ok_or("Ese tipo no existe.")?;
+    // A confusion (or preference) turned into another kind is the student's now: its old profile entry goes.
+    if let Some(o) = state.memdb.get(id).map_err(err)?.filter(|o| o.kind != kind) {
+        let _ = state.learner.update(|p| memdb::strip_from_profile(p, o.kind, &o.topic));
+    }
     state.memdb.edit(id, &title, &content, kind).map_err(err)?;
     state.memdb.list().map_err(err)
 }
@@ -658,12 +662,7 @@ fn memory_edit(state: State<'_, AppState>, id: i64, title: String, content: Stri
 #[tauri::command]
 fn memory_delete(state: State<'_, AppState>, id: i64) -> CmdResult<Vec<memdb::Observation>> {
     if let Some(o) = state.memdb.get(id).map_err(err)? {
-        let _ = state.learner.update(|p| match o.kind {
-            memdb::Kind::Preferencia => p.preferences.retain(|x| !memdb::same_topic(&memdb::topic(memdb::Kind::Preferencia, &x.text), &o.topic)),
-            memdb::Kind::Idea => {}
-            // A status of a concept: its confusions leave the old profile too (the whole topic goes).
-            _ => p.misconceptions.retain(|m| !memdb::same_topic(&memdb::topic(memdb::Kind::Confusion, &m.concept), &o.topic)),
-        });
+        let _ = state.learner.update(|p| memdb::strip_from_profile(p, o.kind, &o.topic));
     }
     state.memdb.delete(id).map_err(err)?;
     state.memdb.list().map_err(err)
@@ -1262,7 +1261,7 @@ fn create_backup(app: tauri::AppHandle, state: State<'_, AppState>) -> CmdResult
     let dir = app.path().download_dir().map_err(err)?;
     let name = format!("Eureka-respaldo-{}.zip", chrono::Local::now().format("%Y%m%d-%H%M"));
     let path = dir.join(name);
-    backup::write_zip(&state.data_dir, &path).map_err(err)?;
+    backup::backup_state(&state, &path).map_err(err)?;
     Ok(path.to_string_lossy().into_owned())
 }
 
@@ -1270,7 +1269,7 @@ fn create_backup(app: tauri::AppHandle, state: State<'_, AppState>) -> CmdResult
 #[tauri::command]
 fn restore_backup(state: State<'_, AppState>, bytes: Vec<u8>) -> CmdResult<usize> {
     let safety = state.data_dir.join(format!("antes-de-restaurar-{}.zip", chrono::Local::now().format("%Y%m%d-%H%M%S")));
-    backup::restore(&state.data_dir, &bytes, &safety).map_err(err)
+    backup::restore_state(&state, &bytes, &safety).map_err(err)
 }
 
 /// Creates a deck from imported cards (Anki's plain text or .apkg, a shared deck).

@@ -336,6 +336,21 @@ impl MemoryDb {
         Self { path: data_dir.join("memory").join("memoria.sqlite"), conn: Mutex::new(None) }
     }
 
+    /// Runs `f` with the store closed: the connection is checkpointed and
+    /// closed (the WAL is folded into the file, so the file alone is a
+    /// consistent snapshot) and nothing can write until `f` returns. The next
+    /// use reopens whatever file is there then (a restored one, for instance).
+    pub fn closed<T>(&self, f: impl FnOnce() -> T) -> T {
+        let mut g = self.conn.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(c) = g.take() {
+            let _ = c.execute_batch("PRAGMA wal_checkpoint(TRUNCATE);");
+            if let Err((c, _)) = c.close() {
+                drop(c);
+            }
+        }
+        f()
+    }
+
     fn with<T>(&self, f: impl FnOnce(&mut Connection) -> Result<T>) -> Result<T> {
         let mut g = self.conn.lock().unwrap_or_else(|e| e.into_inner());
         if g.is_none() {
@@ -707,6 +722,16 @@ impl MemoryDb {
 /// The one-time migration from the app's files (AC-195).
 pub fn migrate(state: &crate::AppState) -> Result<Counts> {
     state.memdb.migrate(&state.graph.ledger(), &state.sessions.all(), &state.learner.load())
+}
+
+/// AC-199: what an observation the student deletes (or turns into another
+/// kind) leaves in the old profile: only its own entry, nothing else of the topic.
+pub fn strip_from_profile(p: &mut crate::learner::Profile, kind: Kind, t: &str) {
+    match kind {
+        Kind::Confusion => p.misconceptions.retain(|m| !same_topic(&topic(Kind::Confusion, &m.concept), t)),
+        Kind::Preferencia => p.preferences.retain(|x| !same_topic(&topic(Kind::Preferencia, &x.text), t)),
+        _ => {}
+    }
 }
 
 /// An old profile entry's source label as a source key ("Sesión: x" → the session isn't known by id).

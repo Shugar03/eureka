@@ -16,7 +16,7 @@ Lo que cambia en cada versión de Eureka, de la más nueva a la más vieja. El f
 - **El profesor encuentra mejor lo que viste antes:** busca por raíces de las palabras (plurales, palabras de la misma familia) y lee primero un resumen corto de cada recuerdo (AC-198).
 
 ### Cambiado
-- La memoria de Eureka pasa a una base SQLite en tu PC; la primera vez que abrís esta versión se copia sola lo que ya sabía de vos, sin borrar los archivos de antes (AC-195).
+- La memoria de Eureka pasa a una base SQLite en tu PC; la primera vez que abrís esta versión se copia sola lo que ya sabía de vos, sin borrar los archivos de antes. El respaldo la incluye, y al restaurar se usa la del respaldo (AC-195).
 - El instalador pasa de ~15 MB a ~30 MB porque trae los modelos de OCR.
 
 ## [0.5.0] - 2026-11-04
