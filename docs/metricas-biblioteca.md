@@ -65,7 +65,7 @@ Cuando el resultado es débil, `library_search` le pide al profesor **una** bús
 
 - **Cómo se simula el modelo:** `tests/fixtures/libro-editorial.retry.json` tiene una reformulación fija por paráfrasis y por negativa, escrita como la escribiría el profesor: sinónimos y conocimiento general («mandioca» → «yuca», «cántaro» → «tinaja vasija barro»), **nunca** los nombres inventados del libro (Quispe, Tolar-7, Condori…). El benchmark la usa solo si el primer resultado trae el aviso, y cuenta como acierto si la sección está en cualquiera de las dos búsquedas (el profesor ve las dos); el 1.º es el de la segunda.
 - **Es un techo, no una medición con modelo:** las reformulaciones las escribió alguien que conoce el libro y las respuestas. Un modelo real puede reformular peor, o no hacerlo. Lo que sí está medido sin trampa es **cuándo** se pide: 6 de 12 paráfrasis y 0 de 36 preguntas que ya andaban.
-- **Lo que no se arregla:** «¿Cuánto tiempo pasa la papa en el agua corriente?» comparte 4 de 6 palabras con otra sección (no dispara el aviso) y la sección correcta no aparece. Para eso hace falta buscar por significado (ver [plan-embeddings-estaticos.md](plan-embeddings-estaticos.md)).
+- **Lo que no se arregla:** «¿Cuánto tiempo pasa la papa en el agua corriente?» comparte 4 de 6 palabras con otra sección (no dispara el aviso) y la sección correcta no aparece. Se pensó que para eso hacía falta buscar por significado (ver [plan-embeddings-estaticos.md](plan-embeddings-estaticos.md)), pero en la fase 0 tampoco la encontró ningún embedding estático (sección «Embeddings estáticos, fase 0»).
 - **El 0 de 36 es optimista:** esas búsquedas usan el vocabulario del libro. Las 12 reformulaciones, que son listas de sinónimos, piden reformular **2 de 12 (17 %)** si se las hace solas: coinciden en menos de la mitad de sus palabras aunque traigan la sección. Por eso la segunda búsqueda del turno solo dice «no trata esto» si no encontró nada o todo es débil; el benchmark exige que nunca lo diga cuando la sección está entre lo enviado (0 de 12).
 - **Negativas:** reformuladas siguen llegando todas débiles (lo exige el benchmark).
 - **Tokens:** el aviso son ~10 tokens y solo aparece cuando hace falta (0 en las búsquedas que andan). La reformulación es otra búsqueda: en el juego hard, de ~1.150 a **~1.800 tokens por pregunta** de promedio (+650, porque la mitad reformula). Las tools y los prompts no cambiaron: `token_budget` da igual.
@@ -89,6 +89,99 @@ Cuando el resultado es débil, `library_search` le pide al profesor **una** bús
 | **Página correcta** | **100 %** | **0 %** |
 
 **Veredicto: no se adopta.** Detecta la misma estructura y es más rápido, pero no marca dónde empieza cada página, así que el profesor perdería la página en cada cita (AC-72), y además habría que mudar la conversión de PDFs al backend, lejos de donde se detectan las páginas escaneadas y corre el OCR (AC-187). La diferencia en hard (8 contra 6 de 12 primeros) viene de que, sin marcas, los párrafos se agrupan distinto en fragmentos; con 12 preguntas no alcanza para decir que recupera mejor. Los PDFs del benchmark no tienen tablas ni dos columnas, así que eso queda sin medir.
+
+## Embeddings estáticos, fase 0 (5/11/2026, solo medición)
+
+La fase 0 de [plan-embeddings-estaticos.md](plan-embeddings-estaticos.md): ¿buscar también por significado mejora lo que ya da BM25 con una reformulación? Se midió en Python, sin tocar la app, con [`bench/embeddings-fase0/embeddings_fase0.py`](../bench/embeddings-fase0/embeddings_fase0.py).
+
+**Cómo se midió**
+
+- **El mismo BM25:** el script reimplementa el de `library.rs` (secciones, fragmentos de 1000 bytes, palabra + raíz de 4 letras, títulos ×2, coincidencia débil) y la cuenta de `editorial_benchmark`, con la reformulación simulada de `libro-editorial.retry.json`. Antes de comparar exige que salgan los mismos números que `libro-editorial.retrieval.json`. Salen todos: search, question, hard, hard + reformulación y negativas.
+- **Modelos:** `minishlab/potion-multilingual-128M` (256 dimensiones) y `sentence-transformers/static-similarity-mrl-multilingual-v1`, entero (1024) y recortado a 256. Cada vector es el promedio de las filas de sus tokens, sin tokens especiales, normalizado. Así funcionan model2vec y `StaticEmbedding`. Contra `model2vec.encode` da un coseno mínimo de 0,99999994 en 20 frases, así que la prueba de paridad de la fase 1 ya tiene referencia. Cada fragmento se vectoriza con su ruta de sección delante, que es lo mismo que ve BM25.
+- **Híbrido:** el top 50 de BM25 (puntaje > 0) más el top 50 por coseno, combinados con RRF (k = 60). El libro tiene **36 fragmentos**, así que el top 50 es el libro entero. Se probaron tres formas de dar prioridad a la coincidencia exacta:
+  - **sin prioridad;**
+  - **todas las palabras:** primero los fragmentos que tienen todas las palabras de la consulta;
+  - **fuerte:** primero los que BM25 no marca débiles y comparten al menos la mitad de las palabras. Es la que se usa abajo salvo que se diga otra cosa.
+- **Débil:** BM25 la marca débil (o no comparte ninguna palabra) **y** el coseno queda bajo el umbral. El umbral es el coseno de la negativa original más alta + 0,01: 0,258 para potion, 0,184 para mrl-1024 y 0,18 para mrl-256. **Se ajustó con estos mismos datos.**
+- **Reformulación en el híbrido:** el aviso de AC-189, salvo que un 1.º parecido en significado (coseno ≥ umbral) no cuenta como «comparte pocas palabras». Como eso hace que se pida reformular menos veces, también se midió con el aviso exacto de hoy, calculado sobre el resultado de BM25 («aviso de BM25»).
+- **Juegos nuevos** (en `bench/embeddings-fase0/cross-language.json`, escritos antes de medir):
+  - **en dos idiomas:** 12 preguntas en español sobre un texto en inglés inventado, *Field Notes on Kelp Curing in the Orrin Isles* (6 secciones, 6 fragmentos). Ese texto se indexa junto con el libro, así que compite con él. Cada pregunta trae una reformulación en inglés con palabras generales, que simula al profesor buscando en el idioma del libro. Igual que `retry.json`, es un techo;
+  - **5 negativas cercanas:** kimchi, masa madre, kombucha, yogur y vino. Son del mismo tema, pero el libro no las responde.
+
+**Resultados** (sección correcta en el 1.º / en el top 4)
+
+| Modo | search | question | hard | hard + 1 reformulación | inglés | inglés + reformulación en inglés |
+|---|---|---|---|---|---|---|
+| **BM25 (hoy)** | 100 / 100 | 100 / 100 | 50 / 83 | **92 / 92** | **0 / 0** | 50 / 58 |
+| potion, solo coseno | 89 / 100 | 89 / 100 | 33 / 42 | 50 / 50 | 33 / 58 | 50 / 75 |
+| potion, híbrido sin prioridad | 94 / 100 | 89 / 100 | 17 / 75 | 50 / 83 | 0 / 17 | 58 / 67 |
+| potion, híbrido fuerte | 94 / 100 | 89 / 100 | 50 / 83 | 58 / 83 (aviso de BM25: 83 / 92) | 0 / 17 | 50 / 58 |
+| mrl-1024, solo coseno | 94 / 100 | 78 / 89 | 17 / 50 | 50 / 67 | 17 / 42 | 50 / 67 |
+| mrl-1024, híbrido sin prioridad | 100 / 100 | 83 / 94 | 50 / 83 | 67 / 92 | 0 / 17 | 58 / 67 |
+| mrl-1024, híbrido fuerte | 100 / 100 | 89 / 94 | 67 / 83 | 75 / 92 (aviso de BM25: 83 / 92) | 0 / 17 | 50 / 58 |
+| mrl-256, solo coseno | 100 / 100 | 72 / 89 | 17 / 42 | 42 / 58 | 33 / 50 | 50 / 67 |
+| mrl-256, híbrido sin prioridad | 100 / 100 | 89 / 100 | 42 / 83 | 50 / 83 | 0 / 17 | 50 / 50 |
+| mrl-256, híbrido fuerte | 100 / 100 | 89 / 100 | 67 / 83 | 75 / 83 (aviso de BM25: 83 / 92) | 0 / 17 | 42 / 42 (aviso de BM25: 50 / 58) |
+
+Todos los valores son porcentajes. La prioridad «todas las palabras» da lo mismo que «sin prioridad», salvo question, que sube a 94 / 100 con potion y mrl-256, y a 89 / 100 con mrl-1024. Con la tabla cuantizada a 8 bits (escala por fila) los números son los mismos, salvo una pregunta en una celda de mrl-1024 solo coseno y una positiva más marcada débil en mrl-1024 híbrido.
+
+**Lo que se ve:**
+
+- **No le gana a la reformulación.**
+  - El mejor híbrido sin reformular, mrl fuerte, llega a 67 / 83. Gana 2 preguntas en el 1.º («montaña» y «papa deshidratada»), pero no pasa del 83 % en el top 4.
+  - Con la misma reformulación y el mismo aviso, el híbrido da 83 / 92, por debajo de BM25 + reformulación (92 / 92).
+  - «¿Cuánto tiempo pasa la papa en el agua corriente?», la que la reformulación no arregla, tampoco la encuentra ningún modelo: queda fuera del top 4 en todas las variantes.
+- **En dos idiomas no llega.**
+  - La meta era ≥ 80 % en el top 4; el híbrido da 17 % y el coseno solo, 42–58 %.
+  - Sobre el texto en inglés solo, el coseno acierta la sección en el 1.º el 75–92 % de las veces (con 6 fragmentos el top 4 no dice mucho), así que la alineación entre idiomas existe.
+  - Con el libro en español al lado, ganan los párrafos en español de un tema parecido (secar, salar, guardar): con estos vectores, el mismo idioma pesa más que el significado.
+  - Reformular en inglés lleva a BM25 solo a 50 / 58. El híbrido suma a lo sumo una pregunta (58 / 67), y solo sin prioridad, que es la variante que baja hard al 17 % (potion) o al 50 % (mrl-1024) en el 1.º. Además, la idea de que «la reformulación no ayuda entre idiomas» es falsa en parte.
+- **Empeora lo que andaba.**
+  - question baja del 100 % al 89 % en el 1.º en todas las variantes con prioridad fuerte. Son dos preguntas. «¿Por qué las levaduras de altura aguantan las heladas?» pasa al 2.º puesto. «¿Cómo se fermenta la tunta?» pasa al 4.º con potion y mrl-256, y con mrl-1024 sale del top 4.
+  - Con potion, search también baja, al 94 %.
+- **Las negativas no mejoran.**
+  - El coseno no separa lo que está de lo que no: la negativa cercana más alta («masa madre», 0,42–0,47) supera la mediana de las positivas (0,20–0,30).
+  - Con el umbral elegido, las 2 negativas originales siguen llegando débiles.
+  - De las 5 cercanas, quedan débiles 1 (potion) o 3 (mrl), contra 4 con BM25 solo.
+  - Subir el umbral hasta recuperar 4 de 5 (≥ 0,45–0,55) marca como débiles las mismas 8 positivas (de 60) que ya marca BM25. Ningún umbral queda mejor que BM25 en las dos cosas a la vez.
+
+| Negativas y umbral | BM25 | potion (0,258) | mrl-1024 (0,184) | mrl-256 (0,18) |
+|---|---|---|---|---|
+| 2 negativas originales: todas débiles | 2 | 2 | 2 | 2 |
+| … reformuladas: todas débiles | 2 | 1 | 2 | 2 |
+| 5 negativas cercanas: todas débiles | 4 | 1 | 3 | 3 |
+| Positivas (60) que llegan todas débiles | 8 (3 hard, 5 inglés) | 4 (0, 4) | 7 (3, 4) | 6 (2, 4) |
+
+**Costo** (Ryzen 5 4500, Python 3.14 con numpy; Rust debería ser igual o más rápido)
+
+| | potion-multilingual-128M | mrl-1024 | mrl-256 |
+|---|---|---|---|
+| Tabla | 500.353 × 256 | 105.879 × 1024 | 105.879 × 256 |
+| Disco, f32 | 512 MB | 434 MB | 108 MB |
+| Disco, 8 bits con escala por fila | 130 MB | 109 MB | 27,5 MB |
+| Solo tokens de escritura latina (cota superior de es/en/pt) | 276.320 filas: 72 MB en 8 bits | 58.816 filas: 60 MB | 58.816 filas: 15 MB |
+| `tokenizer.json` | 18,6 MB | 2,6 MB | 2,6 MB |
+| RAM en Python (tabla entera en memoria; en Rust iría con mmap) | +976 MB | +427 MB | +115 MB |
+| Vectorizar el libro (36 fragmentos) | 15–18 ms (134 ms en frío) | 30–35 ms | 13–18 ms |
+| Vector de una consulta | 0,08 ms | 0,08 ms | 0,07 ms |
+| Consulta híbrida completa, 36 fragmentos (BM25 solo: 0,12–0,18 ms) | 0,33–0,43 ms | 0,32–0,41 ms | 0,31–0,49 ms |
+| Coseno contra 50.000 fragmentos | 2,4–6,5 ms | 7,1–7,8 ms | 2,2–2,7 ms |
+
+Las cuentas se hacen en Python sobre la versión con todas las filas, salvo la de 8 bits. Las filas de escritura latina incluyen también francés, alemán y otros idiomas, así que recortar a es/en/pt dejaría menos. El costo entra en la meta (≤ 100 MB, ≤ 7 ms) con mrl-256 sin recortar y con potion recortado.
+
+**Licencias:**
+
+- `potion-multilingual-128M`: MIT. Es un destilado de `BAAI/bge-m3`, que también es MIT.
+- `static-similarity-mrl-multilingual-v1`: Apache-2.0. No tiene modelo base: se entrenó de cero con conjuntos públicos, como OpenSubtitles, Europarl o Tatoeba.
+
+Las dos licencias son compatibles con AGPL-3.0.
+
+**Cuánto depende de pocas preguntas:** en hard, una pregunta son 8 puntos. La ventaja del híbrido sin reformular son 2 preguntas, y la diferencia con BM25 + reformulación es 1, para el otro lado. El veredicto no cuelga de eso:
+
+- en dos idiomas faltan 7 u 8 preguntas de 12 para la meta;
+- la caída de question son 2 preguntas en un juego donde la meta es no perder ninguna.
+
+**Veredicto: no se adopta (NO-GO).** Los estáticos no mejoran lo que ya da una reformulación, no resuelven el cruce de idiomas con una biblioteca mezclada y bajan el 1.º en las preguntas del alumno. El costo no es el problema. Detalle por pregunta: lo imprime el script.
 
 ## Qué se cambió por estas mediciones
 

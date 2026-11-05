@@ -1,6 +1,6 @@
 # Plan: embeddings estáticos para buscar por significado
 
-> Estado: **planificado**, después del OCR (AC-187/188) y de la documentación.
+> Estado: **fase 0 medida (5/11/2026): la recomendación es no seguir** (sección 9). La decisión es del mantenedor.
 > Los criterios de aceptación se numeran cuando se implemente (el próximo libre).
 
 ## 1. Por qué
@@ -126,3 +126,29 @@ Los valores son estimaciones: se confirman en la fase 0 y en el benchmark.
 | Falsos positivos por tema parecido | Coincidencia débil exige las dos señales bajas |
 | Tamaño del modelo | Recorte de vocabulario y 8 bits; descarga a pedido |
 | Licencia del modelo | Verificar antes de la fase 1 |
+
+## 9. Resultado de la fase 0
+
+Se midió el 5/11/2026 en Python con [`bench/embeddings-fase0/embeddings_fase0.py`](../bench/embeddings-fase0/embeddings_fase0.py). El script reproduce primero el BM25 de Rust: da los mismos números que `editorial_benchmark`. El detalle está en [metricas-biblioteca.md](metricas-biblioteca.md), sección «Embeddings estáticos, fase 0».
+
+| Meta (sección 2) | BM25 hoy | Mejor híbrido medido | ¿Se cumple? |
+|---|---|---|---|
+| Paráfrasis, 1.º ≥ 75 % | 50 % | 67 % (mrl, prioridad fuerte) | no |
+| Paráfrasis, top 4 ≥ 95 % | 83 % | 83 % | no |
+| Ganarle a BM25 + 1 reformulación (92 % / 92 %) | — | 83 % / 92 % con la misma reformulación | no |
+| Palabras clave y preguntas: 100 % | 100 % / 100 % | search 100 %; question **89 %** en el 1.º (mrl-1024: 94 % en el top 4) | no (question baja) |
+| Negativas igual o mejor | 2 de 2, y 4 de 5 cercanas | 2 de 2, y 1–3 de 5 cercanas | no |
+| Dos idiomas, top 4 ≥ 80 % | 0 % | 17 % (solo coseno: 42–58 %) | no |
+| ≤ 100 MB, ≤ 7 ms | — | mrl-256 en 8 bits: 27,5 MB; 2,2–2,7 ms con 50.000 fragmentos | sí |
+| Licencia compatible con AGPL-3.0 | — | potion: MIT (bge-m3: MIT); mrl: Apache-2.0 | sí |
+
+**Recomendación: NO-GO.** Solo se cumplen el costo y la licencia. Las razones:
+
+- **La reformulación de AC-189 sigue siendo mejor.** Con o sin vectores, la paráfrasis que la reformulación no arregla tampoco aparece.
+- **El cruce de idiomas falla con una biblioteca mezclada.** Contra el texto en inglés solo, el coseno acierta; con el libro en español al lado, ganan los párrafos en español del mismo tema.
+- **Bajan dos preguntas del alumno** que hoy salen primeras.
+- **El coseno no separa lo que está de lo que no:** una negativa del mismo tema tiene más coseno que la mitad de las positivas.
+
+Con 12 paráfrasis, una pregunta son 8 puntos. Aun así, el veredicto no depende de una o dos preguntas: el cruce de idiomas queda a 7–8 preguntas de la meta.
+
+Si se vuelve a evaluar, convendría hacerlo con otro tipo de modelo, no con otro estático: uno contextual pequeño, que cuesta ONNX y cientos de MB. También convendría medir con una biblioteca real de varios libros, donde el top 50 no sea el libro entero (acá son 36 fragmentos).
