@@ -88,32 +88,29 @@ fn keystore_available() -> bool {
     }
 }
 
+// One fake keystore per test thread: tests run in parallel and use the same provider ids.
 #[cfg(test)]
-static TEST_KEYSTORE: std::sync::Mutex<Option<std::collections::HashMap<String, String>>> = std::sync::Mutex::new(None);
+thread_local! {
+    static TEST_KEYSTORE: std::cell::RefCell<std::collections::HashMap<String, String>> = Default::default();
+}
 
 #[cfg(test)]
 fn store_tokens(provider_id: &str, access: &str, refresh: &str) -> bool {
-    let mut store = TEST_KEYSTORE.lock().unwrap();
-    let store = store.get_or_insert_with(std::collections::HashMap::new);
     let payload = serde_json::json!({ "access": access, "refresh": refresh }).to_string();
-    store.insert(provider_id.to_string(), payload);
+    TEST_KEYSTORE.with(|s| s.borrow_mut().insert(provider_id.to_string(), payload));
     true
 }
 
 #[cfg(test)]
 fn load_tokens(provider_id: &str) -> Option<(String, String)> {
-    let store = TEST_KEYSTORE.lock().unwrap();
-    let store = store.as_ref()?;
-    let payload = store.get(provider_id)?;
-    let v: serde_json::Value = serde_json::from_str(payload).ok()?;
+    let payload = TEST_KEYSTORE.with(|s| s.borrow().get(provider_id).cloned())?;
+    let v: serde_json::Value = serde_json::from_str(&payload).ok()?;
     Some((v.get("access")?.as_str()?.to_string(), v.get("refresh")?.as_str()?.to_string()))
 }
 
 #[cfg(test)]
 fn delete_tokens(provider_id: &str) {
-    if let Some(store) = TEST_KEYSTORE.lock().unwrap().as_mut() {
-        store.remove(provider_id);
-    }
+    TEST_KEYSTORE.with(|s| s.borrow_mut().remove(provider_id));
 }
 
 #[cfg(not(test))]
