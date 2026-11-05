@@ -49,4 +49,24 @@ function releaseChangelog(text, version, date, repo) {
   return { text: out.join(eol), notes };
 }
 
-module.exports = { releaseChangelog, localDate };
+/**
+ * The moved section as one plain-text line for the in-app update notice (it renders text,
+ * not Markdown): the bullets without headings, emphasis, links or the (AC-n) references.
+ */
+function plainNotes(markdown) {
+  return markdown
+    .split(/\r?\n/)
+    .filter((l) => /^\s*[-*]\s+/.test(l))
+    .map((l) =>
+      l
+        .replace(/^\s*[-*]\s+/, "")
+        .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+        .replace(/\*\*|__|`/g, "")
+        .replace(/\s*\((?:AC-\d+(?:[,\s]+|\.\.|…)?)+\)/g, "")
+        .trim(),
+    )
+    .filter(Boolean)
+    .join(" · ");
+}
+
+module.exports = { releaseChangelog, localDate, plainNotes };

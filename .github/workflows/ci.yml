@@ -15,7 +15,8 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # PRs: only the latest push matters. main: every run finishes, so the cargo cache gets saved.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   NODE_VERSION: "24"
@@ -131,7 +132,7 @@ jobs:
         run: npx --yes markdownlint-cli2@0.18.1
       - name: YAML válido en .github/
         run: |
-          python3 -m pip install --quiet pyyaml
+          python3 -c "import yaml" 2>/dev/null || python3 -m pip install --quiet --break-system-packages pyyaml
           python3 - <<'EOF'
           import pathlib, sys, yaml
           bad = 0

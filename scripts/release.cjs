@@ -15,7 +15,7 @@ const { spawnSync } = require("node:child_process");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { releaseChangelog, localDate } = require("./changelog.cjs");
+const { releaseChangelog, localDate, plainNotes } = require("./changelog.cjs");
 
 const REPO = "Shugar03/eureka";
 const ROOT = path.resolve(__dirname, "..");
@@ -70,6 +70,8 @@ try {
 }
 if (!process.argv[3] && !changelog.notes) console.warn(`«Sin publicar» está vacía en CHANGELOG.md: las notas van a decir solo «Eureka ${version}».`);
 const notes = process.argv[3] || changelog.notes || `Eureka ${version}`;
+// The in-app update notice (UpdateNotice.tsx) shows latest.json's notes as plain text.
+const appNotes = process.argv[3] || plainNotes(changelog.notes) || `Eureka ${version}`;
 console.log(`\nPublicando Eureka ${current} → ${version}\n`);
 
 // ── 1. Version, commit and tag ────────────────────────────────────────────
@@ -110,7 +112,7 @@ const url = run("gh", ["api", `repos/${REPO}/releases/tags/v${version}`, "--jq",
 if (!url) die("el release no tiene el instalador");
 
 const manifest = path.join(os.tmpdir(), "latest.json");
-fs.writeFileSync(manifest, JSON.stringify({ version, notes, pub_date: new Date().toISOString(), platforms: { "windows-x86_64": { signature, url } } }, null, 2));
+fs.writeFileSync(manifest, JSON.stringify({ version, notes: appNotes, pub_date: new Date().toISOString(), platforms: { "windows-x86_64": { signature, url } } }, null, 2));
 run("gh", ["release", "upload", `v${version}`, manifest, "--repo", REPO, "--clobber"]);
 fs.rmSync(manifest, { force: true });
 

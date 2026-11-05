@@ -1,7 +1,7 @@
 // node --test scripts/changelog.test.cjs  (npm run test:scripts)
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { releaseChangelog, localDate } = require("./changelog.cjs");
+const { releaseChangelog, localDate, plainNotes } = require("./changelog.cjs");
 
 const REPO = "Shugar03/eureka";
 const BEFORE = `# Cambios
@@ -79,15 +79,25 @@ test("refuses a version that is already there, or a file without «Sin publicar�
   assert.throws(() => releaseChangelog("# Cambios\n", "0.6.0", "2026-11-05", REPO), /Sin publicar/);
 });
 
-test("the real CHANGELOG.md goes through", () => {
+test("the real CHANGELOG.md goes through, also twice in a row (empty «Sin publicar» after a release)", () => {
   const real = require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "CHANGELOG.md"), "utf8");
-  const { text, notes } = releaseChangelog(real, "9.9.9", "2026-11-05", REPO);
-  assert.match(text, /## Sin publicar\r?\n\r?\n## \[9\.9\.9\] - 2026-11-05/);
-  assert.match(text, /\[9\.9\.9\]: https:\/\/github\.com\/Shugar03\/eureka\/releases\/tag\/v9\.9\.9\r?\n\[0\.5\.0\]/);
-  assert.ok(notes.length > 0);
+  const once = releaseChangelog(real, "9.9.8", "2026-11-05", REPO);
+  assert.match(once.text, /## Sin publicar\r?\n\r?\n## \[9\.9\.8\] - 2026-11-05/);
+  assert.match(once.text, /\r?\n\[9\.9\.8\]: https:\/\/github\.com\/Shugar03\/eureka\/releases\/tag\/v9\.9\.8\r?\n\[/);
   // Nothing else changes: dropping the two added lines gives back the original text.
-  const undo = (s) => s.replace(/\r\n/g, "\n").replace("## [9.9.9] - 2026-11-05\n\n", "").replace(/\[9\.9\.9\]: .*\n/, "");
-  assert.equal(undo(text), real.replace(/\r\n/g, "\n"));
+  const undo = (s) => s.replace(/\r\n/g, "\n").replace("## [9.9.8] - 2026-11-05\n\n", "").replace(/\[9\.9\.8\]: .*\n/, "");
+  assert.equal(undo(once.text), real.replace(/\r\n/g, "\n"));
+
+  const twice = releaseChangelog(once.text, "9.9.9", "2026-11-06", REPO);
+  assert.equal(twice.notes, "");
+  assert.match(twice.text, /## Sin publicar\r?\n\r?\n## \[9\.9\.9\] - 2026-11-06\r?\n\r?\n## \[9\.9\.8\]/);
+  assert.match(twice.text, /\[9\.9\.9\]: .*\r?\n\[9\.9\.8\]: /);
+});
+
+test("plainNotes turns the section into one line of plain text for the app", () => {
+  const md = "### Nuevo\n- **PDFs escaneados** se leen con [OCR](docs/x.md) (AC-187).\n- Fotos `locales` (AC-187, AC-188).\n\n### Cambiado\n- Instalador más grande.";
+  assert.equal(plainNotes(md), "PDFs escaneados se leen con OCR. · Fotos locales. · Instalador más grande.");
+  assert.equal(plainNotes(""), "");
 });
 
 test("localDate uses the local calendar day", () => {

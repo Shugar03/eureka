@@ -46,7 +46,7 @@ Los detalles de cada capa de pruebas están en [docs/testing.md](docs/testing.md
 | `npm run bench:library` | Benchmark de la biblioteca (velocidad y acierto) |
 | `npm run check:repo` | Higiene del repo: secretos, nombre prohibido, trazabilidad de los `AC-n` y links rotos |
 
-**CI:** cada PR corre tipos, Vitest, `cargo test --lib`, `check:repo` y un lint liviano de las docs en GitHub Actions (detalle en [docs/testing.md](docs/testing.md#integración-continua)). Si `npm test` y `npm run check:repo` pasan en tu PC, lo normal es que CI también pase.
+**CI:** cada PR corre tipos, Vitest, `cargo test --lib`, `check:repo` y un lint liviano de las docs en GitHub Actions (detalle en [docs/testing.md](docs/testing.md#integración-continua)). Corré `npm run test:unit`, `npm run test:rust` y `npm run check:repo` antes de mandarlo: es lo mismo que mira CI.
 
 Ninguna prueba llama a un modelo real. Si un cambio toca prompts o herramientas del agente, corré el test `token_budget` (`cargo test token_budget`): falla si una fase empieza a mandar más tokens. Si el aumento está justificado, actualizá la línea base con `TOKEN_BASELINE_UPDATE=1` y explicalo en el PR.
 
