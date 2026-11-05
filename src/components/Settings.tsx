@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { api, backupApi, codeApi, errorText, learnerApi } from "../api";
+import { api, backupApi, codeApi, errorText } from "../api";
 import { keepFile } from "../lib/saveFile";
 import { onPhone, thisDevice, yourDevice } from "../lib/platform";
-import { DEFAULT_LOCAL_SPEECH, LOCAL_SPEECH, type Accessibility, type LearnerProfile, type ModelRef, type PromptView, type ProviderInput, type RememberedSession, type Roles, type Runtime, type SettingsView } from "../types";
+import { DEFAULT_LOCAL_SPEECH, LOCAL_SPEECH, type Accessibility, type ModelRef, type PromptView, type ProviderInput, type RememberedSession, type Roles, type Runtime, type SettingsView } from "../types";
 import { langLabel } from "../lib/code";
 import { speechModelWarning } from "../lib/speechModel";
 import { LocalSpeech } from "./settings/LocalSpeech";
@@ -830,69 +830,6 @@ export function SessionMemories() {
         <p className="error-text small" role="alert">
           {error}
         </p>
-      )}
-    </section>
-  );
-}
-
-/** Audit M10: what the app learned about you across sessions — and forgetting it. */
-export function LearnerSection() {
-  const [p, setP] = useState<LearnerProfile | null>(null);
-  const [armed, setArmed] = useState(false);
-  useEffect(() => {
-    learnerApi.get().then(setP).catch(() => setP({ misconceptions: [], preferences: [] }));
-  }, []);
-  if (!p) return null;
-  const empty = !p.misconceptions.length && !p.preferences.length;
-  const forget = async (kind: "misconception" | "preference" | "all", i = 0) => setP(await learnerApi.forget(kind, i));
-  return (
-    <section className="card" aria-label="Lo que la app sabe de vos">
-      <div className="row-between">
-        <h2>Lo que la app sabe de vos</h2>
-        {!empty && (
-          <button
-            className={`btn small ${armed ? "danger" : "ghost"}`}
-            onClick={() => (armed ? (setArmed(false), forget("all")) : setArmed(true))}
-            onBlur={() => setArmed(false)}
-          >
-            {armed ? "¿Seguro? Olvidar todo" : "Olvidar todo"}
-          </button>
-        )}
-      </div>
-      <p className="muted small">Cuando una sesión termina o queda quieta un rato se anotan tus confusiones y cómo aprendés mejor, para que el profesor las tenga en cuenta la próxima vez. Queda solo en {thisDevice()}.</p>
-      {empty ? (
-        <p className="muted small">Todavía nada: se completa cuando terminás sesiones o practicás.</p>
-      ) : (
-        <>
-          {p.preferences.length > 0 && (
-            <ul className="learner-list" aria-label="Cómo aprendés mejor">
-              {p.preferences.map((x, i) => (
-                <li key={`p${i}`}>
-                  <span>
-                    <strong>Preferís:</strong> {x.text} <span className="muted small">· {x.source}</span>
-                  </span>
-                  <button className="btn ghost small" onClick={() => forget("preference", i)} aria-label={`Olvidar: ${x.text}`}>
-                    Olvidar
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-          {p.misconceptions.length > 0 && (
-            <ul className="learner-list" aria-label="Confusiones">
-              {p.misconceptions.map((m, i) => (
-                <li key={`m${i}`}>
-                  <span>
-                    <strong>{m.concept}:</strong> {m.wrong_idea} {m.fixed ? <span className="tag tag-check">reparada</span> : null} <span className="muted small">· {m.source}</span>
-                  </span>
-                  <button className="btn ghost small" onClick={() => forget("misconception", i)} aria-label={`Olvidar: ${m.concept}`}>
-                    Olvidar
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </>
       )}
     </section>
   );

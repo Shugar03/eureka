@@ -255,8 +255,60 @@ pub fn model(state: &AppState, today: NaiveDate) -> StudentModel {
     let minutes_7d = state.study.since(&week_ago).iter().map(|e| e.minutes).sum();
 
     let mut topics = b.topics;
+    let mut preferences: Vec<String> = profile.preferences.iter().map(|p| p.text.clone()).collect();
+    // AC-199: what the student corrected or deleted in «Lo que Eureka sabe de vos» wins.
+    if let Ok((mine, gone)) = state.memdb.overrides() {
+        apply_overrides(&mut topics, &mut preferences, &mut pending, &mine, &gone);
+    }
     topics.sort_by(|a, b| a.status.cmp(&b.status).then(b.at.cmp(&a.at)));
-    StudentModel { topics, pending, upcoming, preferences: profile.preferences.iter().map(|p| p.text.clone()).collect(), cards_due, minutes_7d }
+    StudentModel { topics, pending, upcoming, preferences, cards_due, minutes_7d }
+}
+
+/// The student's word over the computed signals: their own observations set
+/// the status of a topic; what they deleted leaves (unless newer evidence came).
+fn apply_overrides(topics: &mut Vec<TopicState>, preferences: &mut Vec<String>, pending: &mut Vec<Pending>, mine: &[crate::memdb::Observation], gone: &[(String, crate::memdb::Kind, DateTime<Utc>)]) {
+    use crate::memdb::{topic, Kind};
+    let concept = |name: &str| topic(Kind::LeCuesta, name);
+    for (t, kind, at) in gone {
+        match kind {
+            Kind::Preferencia => preferences.retain(|p| &topic(Kind::Preferencia, p) != t),
+            Kind::Idea => {}
+            Kind::Pendiente => {
+                pending.retain(|p| !(&concept(&p.item) == t && p.at <= *at));
+                topics.retain(|x| !(x.status == Status::Pendiente && &concept(&x.name) == t && x.at <= *at));
+            }
+            _ => topics.retain(|x| !(&concept(&x.name) == t && x.at <= *at)),
+        }
+    }
+    for o in mine {
+        let status = match o.kind {
+            Kind::Domina => Status::Domina,
+            Kind::LeCuesta | Kind::Confusion => Status::LeCuesta,
+            Kind::Pendiente => Status::Pendiente,
+            Kind::Preferencia => {
+                if !preferences.iter().any(|p| topic(Kind::Preferencia, p) == o.topic) {
+                    preferences.insert(0, o.title.clone());
+                }
+                continue;
+            }
+            Kind::Idea => continue,
+        };
+        let evidence = if o.content.is_empty() || o.content == o.title { "lo corregiste vos".to_string() } else { format!("lo corregiste vos: {}", o.content.chars().take(100).collect::<String>()) };
+        topics.retain(|x| concept(&x.name) != o.topic || x.status == status);
+        match topics.iter_mut().find(|x| concept(&x.name) == o.topic) {
+            Some(x) => {
+                x.name = o.title.clone();
+                x.evidence.insert(0, evidence);
+                x.evidence.truncate(MAX_EVIDENCE);
+                x.at = o.updated_at;
+                x.confusion = false;
+                if !x.sources.iter().any(|s| s == "vos") {
+                    x.sources.push("vos".into());
+                }
+            }
+            None => topics.push(TopicState { key: normalize(&o.title), name: o.title.clone(), status, evidence: vec![evidence], at: o.updated_at, sources: vec!["vos".into()], confusion: false }),
+        }
+    }
 }
 
 /// "## Lo que sabemos de vos" for the agent, in every phase: what relates to this
@@ -366,6 +418,7 @@ Si la persona saluda o no trae un tema, ofrecéselo con `propose_action` (uno o 
 
 /// "Esto ya lo sé": repairs the open confusion behind a topic. False when there was none.
 pub fn mark_known(state: &AppState, name: &str) -> anyhow::Result<bool> {
+    let _ = state.memdb.repair(name);
     state.learner.update(|p| {
         let open: Vec<String> = p.misconceptions.iter().filter(|m| !m.fixed && same_topic(&m.concept, name)).map(|m| m.concept.clone()).collect();
         open.iter().fold(false, |any, c| crate::learner::mark_fixed(p, c, "Lo marcaste vos") || any)
@@ -388,6 +441,21 @@ mod tests {
 
     fn day() -> NaiveDate {
         chrono::Local::now().date_naive()
+    }
+
+    #[test]
+    fn what_the_student_corrects_or_deletes_wins_in_the_model() {
+        let (st, dir) = st();
+        st.learner.update(|p| crate::learner::add_misconception(p, "La derivada", "es el área", false, "Sesión: a")).unwrap();
+        crate::memdb::migrate(&st).unwrap();
+        let id = st.memdb.list().unwrap()[0].id;
+        st.memdb.edit(id, "La derivada", "ya la entiendo", crate::memdb::Kind::Domina).unwrap();
+        let t = topic(&model(&st, day()), "derivada").clone();
+        assert_eq!(t.status, Status::Domina);
+        assert_eq!(t.evidence[0], "lo corregiste vos: ya la entiendo");
+        st.memdb.delete(id).unwrap();
+        assert!(!model(&st, day()).topics.iter().any(|t| same_topic(&t.name, "derivada")), "deleted: the old confusion doesn't show either");
+        let _ = std::fs::remove_dir_all(dir);
     }
 
     #[test]

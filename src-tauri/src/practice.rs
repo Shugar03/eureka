@@ -785,8 +785,12 @@ pub async fn answer(state: &AppState, set_id: &str, problem_id: &str, answer: &s
         if let Some(idea) = ideas.first() {
             let wrong = format!("respondió «{}»: {}", answer.chars().take(120).collect::<String>(), feedback.chars().take(160).collect::<String>());
             let _ = state.learner.update(|pr| crate::learner::add_misconception(pr, idea, &wrong, false, &source));
+            let _ = state.memdb.record_practice(idea, false, &wrong, &set.id, &source);
         }
     } else {
+        for idea in &ideas {
+            let _ = state.memdb.record_practice(idea, true, "", &set.id, &source);
+        }
         // AC-111: getting it right repairs an open confusion about the same ideas.
         let _ = state.learner.update(|pr| ideas.iter().for_each(|idea| {
             crate::learner::mark_fixed(pr, idea, &source);

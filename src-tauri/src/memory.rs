@@ -124,6 +124,9 @@ async fn consolidate_now(state: &AppState, id: &str) -> Result<()> {
     };
     // Reload: the person may have written while the model ran.
     let mut s = state.sessions.load(id)?;
+    if let Err(e) = state.memdb.record_session(&s.id, &s.title, &memory) {
+        eprintln!("memoria del estudiante: {e}");
+    }
     s.memory = Some(memory);
     if graph.is_some() {
         s.graph = graph;
@@ -177,6 +180,10 @@ pub async fn pass(state: &AppState, backoff: &Backoff) {
     let now = Utc::now();
     let today = chrono::Local::now().date_naive();
     if tidy_due(&state.data_dir, today) && tidy(state, now).is_ok() {
+        // AC-196: the memory's own hygiene (no model), counted apart from the tidy.
+        if let Err(e) = state.memdb.hygiene(now) {
+            eprintln!("memoria del estudiante: {e}");
+        }
         let _ = std::fs::create_dir_all(tidy_mark(&state.data_dir).parent().unwrap());
         let _ = std::fs::write(tidy_mark(&state.data_dir), today.to_string());
     }
@@ -190,6 +197,56 @@ pub async fn pass(state: &AppState, backoff: &Backoff) {
         if let Err(e) = consolidate(state, &s.id).await {
             eprintln!("memoria de «{}»: {e}", s.title);
             backoff.fail(&s.id);
+        }
+    }
+    resolve_conflicts(state).await;
+}
+
+pub const CONFLICT_TOOL: &str = "resolve_conflict";
+/// Ambiguous contradictions decided per pass (each one is a small call).
+const CONFLICTS_PER_PASS: usize = 3;
+
+pub fn conflict_tool() -> Value {
+    json!({ "type": "function", "function": {
+        "name": CONFLICT_TOOL,
+        "description": "Decide qué observación vale.",
+        "parameters": { "type": "object", "properties": {
+            "keep": { "type": "string", "enum": ["a", "b", "ambas"] },
+            "reason": { "type": "string" }
+        }, "required": ["keep"] }
+    }})
+}
+
+/// The few tokens the model sees for one contradiction.
+pub fn conflict_input(a: &crate::memdb::Observation, b: &crate::memdb::Observation) -> String {
+    let line = |tag: &str, o: &crate::memdb::Observation| {
+        let content = if o.content == o.title { String::new() } else { format!(" — {}", crate::memdb::short(&o.content, 160)) };
+        format!("{tag} ({}, {}): {}: {}{content}", if o.verified { "verificada" } else { "sin verificar" }, o.updated_at.format("%d/%m/%Y"), o.kind.label(), o.title)
+    };
+    format!("{}\n{}", line("a", a), line("b", b))
+}
+
+fn parse_conflict(raw: &str) -> Result<(String, String)> {
+    let v: Value = serde_json::from_str(raw)?;
+    match v["keep"].as_str() {
+        Some(k @ ("a" | "b" | "ambas")) => Ok((k.to_string(), v["reason"].as_str().unwrap_or("").to_string())),
+        _ => bail!("keep tiene que ser a, b o ambas"),
+    }
+}
+
+/// AC-197: only the contradictions the rule left open go to the cheap model.
+/// Without a model they wait (both stay, flagged «en conflicto»).
+pub async fn resolve_conflicts(state: &AppState) {
+    let Ok(pending) = state.memdb.pending_conflicts(CONFLICTS_PER_PASS) else { return };
+    for (a, b) in pending {
+        match crate::practice::forced_valid(state, Role::Extractor, "memory_conflict", conflict_tool(), CONFLICT_TOOL, conflict_input(&a, &b), parse_conflict).await {
+            Ok((keep, reason)) => {
+                let _ = state.memdb.decide(a.id, b.id, &keep, &reason);
+            }
+            Err(e) => {
+                eprintln!("conflicto de memoria: {e}");
+                return;
+            }
         }
     }
 }

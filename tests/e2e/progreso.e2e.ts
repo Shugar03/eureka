@@ -22,6 +22,6 @@ test("AC-113 Mi progreso muestra lo que cuesta y se corrige con «Esto ya lo sé
   await expect(screen.getByRole("region", "Practicando")).toContainText("Recta secante");
   await expect(hard).toContainText("Nada por ahora.");
   // The profile and the session memories live here now, not in Ajustes.
-  await expect(screen.getByRole("region", "Lo que la app sabe de vos")).toBeVisible();
+  await expect(screen.getByRole("region", "Lo que Eureka sabe de vos")).toBeVisible();
   await expect(screen.getByRole("region", "Lo que recuerda de tus sesiones")).toBeVisible();
 });

@@ -934,12 +934,20 @@ async fn recall_answers_from_graph_profile_and_exam_failures() {
         })
         .unwrap();
     st.learner.update(|p| crate::learner::add_misconception(p, "Tangente", "cree que corta la curva en dos puntos", false, "s")).unwrap();
+    // AC-195: what was there before reaches the new memory through the migration.
+    crate::memdb::migrate(&st).unwrap();
     let id = new_session(&st);
     run(&st, &id).await.0.unwrap();
     let s = st.sessions.load(&id).unwrap();
     let r = s.messages.iter().find(|m| m.tool_call_id.as_deref() == Some("r1")).unwrap().content.clone().unwrap();
     assert!(r.contains("Idea entendida: La pendiente de la tangente es la derivada (de «derivadas»)"), "{r}");
     assert!(r.contains("Confusión abierta: «Tangente»"), "{r}");
+    // AC-198: previews carry an id; the whole record comes only when asked for.
+    let m = r.split("[M").nth(1).and_then(|x| x.split(']').next()).unwrap();
+    let full = recall(&st, &s, &format!(r#"{{"id": "M{m}"}}"#));
+    assert!(full.contains("Evidencia") && full.starts_with(&format!("[M{m}]")), "{full}");
+    assert!(recall(&st, &s, r#"{"id": "M99999"}"#).starts_with("No hay nada"));
+    assert!(recall(&st, &s, r#"{"query": "tangentes"}"#).contains("Tangente"), "plurals match");
     let empty = recall(&st, &s, r#"{"query": "fotosíntesis"}"#);
     assert!(empty.starts_with("Nada en la memoria"));
     assert!(recall(&st, &s, "{}").starts_with("error"));
