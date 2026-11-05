@@ -70,6 +70,25 @@ Cuando el resultado es débil, `library_search` le pide al profesor **una** bús
 - **Tokens:** el aviso son ~10 tokens y solo aparece cuando hace falta (0 en las búsquedas que andan). La reformulación es otra búsqueda: en el juego hard, de ~1.150 a **~1.800 tokens por pregunta** de promedio (+650, porque la mitad reformula). Las tools y los prompts no cambiaron: `token_budget` da igual.
 - **Por qué no reformula el backend solo:** un diccionario de sinónimos armado a mano solo «aprendería» este libro, y expandir la búsqueda con las palabras de los primeros fragmentos (*pseudo-relevance feedback*) parte de fragmentos que justo son los equivocados. El modelo ya sabe sinónimos; pedírselo una vez cuesta una línea.
 
+## pdf.js contra pdf-inspector (5/11/2026, solo comparación)
+
+[pdf-inspector](https://github.com/firecrawl/pdf-inspector) (Firecrawl, MIT) llega con anydoc (AC-191), compilado sin PDFium ni OCR. Se pasaron por él los mismos PDFs (`office::tests::pdf_inspector_on_the_benchmark_pdfs`, `#[ignore]`) y su Markdown por la mitad de recuperación (`EUREKA_BENCH_MD=… cargo test editorial_benchmark`).
+
+| | pdf.js (lo que usa Eureka) | pdf-inspector |
+|---|---|---|
+| Títulos de `libro-editorial.pdf` | 12/12 | 12/12 |
+| Encabezado repetido «… — Editorial Marea» | se quita | queda 1 vez, como primer párrafo |
+| Números de página sueltos | se quitan | se quitan |
+| Marcas de página `<!-- p:N -->` | 28 | **0** |
+| `apuntes-fisica.pdf` (títulos, guiones) | 3 títulos, guiones unidos | 3 títulos, guiones unidos |
+| `guia-examen.pdf` (viñetas) | (fuera del benchmark de pdf.js) | junta los «Dominio N» con la viñeta anterior, sin títulos |
+| Tiempo, libro de 28 páginas | 0,6–1,3 s (Node, con pdf.js cargado) | 0,24 s (Rust, build debug) |
+| search / question: sección en el top 4 | 100 % / 100 % | 100 % / 100 % |
+| hard: sección 1.º / top 4 | 50 % / 83 % | 67 % / 83 % |
+| **Página correcta** | **100 %** | **0 %** |
+
+**Veredicto: no se adopta.** Detecta la misma estructura y es más rápido, pero no marca dónde empieza cada página, así que el profesor perdería la página en cada cita (AC-72), y además habría que mudar la conversión de PDFs al backend, lejos de donde se detectan las páginas escaneadas y corre el OCR (AC-187). La diferencia en hard (8 contra 6 de 12 primeros) viene de que, sin marcas, los párrafos se agrupan distinto en fragmentos; con 12 preguntas no alcanza para decir que recupera mejor. Los PDFs del benchmark no tienen tablas ni dos columnas, así que eso queda sin medir.
+
 ## Qué se cambió por estas mediciones
 
 | Cambio | Juego hard: top 4 | MRR | Negativas |

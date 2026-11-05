@@ -1167,7 +1167,10 @@ fn a_weak_library_search_asks_for_one_reformulation_then_to_move_on() {
 fn editorial_benchmark() {
     use std::time::Instant;
     let fix = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../tests/fixtures");
-    let md = std::fs::read_to_string(fix.join("libro-editorial.md")).expect("run the Vitest benchmark first (npm run bench:library)");
+    // Another converter's Markdown of the same PDF can be measured with EUREKA_BENCH_MD
+    // (the pdf-inspector comparison in metricas-biblioteca.md); then nothing is written.
+    let other = std::env::var_os("EUREKA_BENCH_MD").map(std::path::PathBuf::from);
+    let md = std::fs::read_to_string(other.clone().unwrap_or_else(|| fix.join("libro-editorial.md"))).expect("run the Vitest benchmark first (npm run bench:library)");
     let q: Value = serde_json::from_str(&std::fs::read_to_string(fix.join("libro-editorial.questions.json")).unwrap()).unwrap();
     let dir = std::env::temp_dir().join(format!("la-bench-{}", uuid::Uuid::new_v4().simple()));
     let st = AppState::new(dir.clone());
@@ -1297,7 +1300,9 @@ fn editorial_benchmark() {
     report.insert("import_ms".into(), json!(import_ms));
     report.insert("index_ms".into(), json!(index_ms));
     report.insert("negative".into(), json!(negatives));
-    std::fs::write(fix.join("libro-editorial.retrieval.json"), serde_json::to_string_pretty(&report).unwrap()).unwrap();
+    if other.is_none() {
+        std::fs::write(fix.join("libro-editorial.retrieval.json"), serde_json::to_string_pretty(&report).unwrap()).unwrap();
+    }
     eprintln!("\n── Benchmark biblioteca (libro de {book_tokens} tokens) ──\n{}\n", lines.join("\n"));
 
     assert!(report["search"]["section_at_4"].as_f64().unwrap() >= 0.9, "{lines:?}");

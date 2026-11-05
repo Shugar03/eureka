@@ -121,6 +121,25 @@ mod tests {
         assert!(parse_upload(&body[..10]).is_err() && parse_upload(b"").is_err());
     }
 
+    /// Comparison only (docs/metricas-biblioteca.md): the benchmark PDFs through
+    /// pdf-inspector, which comes with anydoc. Writes its Markdown to the temp folder;
+    /// `EUREKA_BENCH_MD=<that file> cargo test editorial_benchmark` runs the retrieval half on it.
+    #[test]
+    #[ignore]
+    fn pdf_inspector_on_the_benchmark_pdfs() {
+        for name in ["libro-editorial.pdf", "apuntes-fisica.pdf", "guia-examen.pdf"] {
+            let bytes = fixture(name);
+            let _ = anydoc::to_markdown_bytes(&bytes, anydoc::Format::Pdf); // warm up
+            let t = std::time::Instant::now();
+            let md = anydoc::to_markdown_bytes(&bytes, anydoc::Format::Pdf).unwrap();
+            let took = t.elapsed();
+            let heads: Vec<&str> = md.lines().filter(|l| heading_level(l).is_some()).collect();
+            let out = std::env::temp_dir().join(name.replace(".pdf", ".inspector.md"));
+            std::fs::write(&out, &md).unwrap();
+            eprintln!("── {name}: {took:?}, {} caracteres, {} secciones\n{heads:#?}\n{}\n→ {}", md.len(), sections(&md).len(), &md[..md.len().min(1500)], out.display());
+        }
+    }
+
     #[test]
     fn empty_headings_go_parents_stay() {
         assert_eq!(drop_empty_headings("# Título\n\n# Cap 1\n\n## 1.1\n\nTexto.\n\n# Vacío"), "# Cap 1\n\n## 1.1\n\nTexto.");
