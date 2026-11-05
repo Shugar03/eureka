@@ -16,6 +16,21 @@ Whisper (tiny, base)
   Copyright (c) OpenAI. MIT License.
   https://github.com/openai/whisper
 
+Eureka ships these models inside its installer, for reading scanned PDFs and
+photos of printed text on this PC (OCR):
+
+PaddleOCR models: PP-OCRv6_det_small (text detection), ch_ppocr_mobile_v2.0_cls
+(text line orientation), latin_PP-OCRv5_rec_mobile (Latin text recognition)
+  Copyright (c) PaddlePaddle Authors. Apache License 2.0.
+  https://github.com/PaddlePaddle/PaddleOCR
+  ONNX conversions published by RapidAI (RapidOCR v3.10.0), unmodified:
+  https://www.modelscope.cn/models/RapidAI/RapidOCR
+
+RapidOCR, Copyright (c) RapidAI. Apache License 2.0.
+  https://github.com/RapidAI/RapidOCR
+  Eureka's OCR pre- and post-processing (src-tauri/src/ocr.rs) is a Rust port of
+  RapidOCR's (detector resize, DB post-processing, crops, classifier, CTC decoding).
+
 Software linked into Eureka for local speech:
   ONNX Runtime, Copyright (c) Microsoft Corporation. MIT License.
   parakeet-rs, by altunenes. MIT OR Apache-2.0.

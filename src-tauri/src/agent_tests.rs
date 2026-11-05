@@ -1078,7 +1078,7 @@ async fn the_teacher_searches_the_library_and_cites_numbered_passages() {
     .await;
     let (st, dir) = state(&f, true, "");
     st.library
-        .import("Cálculo I", "c.pdf", "<!-- p:1 -->\n\n# Derivadas\n\nIntro.\n\n<!-- p:2 -->\n\n## Recta tangente\n\nLa pendiente de la recta tangente es la derivada.", 2, vec![])
+        .import("Cálculo I", "c.pdf", "<!-- p:1 -->\n\n# Derivadas\n\nIntro.\n\n<!-- p:2 -->\n\n## Recta tangente\n\nLa pendiente de la recta tangente es la derivada.", 2, vec![], None)
         .unwrap();
     let id = new_session(&st);
     run(&st, &id).await.0.unwrap();
@@ -1145,7 +1145,7 @@ fn editorial_benchmark() {
     let st = AppState::new(dir.clone());
 
     let t = Instant::now();
-    st.library.import("Fermentación en la cocina andina", "libro-editorial.pdf", &md, q["pages"].as_u64().unwrap() as u32, vec![]).unwrap();
+    st.library.import("Fermentación en la cocina andina", "libro-editorial.pdf", &md, q["pages"].as_u64().unwrap() as u32, vec![], None).unwrap();
     let import_ms = t.elapsed().as_secs_f64() * 1000.0;
     let t = Instant::now();
     st.library.index();

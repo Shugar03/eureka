@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { api, errorText, libraryApi } from "../api";
 import type { Book, BookSummary, LibraryHit } from "../types";
-import { pdfBook, textToMarkdown } from "../lib/bookText";
+import { textToMarkdown } from "../lib/bookText";
+import { addPdf } from "../lib/scanned";
 import { Markdown } from "./Markdown";
+import { OcrProgress, useOcrJobs } from "./OcrProgress";
 import { ReadAloud } from "./a11y/ReadAloud";
 
 interface Props {
@@ -38,10 +40,25 @@ export function LibraryScreen({ onOpenSession }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [armed, setArmed] = useState(false);
+  /** AC-187: more than OCR_AUTO_PAGES scanned pages: the estimate, waiting for an OK. */
+  const [ask, setAsk] = useState<{ text: string; answer: (yes: boolean) => void } | null>(null);
+  const jobs = useOcrJobs();
 
   useEffect(() => {
     libraryApi.list().then(setBooks).catch((e) => setError(errorText(e)));
   }, []);
+
+  // A reading in the background added pages: the list and the open book show them.
+  const growth = jobs.map((j) => `${j.bookId}:${j.progress?.index}:${j.state}`).join(" ");
+  useEffect(() => {
+    if (!growth) return;
+    libraryApi.list().then(setBooks).catch(() => {});
+    setBook((b) => {
+      if (b && jobs.some((j) => j.bookId === b.id)) libraryApi.get(b.id).then(setBook).catch(() => {});
+      return b;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [growth]);
 
   const openBook = async (id: string, sectionId = 0) => {
     setError(null);
@@ -62,22 +79,28 @@ export function LibraryScreen({ onOpenSession }: Props) {
     try {
       const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
       setProgress(`Leyendo ${file.name}…`);
-      const doc = isPdf
-        ? await pdfBook(await file.arrayBuffer(), (done, total) => setProgress(`Leyendo ${file.name}: página ${done} de ${total}`))
-        : { markdown: /\.md$/i.test(file.name) ? await file.text() : textToMarkdown(await file.text()), pages: 0, scanned: [] as number[] };
-      setProgress("Indexando…");
       const title = file.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").trim();
-      const saved = await libraryApi.import(title, file.name, doc.markdown, doc.pages, doc.scanned);
+      const confirm = (_pages: number, text: string) =>
+        new Promise<boolean>((answer) => {
+          setProgress(null);
+          setAsk({ text, answer });
+        });
+      const added = isPdf
+        ? await addPdf(file, title, { onStatus: setProgress, confirm })
+        : { book: await libraryApi.import(title, file.name, /\.md$/i.test(file.name) ? await file.text() : textToMarkdown(await file.text()), 0, []), unread: 0, ocr: "none" as const };
+      const saved = added.book;
       setBooks(await libraryApi.list());
       const secs = ((performance.now() - started) / 1000).toFixed(1);
-      const scanned = doc.scanned.length ? ` ${doc.scanned.length} páginas escaneadas no tienen texto y no se pueden buscar.` : "";
-      const tokens = Math.ceil(doc.markdown.replace(/<!-- p:\d+ -->/g, "").length / 3.5);
-      setNotice(`Listo: «${saved.title}» quedó en la biblioteca (${saved.sections} secciones, ${secs} s, 0 tokens del modelo; el texto equivale a ~${tokens.toLocaleString("es-AR")} tokens).${scanned}`);
+      const scanned = added.unread ? ` ${added.unread} páginas escaneadas no tienen texto y no se pueden buscar.` : "";
+      const ocr = added.ocr === "started" ? " Las páginas escaneadas se leen con OCR en esta PC: el libro se completa solo mientras seguís." : "";
+      const tokens = Math.ceil(saved.chars / 3.5);
+      setNotice(`Listo: «${saved.title}» quedó en la biblioteca (${saved.sections} secciones, ${secs} s, 0 tokens del modelo; el texto equivale a ~${tokens.toLocaleString("es-AR")} tokens).${scanned}${ocr}`);
       await openBook(saved.id);
     } catch (e) {
       setError(typeof e === "string" ? e : `No se pudo leer ${file.name}: ${errorText(e)}`);
     } finally {
       setProgress(null);
+      setAsk(null);
     }
   };
 
@@ -92,6 +115,7 @@ export function LibraryScreen({ onOpenSession }: Props) {
 
   const current = book?.sections.find((s) => s.id === section) ?? book?.sections[0];
   const shown = useMemo(() => (current ? pieces(current.markdown) : []), [current]);
+  const review = useMemo(() => new Map((book?.ocr?.review ?? []).map((r) => [r.page, r.lines])), [book]);
 
   const study = async () => {
     if (!book || !current) return;
@@ -162,8 +186,20 @@ export function LibraryScreen({ onOpenSession }: Props) {
         </label>
       </header>
 
-      {(progress || notice || error) && (
+      <OcrProgress />
+      {(progress || notice || error || ask) && (
         <div className="library-status">
+          {ask && (
+            <div className="row ocr-ask" role="group" aria-label="Leer las páginas escaneadas">
+              <p>{ask.text}. ¿Las leo con OCR en esta PC? Mientras tanto podés seguir usando Eureka.</p>
+              <button className="btn small primary" onClick={() => ask.answer(true)}>
+                Leer con OCR
+              </button>
+              <button className="btn ghost small" onClick={() => ask.answer(false)}>
+                Ahora no
+              </button>
+            </div>
+          )}
           {progress && (
             <p className="muted" role="status" data-testid="library-progress">
               {progress}
@@ -198,7 +234,8 @@ export function LibraryScreen({ onOpenSession }: Props) {
                     <span className="muted small">
                       {b.pages ? `${b.pages} págs · ` : ""}
                       {b.sections} secciones · {kb(b.chars)} caracteres
-                      {b.scanned ? ` · ${b.scanned} escaneadas` : ""}
+                      {b.scanned && !b.ocr ? ` · ${b.scanned} escaneadas` : ""}
+                      {b.ocr ? ` · leído con OCR${b.ocr.pending.length ? ` (faltan ${b.ocr.pending.length} págs)` : ""}` : ""}
                     </span>
                   </button>
                 </li>
@@ -265,10 +302,25 @@ export function LibraryScreen({ onOpenSession }: Props) {
                   </button>
                 </span>
               </div>
+              {book.ocr && (
+                <p className="muted small ocr-note">
+                  Leído con OCR: puede tener errores.
+                  {book.ocr.pending.length ? ` Faltan ${book.ocr.pending.length} páginas por leer${jobs.some((j) => j.bookId === book.id && j.state === "running") ? "" : ": agregá el mismo PDF otra vez para seguir donde quedó"}.` : ""}
+                </p>
+              )}
               <ReadAloud markdown={shown.map((p) => p.text).join("\n\n")} label="Escuchar esta sección" />
               {shown.map((p, i) => (
                 <div key={i} className="library-page">
-                  {p.page !== null && <div className="library-page-mark">p. {p.page}</div>}
+                  {p.page !== null && (
+                    <div className="library-page-mark">
+                      p. {p.page}
+                      {review.get(p.page) && (
+                        <span className="ocr-review" title={`Líneas leídas con poca seguridad:\n${review.get(p.page)!.join("\n")}`}>
+                          {" "}· revisar
+                        </span>
+                      )}
+                    </div>
+                  )}
                   <Markdown text={p.text} />
                 </div>
               ))}

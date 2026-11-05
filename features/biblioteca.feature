@@ -13,7 +13,7 @@ Característica: Biblioteca local de bibliografía
     Y las palabras cortadas con guion están unidas
 
   @AC-69
-  Escenario: Un PDF escaneado no entra
+  Escenario: Sin OCR (como en el celular) un PDF escaneado no entra
     Cuando agrego un PDF sin texto
     Entonces veo que "parece escaneado"
 

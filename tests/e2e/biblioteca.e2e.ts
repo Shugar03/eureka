@@ -58,8 +58,10 @@ test("AC-71 un .txt también entra, y una sección se estudia en una sesión", a
   await expect(screen.getByRole("heading", "Entender «CAPÍTULO 2 La Independencia» del libro «resumen historia»")).toBeVisible({ timeout: 15_000 });
 });
 
-test("AC-69 un PDF escaneado avisa y quitar un libro lo saca de la biblioteca", async ({ app, screen, browser }) => {
-  await addFile(app, screen, browser, "guia-escaneada.pdf");
+test("AC-69 sin OCR un PDF escaneado avisa y quitar un libro lo saca de la biblioteca", async ({ app, screen, browser }) => {
+  await app.open("/?noOcr");
+  await nav(screen).getByRole("button", "Biblioteca").click({ timeout: 30_000 });
+  await browser.locator('input[aria-label="Agregar un documento a la biblioteca"]').setInputFiles("tests/fixtures/guia-escaneada.pdf");
   await expect(screen.getByRole("alert")).toContainText("parece escaneado", { timeout: 20_000 });
 
   await browser.locator('input[aria-label="Agregar un documento a la biblioteca"]').setInputFiles("tests/fixtures/resumen-historia.txt");

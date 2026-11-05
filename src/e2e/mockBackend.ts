@@ -18,6 +18,8 @@
 //   ?noSpeech      no speech model configured (speaking explains how)
 //   ?withProfile   the learner profile has a confusion and a preference
 //   ?noRust        Rust is not installed (the console explains how to install it)
+//   ?noOcr         no local OCR (like the phone): scanned PDFs are refused as before
+//   ?ocrUnsure     the OCR reads photos with low confidence (the vision model reads them)
 //   ?shortTime     a timed mock lasts 3 seconds per "minute" (to see the clock run out)
 import { mockIPC } from "@tauri-apps/api/mocks";
 import type { Channel } from "@tauri-apps/api/core";
@@ -44,6 +46,8 @@ import type {
   JournalEntry,
   ThoughtRecord,
   Book,
+  OcrPageInput,
+  OcrPageText,
   AgentEvent,
   CardSource,
   Deck,
@@ -124,6 +128,13 @@ const DEFAULT_PROMPTS: Record<string, string> = {
   code_exercise: codeExercise,
 };
 const DELAY = Number(import.meta.env.VITE_E2E_DELAY ?? 12);
+
+/** AC-187: what the scripted OCR "reads" on each scanned page. */
+const OCR_PAGES = [
+  "La célula es la unidad básica de la vida: todos los seres vivos están formados por células.",
+  "La mitocondria produce la energía que la célula usa para crecer y dividirse.",
+  "El ribosoma arma las proteínas siguiendo las instrucciones del ADN.",
+];
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const params = new URLSearchParams(location.search);
@@ -333,6 +344,10 @@ const store = {
   prompts: {} as Record<string, string>,
   ledger: [] as LedgerLine[],
   books: new Map<string, Book>(),
+  /** The Markdown each book was built from (OCR'd pages merge into it). */
+  bookMarkdown: new Map<string, string>(),
+  /** AC-187: per-page OCR results by file hash. */
+  ocrCache: new Map<string, Record<string, OcrPageText>>(),
   practice: new Map<string, PracticeSet>(),
   exams: new Map<string, Exam>(),
   decks: new Map<string, Deck>(),
@@ -1081,12 +1096,53 @@ export function install() {
       case "import_book": {
         const title = String(args.title ?? "").trim();
         if (!title) throw "Poné un título.";
-        const sections = lib.sections(String(args.markdown ?? ""));
+        const ocr = args.ocr as { hash: string; pages: OcrPageInput[]; pending: number[] } | null | undefined;
+        const markdown = ocr ? lib.mergePages(String(args.markdown ?? ""), ocr.pages) : String(args.markdown ?? "");
+        const sections = lib.sections(markdown);
         if (!sections.some((s) => s.markdown.replace(/<!-- p:\d+ -->/g, "").trim())) throw (args.scanned as number[]).length ? "El PDF no tiene texto seleccionable (parece escaneado)." : "El documento no tiene texto.";
-        const b: Book = { id: nid(), title, file_name: String(args.fileName ?? ""), created_at: new Date(++clock).toISOString(), pages: Number(args.pages ?? 0), scanned: (args.scanned as number[]) ?? [], sections };
+        const b: Book = { id: nid(), title, file_name: String(args.fileName ?? ""), created_at: new Date(++clock).toISOString(), pages: Number(args.pages ?? 0), scanned: (args.scanned as number[]) ?? [], sections, ocr: ocr ? { hash: ocr.hash, pages: [], pending: [], review: [] } : null };
+        if (ocr) lib.applyOcr(b, ocr.pages, ocr.pending);
         store.books.set(b.id, b);
+        store.bookMarkdown.set(b.id, markdown);
         return lib.summary(b);
       }
+      case "add_ocr_pages": {
+        const b = store.books.get(args.id as string);
+        if (!b) throw "Ese libro ya no está en la biblioteca.";
+        if (!b.ocr) throw "Ese libro no se está leyendo con OCR.";
+        const markdown = lib.mergePages(store.bookMarkdown.get(b.id) ?? "", args.pages as OcrPageInput[]);
+        store.bookMarkdown.set(b.id, markdown);
+        b.sections = lib.sections(markdown);
+        lib.applyOcr(b, args.pages as OcrPageInput[], args.pending as number[]);
+        return lib.summary(b);
+      }
+      case "ocr_available":
+        return !params.has("noOcr");
+      case "ocr_page": {
+        // Raw bytes like the real command: width, height, page (0 = a photo), then RGBA.
+        // No real OCR here: a scanned page reads as a fixed sentence about that page;
+        // a photo reads confidently unless ?ocrUnsure (then the vision model reads it).
+        const body = args as unknown as Uint8Array;
+        const head = new DataView(body.buffer, body.byteOffset, 12);
+        const [w, h, page] = [head.getUint32(0, true), head.getUint32(4, true), head.getUint32(8, true)];
+        if (body.length !== 12 + w * h * 4) throw "La imagen llegó incompleta.";
+        await sleep(DELAY * 4);
+        const text = page ? OCR_PAGES[(page - 1) % OCR_PAGES.length] : "Mitocondria: produce la energía de la célula. Ribosoma: sintetiza proteínas.";
+        const confidence = page ? (page === 2 ? 0.93 : 0.98) : params.has("ocrUnsure") ? 0.55 : 0.96;
+        const review = page === 2 ? ["la rnitocondria"] : [];
+        return { markdown: text, lines: [{ text, confidence, bbox: [0, 0, w, h / 10] }], confidence, chars: text.replace(/[^\p{L}\p{N}]/gu, "").length, review };
+      }
+      case "ocr_cached":
+        return { ...(store.ocrCache.get(args.hash as string) ?? {}) };
+      case "ocr_cache_put": {
+        const c = store.ocrCache.get(args.hash as string) ?? {};
+        c[String(args.page)] = args.text as OcrPageText;
+        store.ocrCache.set(args.hash as string, c);
+        return null;
+      }
+      case "ocr_cache_clear":
+        store.ocrCache.delete(args.hash as string);
+        return null;
       case "list_books":
         return [...store.books.values()].sort((a, b) => b.created_at.localeCompare(a.created_at)).map(lib.summary);
       case "get_book": {
@@ -1096,6 +1152,7 @@ export function install() {
       }
       case "delete_book":
         store.books.delete(args.id as string);
+        store.bookMarkdown.delete(args.id as string);
         return null;
       case "search_library":
         return lib.search([...store.books.values()], String(args.query ?? ""), Number(args.limit ?? 10));

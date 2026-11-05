@@ -20,6 +20,8 @@ import type {
   HelpResource,
   Book,
   BookSummary,
+  OcrPageInput,
+  OcrPageText,
   LibraryHit,
   AgentEvent,
   CardSource,
@@ -278,7 +280,10 @@ export const projectApi = {
 export const libraryApi = {
   list: () => invoke<BookSummary[]>("list_books"),
   get: (id: string) => invoke<Book>("get_book", { id }),
-  import: (title: string, fileName: string, markdown: string, pages: number, scanned: number[]) => invoke<BookSummary>("import_book", { title, fileName, markdown, pages, scanned }),
+  import: (title: string, fileName: string, markdown: string, pages: number, scanned: number[], ocr: { hash: string; pages: OcrPageInput[]; pending: number[] } | null = null) =>
+    invoke<BookSummary>("import_book", { title, fileName, markdown, pages, scanned, ocr }),
+  /** AC-187: the next OCR'd pages of a book being read in the background. */
+  addOcrPages: (id: string, pages: OcrPageInput[], pending: number[]) => invoke<BookSummary>("add_ocr_pages", { id, pages, pending }),
   remove: (id: string) => invoke<null>("delete_book", { id }),
   search: (query: string, limit = 10) => invoke<LibraryHit[]>("search_library", { query, limit }),
 };
@@ -294,6 +299,24 @@ export const careerApi = {
 };
 
 /** AC-63: transcribes photos or scanned pages (data URLs) with the teacher's model. */
+/** AC-187/188: OCR on this PC (desktop). */
+export const ocrApi = {
+  available: () => invoke<boolean>("ocr_available"),
+  /** Raw bytes, not JSON (a page is ~18 MB): width, height, page (0 = a photo), then RGBA. */
+  page: (width: number, height: number, rgba: Uint8ClampedArray | Uint8Array, page = 0) => {
+    const body = new Uint8Array(12 + rgba.length);
+    const head = new DataView(body.buffer);
+    head.setUint32(0, width, true);
+    head.setUint32(4, height, true);
+    head.setUint32(8, page, true);
+    body.set(rgba, 12);
+    return invoke<OcrPageText>("ocr_page", body);
+  },
+  cached: (hash: string) => invoke<Record<string, OcrPageText>>("ocr_cached", { hash }),
+  put: (hash: string, page: number, text: OcrPageText) => invoke<null>("ocr_cache_put", { hash, page, text }),
+  clear: (hash: string) => invoke<null>("ocr_cache_clear", { hash }),
+};
+
 export const visionApi = {
   read: (images: string[], purpose: "guide" | "notes" | "timetable" | "curriculum" | "problems") => invoke<string>("read_images", { images, purpose }),
 };

@@ -124,7 +124,7 @@ export function Home({ sessions, onChanged, onOpen, onOpenSettings, onOpenExam, 
             Enviar
           </button>
         </form>
-        <AttachChips items={attach.items} working={attach.working} error={attach.error} onRemove={attach.remove} />
+        <AttachChips items={attach.items} working={attach.working} error={attach.error} ask={attach.ask} onRemove={attach.remove} />
         {onGo && (
           <div className="quick" aria-label="Atajos">
             {QUICK.map((q) => (

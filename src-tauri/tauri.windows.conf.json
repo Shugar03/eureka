@@ -4,7 +4,10 @@
       "vcruntime/msvcp140.dll": "msvcp140.dll",
       "vcruntime/msvcp140_1.dll": "msvcp140_1.dll",
       "vcruntime/vcruntime140.dll": "vcruntime140.dll",
-      "vcruntime/vcruntime140_1.dll": "vcruntime140_1.dll"
+      "vcruntime/vcruntime140_1.dll": "vcruntime140_1.dll",
+      "ocr-models/PP-OCRv6_det_small.onnx": "ocr/PP-OCRv6_det_small.onnx",
+      "ocr-models/ch_ppocr_mobile_v2.0_cls_mobile.onnx": "ocr/ch_ppocr_mobile_v2.0_cls_mobile.onnx",
+      "ocr-models/latin_PP-OCRv5_rec_mobile.onnx": "ocr/latin_PP-OCRv5_rec_mobile.onnx"
     }
   }
 }

@@ -1,7 +1,10 @@
 import { useId, useRef, useState } from "react";
-import { errorText, libraryApi, visionApi } from "../../api";
-import { pdfBook, textToMarkdown } from "../../lib/bookText";
-import { imageToDataUrl } from "../../lib/images";
+import { errorText, libraryApi, ocrApi, visionApi } from "../../api";
+import { textToMarkdown } from "../../lib/bookText";
+import { imageRgba, imageToDataUrl } from "../../lib/images";
+import { photoText } from "../../lib/ocr";
+import { addPdf } from "../../lib/scanned";
+import { OcrProgress } from "../OcrProgress";
 import { isDocument, isPhoto, titleOf, type Attachment } from "../../lib/attachments";
 import { useDictation } from "../a11y/useDictation";
 import { Icon } from "../Icon";
@@ -12,19 +15,44 @@ export function useAttachments() {
   const [items, setItems] = useState<Attachment[]>([]);
   const [working, setWorking] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** AC-187: a long scanned PDF waits for an OK after its estimate. */
+  const [ask, setAsk] = useState<{ text: string; answer: (yes: boolean) => void } | null>(null);
 
   const addOne = async (file: File): Promise<Attachment> => {
     if (isPhoto(file)) {
       setWorking(`Leyendo ${file.name}…`);
-      const text = await visionApi.read([await imageToDataUrl(file)], "notes");
-      return { id: `${file.name}-${Date.now()}`, kind: "image", label: file.name, detail: "texto leído de la imagen", text };
+      // AC-188: printed text is read on this PC; the vision model only when the OCR
+      // isn't sure (handwriting, diagrams, a blurry photo) or can't run here.
+      const { text, via } = await photoText({
+        available: () => ocrApi.available(),
+        ocr: async () => {
+          const img = await imageRgba(file);
+          return ocrApi.page(img.width, img.height, img.data);
+        },
+        vision: async () => visionApi.read([await imageToDataUrl(file)], "notes"),
+      });
+      return { id: `${file.name}-${Date.now()}`, kind: "image", label: file.name, detail: via === "ocr" ? "texto leído en esta PC" : "texto leído de la imagen", text };
     }
     if (!isDocument(file)) throw `${file.name}: por ahora acepto PDF, texto, Markdown o fotos (PNG, JPG, WEBP).`;
     setWorking(`Guardando ${file.name} en tu biblioteca…`);
-    const doc = /\.pdf$/i.test(file.name) || file.type === "application/pdf"
-      ? await pdfBook(await file.arrayBuffer(), (done, total) => setWorking(`Leyendo ${file.name}: página ${done} de ${total}`))
-      : { markdown: /\.(md|markdown)$/i.test(file.name) ? await file.text() : textToMarkdown(await file.text()), pages: 0, scanned: [] as number[] };
-    const saved = await libraryApi.import(titleOf(file.name), file.name, doc.markdown, doc.pages, doc.scanned);
+    if (/\.pdf$/i.test(file.name) || file.type === "application/pdf") {
+      const added = await addPdf(file, titleOf(file.name), {
+        onStatus: setWorking,
+        confirm: (_pages, text) =>
+          new Promise<boolean>((answer) =>
+            setAsk({
+              text,
+              answer: (yes) => {
+                setAsk(null);
+                answer(yes);
+              },
+            }),
+          ),
+      });
+      return { id: added.book.id, kind: "book", label: added.book.title, detail: added.ocr === "started" ? "en tu biblioteca · leyendo con OCR" : "en tu biblioteca" };
+    }
+    const markdown = /\.(md|markdown)$/i.test(file.name) ? await file.text() : textToMarkdown(await file.text());
+    const saved = await libraryApi.import(titleOf(file.name), file.name, markdown, 0, []);
     return { id: saved.id, kind: "book", label: saved.title, detail: "en tu biblioteca" };
   };
 
@@ -42,7 +70,7 @@ export function useAttachments() {
     setWorking(null);
   };
 
-  return { items, working, error, add, remove: (id: string) => setItems((xs) => xs.filter((x) => x.id !== id)), clear: () => setItems([]) };
+  return { items, working, error, ask, add, remove: (id: string) => setItems((xs) => xs.filter((x) => x.id !== id)), clear: () => setItems([]) };
 }
 
 export function AttachButton({ onFiles, disabled }: { onFiles: (f: FileList | null) => void; disabled?: boolean }) {
@@ -68,10 +96,29 @@ export function AttachButton({ onFiles, disabled }: { onFiles: (f: FileList | nu
   );
 }
 
-export function AttachChips({ items, working, error, onRemove }: { items: Attachment[]; working: string | null; error: string | null; onRemove: (id: string) => void }) {
-  if (!items.length && !working && !error) return null;
+export function AttachChips({ items, working, error, ask, onRemove }: { items: Attachment[]; working: string | null; error: string | null; ask?: { text: string; answer: (yes: boolean) => void } | null; onRemove: (id: string) => void }) {
+  return (
+    <>
+      <OcrProgress />
+      {(items.length > 0 || working || error || ask) && <Chips items={items} working={working} error={error} ask={ask} onRemove={onRemove} />}
+    </>
+  );
+}
+
+function Chips({ items, working, error, ask, onRemove }: { items: Attachment[]; working: string | null; error: string | null; ask?: { text: string; answer: (yes: boolean) => void } | null; onRemove: (id: string) => void }) {
   return (
     <div className="attach-chips">
+      {ask && (
+        <span className="row ocr-ask" role="group" aria-label="Leer las páginas escaneadas">
+          <span className="small">{ask.text}. ¿Las leo con OCR en esta PC?</span>
+          <button type="button" className="btn small primary" onClick={() => ask.answer(true)}>
+            Leer con OCR
+          </button>
+          <button type="button" className="btn ghost small" onClick={() => ask.answer(false)}>
+            Ahora no
+          </button>
+        </span>
+      )}
       {items.map((a) => (
         <span className="chip attach-chip" key={a.id}>
           <Icon name={a.kind === "book" ? "book" : "image"} size={14} />

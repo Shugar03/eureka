@@ -82,7 +82,7 @@ Cada respuesta lleva tu **confianza (1 a 5)** y, si querés, tu **razonamiento e
 - **Materias** con su programa, **horario de clases**, **Agenda** semanal y **recordatorios** de Windows.
 - **Exportá la agenda** (.ics) a Google Calendar u Outlook.
 - **Tarjetas** con repetición espaciada (SM-2), importación y exportación con **Anki**.
-- **Fotos y PDFs escaneados** leídos con visión y **respaldo completo** en un .zip.
+- **PDFs escaneados y fotos** leídos en esta PC con OCR (o con visión cuando hace falta) y **respaldo completo** en un .zip.
 
 ## 🔒 Tus datos son tuyos
 
@@ -211,7 +211,9 @@ npm run test:all     # todo
 
 ## 🙏 Créditos
 
-La voz «En esta PC» usa [Parakeet TDT 0.6B v3](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3) de **NVIDIA** ([CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/); export ONNX de [istupakov](https://huggingface.co/istupakov/parakeet-tdt-0.6b-v3-onnx)) con [ONNX Runtime](https://onnxruntime.ai/), y [Whisper](https://github.com/openai/whisper) de OpenAI (MIT) con [candle](https://github.com/huggingface/candle). Los modelos no vienen en el instalador: se descargan cuando los elegís. Detalle en [NOTICE](NOTICE).
+La voz «En esta PC» usa [Parakeet TDT 0.6B v3](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3) de **NVIDIA** ([CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/); export ONNX de [istupakov](https://huggingface.co/istupakov/parakeet-tdt-0.6b-v3-onnx)) con [ONNX Runtime](https://onnxruntime.ai/), y [Whisper](https://github.com/openai/whisper) de OpenAI (MIT) con [candle](https://github.com/huggingface/candle). Los modelos de voz no vienen en el instalador: se descargan cuando los elegís.
+
+Los PDFs escaneados y las fotos de texto impreso se leen en esta PC con los modelos de [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) (PP-OCRv6 detección, PP-OCRv5 latino; Apache-2.0), en las conversiones ONNX de [RapidOCR](https://github.com/RapidAI/RapidOCR) (Apache-2.0), cuyo pre y posprocesamiento Eureka porta a Rust. Esos modelos (~18 MB) sí vienen en el instalador. Detalle en [NOTICE](NOTICE).
 
 ## 📄 Licencia
 

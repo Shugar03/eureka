@@ -267,6 +267,20 @@ que el proveedor informa: entrada, salida, en caché (`prompt_tokens_details.cac
 costo (OpenRouter `usage.cost`). Se ve en Ajustes → Avanzado → **Uso**. Comparar ese «% en caché» con el «prefijo
 repetido» de este benchmark dice cuánto del techo está aprovechando cada proveedor.
 
+## Fotos del chat: OCR local primero (AC-188)
+
+Una foto adjunta en el chat se leía siempre con el modelo de visión: una llamada aparte (`read_images`, propósito
+`notes`) con la imagen (≤ 2000 px de lado, JPEG), las reglas de transcripción y la instrucción, más el texto que
+devuelve. La imagen sola cuesta según el proveedor: con el tileado de GPT-4o una foto de 2000×1500 en detalle alto son
+~1,1 k tokens de entrada, y Claude cobra ~1,6 k por una imagen de 1,15 MP; sumadas las reglas y la salida (una página
+de apuntes son unos 300–600 tokens), cada foto rondaba **1,5–2,5 k tokens**, en una llamada que además no aprovecha la
+caché del profesor. Desde AC-188 la foto pasa antes por el OCR de esta PC; si leyó 20 letras o más con confianza media
+≥ 0,9 (texto impreso, que es lo común en una foto de apuntes o de una fotocopia), esa llamada **no se hace: 0 tokens
+de visión**. El texto leído sigue viajando en el mensaje como antes, así que lo que ve el profesor no cambia. Las fotos
+de manuscritos, diagramas o borrosas siguen yendo al modelo de visión, y el horario, el plan de estudios y los
+problemas propios también (ahí importa la estructura). No hay número medido por proveedor todavía: Ajustes → Avanzado
+→ Uso muestra cuántas llamadas «lectura de fotos» quedan.
+
 ## Línea base y presupuesto
 
 `token_budget` compara cada número (por turno, por llamada, por tool y por prompt) con

@@ -8,3 +8,6 @@
 
 # Visual C++ runtime copied by build.rs for the Windows installer
 /vcruntime/
+
+# OCR models build.rs downloads for the installer (AC-187)
+/ocr-models/

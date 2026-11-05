@@ -28,6 +28,57 @@ export async function imageToDataUrl(file: File): Promise<string> {
   return canvasToJpeg(c);
 }
 
+/** Pixels for the local OCR (AC-187/188). */
+export interface Rgba {
+  width: number;
+  height: number;
+  data: Uint8ClampedArray;
+}
+
+/** OCR reads pages at about this width (the scans are rarely sharper). */
+export const OCR_WIDTH = 1800;
+
+function canvasRgba(c: HTMLCanvasElement): Rgba {
+  return { width: c.width, height: c.height, data: c.getContext("2d")!.getImageData(0, 0, c.width, c.height).data };
+}
+
+/** A photo as pixels on white, longest side ≤ MAX_SIDE. */
+export async function imageRgba(file: File): Promise<Rgba> {
+  const bmp = await createImageBitmap(file);
+  const [w, h] = fit(bmp.width, bmp.height);
+  const c = Object.assign(document.createElement("canvas"), { width: w, height: h });
+  const ctx = c.getContext("2d", { willReadFrequently: true })!;
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, w, h);
+  ctx.drawImage(bmp, 0, 0, w, h);
+  bmp.close();
+  return canvasRgba(c);
+}
+
+/** A PDF kept open to render its pages one by one for the OCR, ~OCR_WIDTH wide. */
+export async function pdfRenderer(data: ArrayBuffer): Promise<{ render: (page: number) => Promise<Rgba>; close: () => Promise<void> }> {
+  const pdfjs = await import("pdfjs-dist");
+  const { default: workerSrc } = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
+  pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
+  const task = pdfjs.getDocument({ data: new Uint8Array(data.slice(0)) });
+  const doc = await task.promise;
+  return {
+    render: async (n) => {
+      const page = await doc.getPage(n);
+      const base = page.getViewport({ scale: 1 });
+      const vp = page.getViewport({ scale: OCR_WIDTH / base.width });
+      const c = Object.assign(document.createElement("canvas"), { width: Math.round(vp.width), height: Math.round(vp.height) });
+      const ctx = c.getContext("2d", { willReadFrequently: true })!;
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, c.width, c.height);
+      await page.render({ canvas: c, canvasContext: ctx, viewport: vp }).promise;
+      page.cleanup();
+      return canvasRgba(c);
+    },
+    close: () => task.destroy(),
+  };
+}
+
 export async function pdfPageImages(data: ArrayBuffer, maxPages = MAX_PDF_IMAGE_PAGES): Promise<string[]> {
   const pdfjs = await import("pdfjs-dist");
   const { default: workerSrc } = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");

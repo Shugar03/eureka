@@ -21,6 +21,7 @@ mod language;
 mod learner;
 mod academic;
 mod local_speech;
+mod ocr;
 mod memory;
 mod oauth;
 mod student;
@@ -84,6 +85,8 @@ pub struct AppState {
     running: Mutex<HashMap<String, Arc<AtomicBool>>>,
     /// The local speech model (Parakeet or Whisper), loaded on the first dictation and kept for the next ones.
     local_speech: Arc<Mutex<Option<local_speech::Engine>>>,
+    /// AC-187: the OCR sessions, created on the first scanned page and kept.
+    ocr: Arc<Mutex<Option<ocr::Engine>>>,
     /// What the screen last said it is doing (pomodoro, theme, reminders…): lives only in memory.
     ui: Mutex<String>,
     /// AC-154: a `.eureka` Eureka was opened with, until the screen asks for it.
@@ -119,6 +122,7 @@ impl AppState {
             runtimes: tokio::sync::Mutex::new(None),
             running: Mutex::new(HashMap::new()),
             local_speech: Arc::new(Mutex::new(None)),
+            ocr: Arc::new(Mutex::new(None)),
             ui: Mutex::new(String::new()),
             opened: Mutex::new(None),
             research: research::Background::default(),
@@ -707,8 +711,74 @@ async fn extract_session(state: State<'_, AppState>, id: String) -> CmdResult<Se
 /// AC-21: imports pasted notes as a graph source.
 /// AC-69: a document already converted to Markdown on this PC (pdf.js / text).
 #[tauri::command]
-fn import_book(state: State<'_, AppState>, title: String, file_name: String, markdown: String, pages: u32, scanned: Vec<u32>) -> CmdResult<library::BookSummary> {
-    state.library.import(&title, &file_name, &markdown, pages, scanned).map(|b| b.summary()).map_err(err)
+/// AC-187: `ocr`, the scanned pages already read on this PC and the ones still to read.
+fn import_book(state: State<'_, AppState>, title: String, file_name: String, markdown: String, pages: u32, scanned: Vec<u32>, ocr: Option<OcrImport>) -> CmdResult<library::BookSummary> {
+    let ocr = ocr.map(|o| (o.hash.to_ascii_lowercase(), o.pages, o.pending));
+    state.library.import(&title, &file_name, &markdown, pages, scanned, ocr).map(|b| b.summary()).map_err(err)
+}
+
+#[derive(serde::Deserialize)]
+struct OcrImport {
+    hash: String,
+    pages: Vec<library::OcrPage>,
+    pending: Vec<u32>,
+}
+
+// ── OCR local (AC-187, AC-188) ──
+
+/// AC-187: the next OCR'd pages of a book being read in the background.
+#[tauri::command]
+fn add_ocr_pages(state: State<'_, AppState>, id: String, pages: Vec<library::OcrPage>, pending: Vec<u32>) -> CmdResult<library::BookSummary> {
+    state.library.add_ocr_pages(&id, &pages, pending).map(|b| b.summary()).map_err(err)
+}
+
+/// Whether this build can read scans (desktop with its models; not the phone).
+#[tauri::command]
+fn ocr_available(app: tauri::AppHandle) -> bool {
+    !cfg!(target_os = "android") && ocr::models_dir(app.path().resource_dir().ok()).is_some()
+}
+
+/// One page or photo, as raw bytes (no JSON: a page is ~18 MB): width, height and the
+/// page number (0 for a photo, only for messages) as little-endian u32, then RGBA. The models load on the first page and stay loaded.
+#[tauri::command]
+async fn ocr_page(app: tauri::AppHandle, state: State<'_, AppState>, request: tauri::ipc::Request<'_>) -> CmdResult<ocr::PageText> {
+    let tauri::ipc::InvokeBody::Raw(body) = request.body() else { return Err("La imagen no llegó como bytes.".into()) };
+    if body.len() < 12 {
+        return Err("La imagen llegó vacía.".into());
+    }
+    let u32_at = |i: usize| u32::from_le_bytes(body[i..i + 4].try_into().unwrap());
+    let (w, h, page) = (u32_at(0) as usize, u32_at(4) as usize, u32_at(8));
+    let img = ocr::Image::from_rgba(w, h, &body[12..]).map_err(err)?;
+    let what = if page == 0 { "la imagen".to_string() } else { format!("la página {page}") };
+    let dir = ocr::models_dir(app.path().resource_dir().ok()).ok_or("Esta versión de Eureka no trae el lector de escaneos.")?;
+    let engine = state.ocr.clone();
+    // CPU-heavy: off the async runtime, one page at a time.
+    tokio::task::spawn_blocking(move || {
+        let mut slot = engine.lock().unwrap_or_else(|p| p.into_inner());
+        if slot.is_none() {
+            *slot = Some(ocr::Engine::load(&dir)?);
+        }
+        Ok::<_, anyhow::Error>(ocr::page_text(slot.as_mut().unwrap().read(img)?))
+    })
+    .await
+    .map_err(err)?
+    .map_err(|e| format!("No pude leer {what}: {e}"))
+}
+
+/// Pages of a PDF already read (by its sha256): a reading continues where it stopped.
+#[tauri::command]
+fn ocr_cached(state: State<'_, AppState>, hash: String) -> CmdResult<std::collections::BTreeMap<u32, ocr::PageText>> {
+    ocr::Cache::new(&state.data_dir).get(&hash).map_err(err)
+}
+
+#[tauri::command]
+fn ocr_cache_put(state: State<'_, AppState>, hash: String, page: u32, text: ocr::PageText) -> CmdResult<()> {
+    ocr::Cache::new(&state.data_dir).put(&hash, page, text).map_err(err)
+}
+
+#[tauri::command]
+fn ocr_cache_clear(state: State<'_, AppState>, hash: String) -> CmdResult<()> {
+    ocr::Cache::new(&state.data_dir).clear(&hash).map_err(err)
 }
 
 #[tauri::command]
@@ -1546,6 +1616,12 @@ pub fn run() {
             delete_session,
             forget_source,
             import_book,
+            add_ocr_pages,
+            ocr_available,
+            ocr_page,
+            ocr_cached,
+            ocr_cache_put,
+            ocr_cache_clear,
             list_books,
             get_book,
             delete_book,

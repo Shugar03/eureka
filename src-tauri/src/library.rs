@@ -40,6 +40,44 @@ pub struct Book {
     #[serde(default)]
     pub scanned: Vec<u32>,
     pub sections: Vec<Section>,
+    /// AC-187: pages read with OCR on this PC (they may have errors).
+    #[serde(default)]
+    pub ocr: Option<OcrInfo>,
+}
+
+/// AC-187: what OCR read of a book, and what's still to read.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+pub struct OcrInfo {
+    /// sha256 of the PDF: adding the same file again continues this book.
+    pub hash: String,
+    pub pages: Vec<u32>,
+    /// Scanned pages not read yet (the reading is running, or stopped).
+    pub pending: Vec<u32>,
+    /// Pages with lines read with little confidence: «revisar».
+    pub review: Vec<ReviewNote>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ReviewNote {
+    pub page: u32,
+    pub lines: Vec<String>,
+}
+
+/// One page as OCR read it (the UI already laid it out in paragraphs).
+#[derive(Debug, Clone, Deserialize)]
+pub struct OcrPage {
+    pub page: u32,
+    pub markdown: String,
+    #[serde(default)]
+    pub review: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct OcrStatus {
+    pub hash: String,
+    pub read: usize,
+    pub pending: Vec<u32>,
+    pub review: usize,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -52,6 +90,7 @@ pub struct BookSummary {
     pub sections: usize,
     pub scanned: usize,
     pub chars: usize,
+    pub ocr: Option<OcrStatus>,
 }
 
 impl Book {
@@ -65,6 +104,7 @@ impl Book {
             sections: self.sections.len(),
             scanned: self.scanned.len(),
             chars: self.sections.iter().map(|s| s.markdown.len()).sum(),
+            ocr: self.ocr.as_ref().map(|o| OcrStatus { hash: o.hash.clone(), read: o.pages.len(), pending: o.pending.clone(), review: o.review.len() }),
         }
     }
 
@@ -84,8 +124,78 @@ impl Book {
     }
 }
 
+impl Book {
+    /// Records OCR'd pages: no longer "scanned" (they're searchable now), with their
+    /// «revisar» notes, and what's still pending.
+    fn apply_ocr(&mut self, read: &[OcrPage], pending: Vec<u32>) {
+        let Some(o) = self.ocr.as_mut() else { return };
+        for p in read {
+            if !o.pages.contains(&p.page) {
+                o.pages.push(p.page);
+            }
+            o.review.retain(|r| r.page != p.page);
+            if !p.review.is_empty() {
+                o.review.push(ReviewNote { page: p.page, lines: p.review.iter().take(5).cloned().collect() });
+            }
+        }
+        o.pages.sort_unstable();
+        o.review.sort_by_key(|r| r.page);
+        o.pending = pending;
+        self.scanned.retain(|s| !o.pages.contains(s));
+    }
+}
+
+/// The Markdown of a readable copy, without its frontmatter.
+fn body(md: &str) -> &str {
+    md.strip_prefix("---\n").and_then(|rest| rest.split_once("\n---\n\n")).map_or(md, |(_, b)| b)
+}
+
 fn page_marker(line: &str) -> Option<u32> {
     line.trim().strip_prefix("<!-- p:")?.strip_suffix("-->")?.trim().parse().ok()
+}
+
+/// AC-187: the OCR'd pages into the converted Markdown, each at its place among the
+/// pages that had text (a scanned page 5 lands between 4 and 6), with its marker.
+/// A page read again replaces what was there.
+pub fn merge_pages(markdown: &str, pages: &[OcrPage]) -> String {
+    // Blocks that start at a page marker; text before the first marker has no page.
+    let mut blocks: Vec<(Option<u32>, String)> = Vec::new();
+    for para in markdown.split("\n\n") {
+        match page_marker(para) {
+            Some(p) => blocks.push((Some(p), String::new())),
+            None => match blocks.last_mut() {
+                Some((_, text)) => {
+                    if !text.is_empty() {
+                        text.push_str("\n\n");
+                    }
+                    text.push_str(para);
+                }
+                None => blocks.push((None, para.to_string())),
+            },
+        }
+    }
+    for p in pages {
+        let text = p.markdown.trim().to_string();
+        if let Some(b) = blocks.iter_mut().find(|b| b.0 == Some(p.page)) {
+            b.1 = text;
+        } else {
+            let at = blocks.iter().position(|b| b.0.is_some_and(|q| q > p.page)).unwrap_or(blocks.len());
+            blocks.insert(at, (Some(p.page), text));
+        }
+    }
+    let mut out: Vec<String> = Vec::new();
+    for (page, text) in blocks {
+        if let Some(p) = page {
+            if text.trim().is_empty() {
+                continue;
+            }
+            out.push(format!("<!-- p:{p} -->"));
+        }
+        if !text.trim().is_empty() {
+            out.push(text);
+        }
+    }
+    out.join("\n\n")
 }
 
 /// Splits converted Markdown into sections at `#`–`###` headings, keeping the
@@ -389,37 +499,74 @@ impl LibraryStore {
         Ok(self.dir.join(format!("{id}.json")))
     }
 
-    pub fn import(&self, title: &str, file_name: &str, markdown: &str, pages: u32, scanned: Vec<u32>) -> Result<Book> {
+    /// `ocr`: the scanned pages already read (AC-187), the PDF's hash and the pages
+    /// still to read; they're merged into the text pages before anything else.
+    pub fn import(&self, title: &str, file_name: &str, markdown: &str, pages: u32, scanned: Vec<u32>, ocr: Option<(String, Vec<OcrPage>, Vec<u32>)>) -> Result<Book> {
         let title = title.trim();
         if title.is_empty() {
             bail!("Poné un título.");
         }
-        if markdown.len() > MAX_MARKDOWN_CHARS {
-            bail!("El documento es demasiado grande (más de 8 millones de caracteres).");
-        }
-        let secs = sections(markdown);
-        if secs.iter().all(|s| s.markdown.lines().all(|l| l.trim().is_empty() || page_marker(l).is_some())) {
-            bail!(if scanned.is_empty() { "El documento no tiene texto." } else { "El PDF no tiene texto seleccionable (parece escaneado)." });
-        }
-        let book = Book {
+        let mut book = Book {
             id: uuid::Uuid::new_v4().simple().to_string(),
             title: title.to_string(),
             file_name: file_name.trim().to_string(),
             created_at: Utc::now(),
             pages,
             scanned,
-            sections: secs,
+            sections: vec![],
+            ocr: None,
         };
+        let markdown = match ocr {
+            Some((hash, read, pending)) => {
+                book.ocr = Some(OcrInfo { hash, ..Default::default() });
+                book.apply_ocr(&read, pending);
+                merge_pages(markdown, &read)
+            }
+            None => markdown.to_string(),
+        };
+        if markdown.len() > MAX_MARKDOWN_CHARS {
+            bail!("El documento es demasiado grande (más de 8 millones de caracteres).");
+        }
+        book.sections = sections(&markdown);
+        if book.sections.iter().all(|s| s.markdown.lines().all(|l| l.trim().is_empty() || page_marker(l).is_some())) {
+            bail!(if book.scanned.is_empty() && book.ocr.is_none() { "El documento no tiene texto." } else { "El PDF no tiene texto seleccionable (parece escaneado)." });
+        }
+        self.save(&book, &markdown)?;
+        Ok(book)
+    }
+
+    /// AC-187: more OCR'd pages for a book (the reading goes on in the background):
+    /// merged at their place, sections and the search index rebuilt.
+    pub fn add_ocr_pages(&self, id: &str, read: &[OcrPage], pending: Vec<u32>) -> Result<Book> {
+        let mut book = self.load(id)?;
+        if book.ocr.is_none() {
+            bail!("Ese libro no se está leyendo con OCR.");
+        }
+        let current = std::fs::read_to_string(self.dir.join(format!("{id}.md"))).ok().map(|md| body(&md).to_string()).unwrap_or_else(|| {
+            // No readable copy (deleted by hand): rebuild it from the sections.
+            book.sections.iter().map(|s| if s.level > 0 { format!("{} {}\n\n{}", "#".repeat(s.level as usize), s.title, s.markdown) } else { s.markdown.clone() }).collect::<Vec<_>>().join("\n\n")
+        });
+        let markdown = merge_pages(&current, read);
+        if markdown.len() > MAX_MARKDOWN_CHARS {
+            bail!("El documento es demasiado grande (más de 8 millones de caracteres).");
+        }
+        book.apply_ocr(read, pending);
+        book.sections = sections(&markdown);
+        self.save(&book, &markdown)?;
+        Ok(book)
+    }
+
+    fn save(&self, book: &Book, markdown: &str) -> Result<()> {
         std::fs::create_dir_all(&self.dir)?;
         let path = self.json(&book.id)?;
         let tmp = path.with_extension("json.tmp");
-        std::fs::write(&tmp, serde_json::to_string(&book)?)?;
+        std::fs::write(&tmp, serde_json::to_string(book)?)?;
         std::fs::rename(tmp, &path)?;
         // The readable copy: one note per book, headings as its outline.
-        let front = format!("---\ntitle: \"{}\"\nsource: \"{}\"\npages: {}\nimported: {}\n---\n\n", book.title.replace('"', "'"), book.file_name.replace('"', "'"), pages, book.created_at.format("%Y-%m-%d"));
+        let front = format!("---\ntitle: \"{}\"\nsource: \"{}\"\npages: {}\nimported: {}\n---\n\n", book.title.replace('"', "'"), book.file_name.replace('"', "'"), book.pages, book.created_at.format("%Y-%m-%d"));
         std::fs::write(self.dir.join(format!("{}.md", book.id)), front + markdown)?;
         *self.index.lock().unwrap() = None;
-        Ok(book)
+        Ok(())
     }
 
     pub fn load(&self, id: &str) -> Result<Book> {
@@ -480,7 +627,7 @@ mod tests {
         assert_eq!(titles, ["Capítulo 1: Derivadas", "1.1 La recta tangente", "Capítulo 2: Integrales"]);
         assert_eq!(s.iter().map(|x| x.page).collect::<Vec<_>>(), [Some(1), Some(2), Some(3)]);
         assert!(s[1].markdown.starts_with("<!-- p:2 -->"), "a section keeps the page it starts on");
-        let book = Book { id: "b".into(), title: "Cálculo".into(), file_name: "c.pdf".into(), created_at: Utc::now(), pages: 3, scanned: vec![], sections: s };
+        let book = Book { id: "b".into(), title: "Cálculo".into(), file_name: "c.pdf".into(), created_at: Utc::now(), pages: 3, scanned: vec![], sections: s, ocr: None };
         assert_eq!(book.path(1), "Capítulo 1: Derivadas › 1.1 La recta tangente");
         let c = chunks(&book);
         assert_eq!(c[1].page, Some(2));
@@ -498,10 +645,10 @@ mod tests {
     #[test]
     fn import_search_and_delete() {
         let (st, dir) = store();
-        assert!(st.import("  ", "x.pdf", MD, 3, vec![]).is_err());
-        assert!(st.import("Escaneado", "x.pdf", "<!-- p:1 -->", 1, vec![1]).unwrap_err().to_string().contains("escaneado"));
-        let b = st.import("Cálculo I", "calculo.pdf", MD, 3, vec![]).unwrap();
-        st.import("Historia", "h.txt", "# Revolución\n\nLa revolución de mayo de 1810.", 0, vec![]).unwrap();
+        assert!(st.import("  ", "x.pdf", MD, 3, vec![], None).is_err());
+        assert!(st.import("Escaneado", "x.pdf", "<!-- p:1 -->", 1, vec![1], None).unwrap_err().to_string().contains("escaneado"));
+        let b = st.import("Cálculo I", "calculo.pdf", MD, 3, vec![], None).unwrap();
+        st.import("Historia", "h.txt", "# Revolución\n\nLa revolución de mayo de 1810.", 0, vec![], None).unwrap();
         assert_eq!(st.list().len(), 2);
         assert!(dir.join("library").join(format!("{}.md", b.id)).is_file(), "readable copy for Obsidian");
 
@@ -515,6 +662,46 @@ mod tests {
         st.delete(&b.id).unwrap();
         assert!(st.search("tangente", 5).is_empty(), "the index forgets deleted books");
         assert!(st.load("../x").is_err());
+        std::fs::remove_dir_all(dir).ok();
+    }
+
+    fn ocr_page(page: u32, text: &str, review: &[&str]) -> OcrPage {
+        OcrPage { page, markdown: text.into(), review: review.iter().map(|s| s.to_string()).collect() }
+    }
+
+    #[test]
+    fn ocr_pages_land_in_place_and_are_searchable() {
+        // A mixed PDF: pages 4 and 6 had text, 5 and 7 were scans.
+        let md = "<!-- p:4 -->\n\n# Fotosíntesis\n\nLa luz llega a la hoja.\n\n<!-- p:6 -->\n\nEl oxígeno sale por los estomas.";
+        let merged = merge_pages(md, &[ocr_page(5, "La clorofila absorbe la luz roja y azul.", &[])]);
+        assert_eq!(merged, "<!-- p:4 -->\n\n# Fotosíntesis\n\nLa luz llega a la hoja.\n\n<!-- p:5 -->\n\nLa clorofila absorbe la luz roja y azul.\n\n<!-- p:6 -->\n\nEl oxígeno sale por los estomas.");
+        assert_eq!(merge_pages(&merged, &[ocr_page(5, "Corregido.", &[])]).matches("<!-- p:5 -->").count(), 1, "a page read again replaces itself");
+
+        // Pages long enough to be chunks of their own (a chunk cites the page it starts on).
+        let long = |s: &str| format!("{s} ").repeat(30).trim().to_string();
+        let md = format!("<!-- p:4 -->\n\n# Fotosíntesis\n\n{}\n\n<!-- p:6 -->\n\n{}", long("La luz llega a la hoja."), long("El oxígeno sale por los estomas."));
+        let (st, dir) = store();
+        let b = st.import("Biología", "bio.pdf", &md, 7, vec![5, 7], Some(("ab".repeat(32), vec![ocr_page(5, &long("La clorofila absorbe la luz roja y azul."), &["l4 c1orofi1a"])], vec![7]))).unwrap();
+        let o = b.ocr.clone().unwrap();
+        assert_eq!((o.pages.clone(), o.pending.clone(), b.scanned.clone()), (vec![5], vec![7], vec![7]));
+        assert_eq!(o.review, [ReviewNote { page: 5, lines: vec!["l4 c1orofi1a".into()] }]);
+        let hits = st.search("clorofila", 3);
+        assert_eq!((hits[0].page, hits[0].book_title.as_str()), (Some(5), "Biología"), "cites the scanned page");
+
+        let b = st.add_ocr_pages(&b.id, &[ocr_page(7, &long("Los cloroplastos guardan almidón."), &[])], vec![]).unwrap();
+        assert_eq!(b.ocr.as_ref().unwrap().pages, [5, 7]);
+        assert!(b.ocr.as_ref().unwrap().pending.is_empty() && b.scanned.is_empty());
+        assert_eq!(st.search("almidón", 3)[0].page, Some(7), "the index sees the new page");
+        assert_eq!(st.search("estomas", 3)[0].page, Some(6), "and keeps the old ones");
+        let s = b.summary().ocr.unwrap();
+        assert_eq!((s.read, s.review, s.pending.len()), (2, 1, 0));
+        let md = std::fs::read_to_string(dir.join("library").join(format!("{}.md", b.id))).unwrap();
+        assert!(md.starts_with("---\ntitle: \"Biología\"") && md.matches("title:").count() == 1, "one frontmatter");
+
+        // Only scans, first pages read: the book exists already.
+        let only = st.import("Escaneado", "s.pdf", "", 3, vec![1, 2, 3], Some(("cd".repeat(32), vec![ocr_page(1, "Primera página leída.", &[])], vec![2, 3]))).unwrap();
+        assert_eq!(only.sections[0].page, Some(1));
+        assert!(st.add_ocr_pages(&st.import("Texto", "t.txt", "Hola.", 0, vec![], None).unwrap().id, &[], vec![]).is_err(), "only OCR books grow");
         std::fs::remove_dir_all(dir).ok();
     }
 
@@ -538,7 +725,7 @@ mod tests {
             }
         }
         let t = std::time::Instant::now();
-        st.import("Física", "f.pdf", &md, 500, vec![]).unwrap();
+        st.import("Física", "f.pdf", &md, 500, vec![], None).unwrap();
         let hits = st.search("calor y trabajo", 5);
         let took = t.elapsed();
         assert_eq!(hits.len(), 5);

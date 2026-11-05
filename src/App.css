@@ -1013,6 +1013,14 @@ label.check input { width: auto; accent-color: var(--accent); }
 .library-hit { display: flex; flex-direction: column; gap: 4px; width: 100%; text-align: left; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-2); color: inherit; cursor: pointer; }
 .library-hit:hover { border-color: var(--accent); }
 .file-pick.is-disabled { opacity: .6; }
+/* AC-187: scanned PDFs read with OCR in the background. */
+.ocr-jobs { display: flex; flex-direction: column; gap: 4px; padding: 6px 18px; }
+.ocr-job { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ocr-job progress { flex: 1; min-width: 120px; max-width: 320px; accent-color: var(--accent); }
+.ocr-ask { flex-wrap: wrap; gap: 8px; }
+.ocr-ask p { flex-basis: 100%; }
+.ocr-note { margin: 4px 0 8px; }
+.ocr-review { color: var(--warn); cursor: help; }
 @media (max-width: 760px) { .library-body { grid-template-columns: 1fr; } .library-search input { width: 140px; } }
 
 /* ── Accesibilidad (AC-73..77) ─────────────────────────────────────────── */

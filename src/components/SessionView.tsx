@@ -421,7 +421,7 @@ export function SessionView({ id, onBack, onOpenSettings, onChanged, onOpenGraph
             </div>
           ) : (
             <>
-            <AttachChips items={attach.items} working={attach.working} error={attach.error} onRemove={attach.remove} />
+            <AttachChips items={attach.items} working={attach.working} error={attach.error} ask={attach.ask} onRemove={attach.remove} />
             <div className="composer-row">
               <textarea
                 value={draft}

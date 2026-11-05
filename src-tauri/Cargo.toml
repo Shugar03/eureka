@@ -18,6 +18,8 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
+# AC-187: checks the OCR models build.rs downloads.
+sha2 = "0.11.1"
 
 [dependencies]
 tauri = { version = "2", features = [] }
@@ -65,6 +67,8 @@ webpki-roots = "1"
 # AC-186: the token benchmark counts with a real tokenizer (o200k_base, as a proxy).
 [dev-dependencies]
 tiktoken-rs = "0.12.1"
+# AC-187: the real OCR test reads a page as PNG.
+png = "0.18"
 
 # Whisper in an unoptimized build is unusably slow: optimize the math crates only
 # (optimizing every dependency runs out of memory compiling tauri/windows).
