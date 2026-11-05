@@ -49,3 +49,14 @@ export async function pick(question: ReturnType<Screen["getByRole"]>, option: Re
     for (const b of await boxes.all()) await b.check();
   } else await question.getByRole("radio", option).first().check();
 }
+
+/**
+ * Goes to a screen of the sidebar. Grafo, Acompañamiento, Código and Idiomas live in the «Más» group,
+ * which is collapsed until opened (or until one of its screens is the current one).
+ */
+export async function goTo(screen: Screen, label: "Grafo" | "Acompañamiento" | "Código" | "Idiomas") {
+  const nav = screen.getByRole("navigation", "Navegación");
+  const item = nav.getByRole("button", label);
+  if (!(await item.isVisible())) await nav.getByText("Más").click();
+  await item.click({ timeout: 30_000 });
+}

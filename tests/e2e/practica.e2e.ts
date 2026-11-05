@@ -2,7 +2,7 @@
 import { test } from "@e2e-dev/web";
 import { expect } from "e2e";
 import type { App, Screen } from "e2e";
-import { answer, finishProbe, phase, startSession } from "./helpers.ts";
+import { goTo, answer, finishProbe, phase, startSession } from "./helpers.ts";
 
 const DERIVADA = "La derivada es la pendiente de la recta tangente";
 const nav = (screen: Screen) => screen.getByRole("navigation", "Navegación");
@@ -115,7 +115,7 @@ test("AC-26 retomar donde quedó y borrar", async ({ app, screen }) => {
 
 test("AC-22 practicar una idea desde el grafo", async ({ app, screen }) => {
   await withGraph(app, screen);
-  await nav(screen).getByRole("button", "Grafo").click();
+  await goTo(screen, "Grafo");
   await screen.getByTestId("graph-node").filter({ hasText: DERIVADA }).click();
   await screen.getByRole("button", "Practicar esta idea").click();
   await expect(screen.getByTestId("problem-progress")).toHaveText("Problema 1 de 3", { timeout: 10_000 });

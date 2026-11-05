@@ -2,7 +2,7 @@
 import { test } from "@e2e-dev/web";
 import { expect } from "e2e";
 import type { App, Screen } from "e2e";
-import { answer, finishProbe, phase, startSession } from "./helpers.ts";
+import { goTo, answer, finishProbe, phase, startSession } from "./helpers.ts";
 
 const DERIVADA = "La derivada es la pendiente de la recta tangente";
 const PENDIENTE = "La pendiente mide cuánto sube una recta por cada paso a la derecha";
@@ -16,7 +16,7 @@ async function finishSession(app: App, screen: Screen, query = "") {
   await expect(phase(screen, "Listo")).toHaveAttribute("aria-current", "step", { timeout: 10_000 });
 }
 
-const openGraph = (screen: Screen) => screen.getByRole("navigation", "Navegación").getByRole("button", "Grafo").click();
+const openGraph = (screen: Screen) => goTo(screen, "Grafo");
 const node = (screen: Screen, text: string) => screen.getByTestId("graph-node").filter({ hasText: text });
 
 test("AC-17 terminar una sesión la guarda en el grafo", async ({ app, screen }) => {

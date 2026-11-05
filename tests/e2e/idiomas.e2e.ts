@@ -2,11 +2,11 @@
 import { test } from "@e2e-dev/web";
 import { expect } from "e2e";
 import type { App, Screen } from "e2e";
-import { pick } from "./helpers.ts";
+import { goTo, pick } from "./helpers.ts";
 
 async function openLanguages(app: App, screen: Screen, query = "") {
   await app.open(`/${query}`);
-  await screen.getByRole("navigation", "Navegación").getByRole("button", "Idiomas").click({ timeout: 30_000 });
+  await goTo(screen, "Idiomas");
 }
 
 test("AC-65 listening: audio leído en voz alta, preguntas y transcripción al corregir", async ({ app, screen }) => {

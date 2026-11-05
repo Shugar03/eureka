@@ -64,6 +64,7 @@ test("AC-97 el pomodoro suena al terminar (tic-tac y campanita) y el sonido se p
 test("AC-98 aviso de pararte y de tomar agua, configurables desde Ajustes", async ({ app, screen }) => {
   await app.open("/?fastReminders");
   await nav(screen).getByRole("button", "Ajustes").click({ timeout: 30_000 });
+  await screen.getByRole("tab", "Avanzado").click(); // the reminders live in the Avanzado tab
   const rem = screen.getByRole("region", "Recordatorios");
   await expect(rem.getByLabel("Avisarme que me pare")).not.toBeChecked();
   await expect(rem.getByLabel("Minutos para pararme")).toBeDisabled();

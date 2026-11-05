@@ -51,7 +51,7 @@ test("AC-81 el nombre, el fondo y el color se recuerdan y saludan", async ({ app
   await openSpace(app, screen);
   await screen.getByLabel("Tu nombre").fill("Ana");
   await screen.getByRole("radio", "Dunas de lavanda").click();
-  await screen.getByRole("radio", "Claro").click();
+  await screen.getByRole("radio", "Tema claro").click();
   await app.open("/");
   await expect(screen.getByText(/^Buen(os días|as tardes|as noches), Ana$/)).toBeVisible({ timeout: 30_000 });
   await expect(screen.getByRole("navigation", "Navegación").getByRole("button", "Ana Personalizar")).toBeVisible();

@@ -138,9 +138,9 @@ describe("ResearchCard", () => {
 describe("Diagram", () => {
   it("falls back to the source code when Mermaid cannot render", async () => {
     render(<Diagram title="Roto" code={"esto no es mermaid ((("} />);
-    expect(await screen.findByText(/No se pudo dibujar/, {}, { timeout: 25_000 })).toBeInTheDocument();
+    expect(await screen.findByText(/No se pudo dibujar/, {}, { timeout: 55_000 })).toBeInTheDocument();
     expect(screen.getByText("esto no es mermaid (((")).toBeInTheDocument();
-  }, 30_000); // Mermaid is a big dynamic import (slow under Stryker's instrumentation)
+  }, 60_000); // Mermaid is a big dynamic import: slow under Stryker's instrumentation and when the whole suite runs at once
 });
 
 describe("transcript visual and research items", () => {

@@ -31,6 +31,7 @@ test("AC-92 la bienvenida pide lo básico por pasos, saluda por el nombre y no v
 
   // The care step was left as suggested: the reminders are on, with the suggested minutes.
   await nav(screen).getByRole("button", "Ajustes").click();
+  await screen.getByRole("tab", "Avanzado").click(); // the reminders live in the Avanzado tab
   await expect(screen.getByLabel("Avisarme que me pare")).toBeChecked();
   await expect(screen.getByLabel("Minutos para pararme")).toHaveValue("25");
   await expect(screen.getByLabel("Avisarme que tome agua")).toBeChecked();

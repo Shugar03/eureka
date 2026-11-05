@@ -2,11 +2,12 @@
 // toolchains are covered by runner.rs tests).
 import { test } from "@e2e-dev/web";
 import { expect } from "e2e";
+import { goTo } from "./helpers.ts";
 import type { App, Screen } from "e2e";
 
 async function openConsole(app: App, screen: Screen, query = "") {
   await app.open(`/${query}`);
-  await screen.getByRole("navigation", "Navegación").getByRole("button", "Código").click();
+  await goTo(screen, "Código");
   await expect(screen.getByTestId("runtime")).toHaveText("Python 3.14.7", { timeout: 20_000 });
 }
 

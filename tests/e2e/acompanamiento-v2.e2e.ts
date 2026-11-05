@@ -1,13 +1,14 @@
 // features/acompanamiento-v2.feature — AC-93, AC-94, AC-95 (web, scripted backend).
 import { test } from "@e2e-dev/web";
 import { expect } from "e2e";
+import { goTo } from "./helpers.ts";
 import type { App, Screen } from "e2e";
 
 const nav = (screen: Screen) => screen.getByRole("navigation", "Navegación");
 
 async function open(app: App, screen: Screen, query: string, tab: string) {
   await app.open(`/${query}`);
-  await nav(screen).getByRole("button", "Acompañamiento").click({ timeout: 30_000 });
+  await goTo(screen, "Acompañamiento");
   await screen.getByRole("tab", tab).click();
 }
 

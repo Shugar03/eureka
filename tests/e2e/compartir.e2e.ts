@@ -1,6 +1,7 @@
 // features/compartir.feature — AC-152 … AC-154 (web, scripted backend).
 import { test } from "@e2e-dev/web";
 import { expect } from "e2e";
+import { goTo } from "./helpers.ts";
 import type { App, Screen } from "e2e";
 
 const nav = (screen: Screen) => screen.getByRole("navigation", "Navegación");
@@ -64,7 +65,7 @@ test("AC-154 abrir un .eureka con doble clic lleva a Tarjetas con la vista previ
   await expect(preview.getByRole("heading", "Te compartieron un mazo")).toBeVisible({ timeout: 30_000 });
   await expect(preview.getByLabel("Nombre del mazo para importar")).toHaveValue("Repaso de Biología");
   await preview.getByRole("button", "Cancelar").click();
-  await nav(screen).getByRole("button", "Grafo").click();
+  await goTo(screen, "Grafo");
   await nav(screen).getByRole("button", "Tarjetas").click();
   await expect(screen.getByRole("region", "Mazo para importar")).toHaveCount(0);
 });

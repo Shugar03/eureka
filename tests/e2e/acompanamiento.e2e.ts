@@ -1,13 +1,14 @@
 // features/acompanamiento.feature — AC-82 … AC-87 (web, scripted backend).
 import { test } from "@e2e-dev/web";
 import { expect } from "e2e";
+import { goTo } from "./helpers.ts";
 import type { App, Screen } from "e2e";
 
 const nav = (screen: Screen) => screen.getByRole("navigation", "Navegación");
 
 async function open(app: App, screen: Screen, query = "") {
   await app.open(`/${query}`);
-  await nav(screen).getByRole("button", "Acompañamiento").click({ timeout: 30_000 });
+  await goTo(screen, "Acompañamiento");
 }
 
 async function say(screen: Screen, text: string) {
@@ -96,8 +97,8 @@ test("AC-85 el PIN bloquea el diario, se vuelve a pedir al salir, y olvidarlo no
   await expect(screen.getByRole("button", "Bloquear ahora")).toBeVisible();
 
   // Leaving the screen locks it again.
-  await nav(screen).getByRole("button", "Idiomas").click();
-  await nav(screen).getByRole("button", "Acompañamiento").click();
+  await goTo(screen, "Idiomas");
+  await goTo(screen, "Acompañamiento");
   const lock = screen.getByRole("region", "Diario bloqueado");
   await expect(lock).toBeVisible();
   await expect(screen.getByText("Check-in")).toHaveCount(0);

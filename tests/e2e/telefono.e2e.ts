@@ -39,6 +39,8 @@ async function goTo(screen: Screen, item: string) {
   await screen.getByRole("button", "Abrir menú").click();
   const menu = screen.getByRole("dialog", "Menú");
   await expect(menu).toBeVisible();
+  // Grafo, Acompañamiento, Código and Idiomas are in the «Más» group, collapsed until opened.
+  if (!(await menu.getByRole("button", item).isVisible())) await menu.getByText("Más").click();
   await menu.getByRole("button", item).click();
   // Choosing a screen closes the drawer.
   await expect(screen.getByRole("button", "Abrir menú")).toHaveAttribute("aria-expanded", "false");

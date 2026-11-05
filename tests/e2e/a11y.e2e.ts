@@ -6,7 +6,7 @@ import { expect } from "e2e";
 import type { Screen } from "e2e";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { answer, pending, pick, startSession } from "./helpers.ts";
+import { goTo, answer, pending, pick, startSession } from "./helpers.ts";
 
 const AXE = readFileSync(createRequire(import.meta.url).resolve("axe-core/axe.min.js"), "utf8");
 
@@ -26,9 +26,13 @@ async function audit(browser: Browser, where: string) {
   expect(violations as Violation[], `violaciones de accesibilidad en ${where}`).toEqual([]);
 }
 
+// The theme lives in Ajustes → Mi espacio, not in the sidebar: the palette switches it from any screen without leaving it.
 async function setTheme(screen: Screen, theme: "Tema oscuro" | "Tema claro") {
-  await screen.getByRole("radio", theme).click();
-  await expect(screen.getByRole("radio", theme)).toHaveAttribute("aria-checked", "true");
+  await screen.getByRole("button", "Buscar o ejecutar").click();
+  const box = screen.getByLabel("Buscar comando");
+  await box.fill(theme === "Tema claro" ? "Tema: claro" : "Tema: oscuro");
+  await box.press("Enter");
+  await expect(screen.getByRole("dialog", "Paleta de comandos")).toBeHidden();
 }
 
 for (const theme of ["Tema oscuro", "Tema claro"] as const) {
@@ -54,7 +58,7 @@ for (const theme of ["Tema oscuro", "Tema claro"] as const) {
 
   test(`a11y sesión en cada fase (${theme})`, async ({ app, screen, browser }) => {
     await app.open("/");
-    await setThemeInSettings(screen, theme);
+    await setTheme(screen, theme);
     await startSession(app, screen);
     await audit(browser, `pregunta abierta pendiente, ${theme}`);
 
@@ -74,7 +78,7 @@ for (const theme of ["Tema oscuro", "Tema claro"] as const) {
 for (const theme of ["Tema oscuro", "Tema claro"] as const) {
   test(`a11y panel de hoy con racha, clases y notas (${theme})`, async ({ app, screen, browser }) => {
     await app.open("/?panel&streak");
-    await setThemeInSettings(screen, theme);
+    await setTheme(screen, theme);
     await expect(screen.getByRole("region", "Tu día")).toContainText("7,5", { timeout: 30_000 });
     await audit(browser, `panel de hoy, ${theme}`);
     await screen.getByRole("navigation", "Navegación").getByRole("button", "Mi cursada").click();
@@ -128,7 +132,7 @@ test("a11y grafo, práctica y visuales (Fases 2-4)", async ({ app, screen, brows
   await audit(browser, "aviso del grafo e investigación con fuentes");
 
   const nav = screen.getByRole("navigation", "Navegación");
-  await nav.getByRole("button", "Grafo").click();
+  await goTo(screen, "Grafo");
   await screen.getByTestId("graph-node").first().click();
   await audit(browser, "grafo con detalle");
   await screen.getByRole("button", "Importar notas").click();
@@ -215,7 +219,7 @@ test("a11y herramientas de estudio y programación (Fases 6-7)", async ({ app, s
   await expect(screen.getByRole("region", "Semana")).toBeVisible({ timeout: 10_000 });
   await audit(browser, "agenda");
 
-  await nav.getByRole("button", "Código").click();
+  await goTo(screen, "Código");
   await expect(screen.getByTestId("runtime")).toHaveText("Python 3.14.7", { timeout: 20_000 });
   await screen.getByLabel("Código").fill("x = 1/0");
   await screen.getByRole("button", "Ejecutar").click();
@@ -226,8 +230,8 @@ test("a11y herramientas de estudio y programación (Fases 6-7)", async ({ app, s
 test("acompañamiento: aviso, charla con líneas de ayuda, diario, herramientas y bloqueo", async ({ app, screen, browser }) => {
   for (const theme of ["Tema oscuro", "Tema claro"] as const) {
     await app.open("/");
-    await setThemeInSettings(screen, theme);
-    const go = () => screen.getByRole("navigation", "Navegación").getByRole("button", "Acompañamiento").click();
+    await setTheme(screen, theme);
+    const go = () => goTo(screen, "Acompañamiento");
     await go();
     await expect(screen.getByRole("region", "Antes de empezar")).toBeVisible();
     await audit(browser, `acompañamiento › aviso, ${theme}`);
@@ -260,8 +264,8 @@ test("acompañamiento: aviso, charla con líneas de ayuda, diario, herramientas 
 test("acompañamiento v2: lo que noté, rueda de emociones y registro de pensamientos", async ({ app, screen, browser }) => {
   for (const theme of ["Tema oscuro", "Tema claro"] as const) {
     await app.open("/?companionSeed");
-    await setThemeInSettings(screen, theme);
-    await screen.getByRole("navigation", "Navegación").getByRole("button", "Acompañamiento").click();
+    await setTheme(screen, theme);
+    await goTo(screen, "Acompañamiento");
     await screen.getByRole("tab", "Diario").click();
     await expect(screen.getByRole("region", "Lo que noté")).toContainText("Los domingos suelen costarte más");
     await audit(browser, `acompañamiento › lo que noté, ${theme}`);
@@ -311,7 +315,7 @@ test("citas: bienvenida, tarjeta del inicio y sección en Mi espacio", async ({ 
     await expect(splash).toBeVisible({ timeout: 30_000 });
     await audit(browser, `citas › bienvenida, ${theme === "Tema oscuro" ? "tema guardado" : "antes de cambiar"}`);
     await splash.getByRole("button", "Entrar").click();
-    await setThemeInSettings(screen, theme);
+    await setTheme(screen, theme);
     await screen.getByRole("figure", "Cita").getByRole("button", /favoritas?$/).click();
     await audit(browser, `citas › tarjeta del inicio, ${theme}`);
     await screen.getByRole("navigation", "Navegación").getByRole("button", /Personalizar/).click();
@@ -323,7 +327,7 @@ test("citas: bienvenida, tarjeta del inicio y sección en Mi espacio", async ({ 
 test("a11y compartir mazos y la malla de la carrera (AC-152…157)", async ({ app, screen, browser }) => {
   for (const theme of ["Tema oscuro", "Tema claro"] as const) {
     await app.open("/?openedDeck");
-    await setThemeInSettings(screen, theme);
+    await setTheme(screen, theme);
     await expect(screen.getByRole("region", "Mazo para importar")).toBeVisible({ timeout: 30_000 });
     await audit(browser, `mazo compartido para importar, ${theme}`);
     await screen.getByRole("button", "Importar 2 tarjetas").click();
@@ -351,7 +355,7 @@ test("a11y compartir mazos y la malla de la carrera (AC-152…157)", async ({ ap
 test("a11y una sola clave y propuestas editables del chat (AC-158…165)", async ({ app, screen, browser }) => {
   for (const theme of ["Tema oscuro", "Tema claro"] as const) {
     await app.open("/?unconfigured");
-    await setThemeInSettings(screen, theme);
+    await setTheme(screen, theme);
     const setup = screen.getByRole("region", "Conectar con una clave");
     await setup.getByLabel("Tu clave de acceso").fill("sk-0123456789abcdef0123456789abcdef");
     await setup.getByRole("button", "Conectar").click();
@@ -376,7 +380,7 @@ test("a11y una sola clave y propuestas editables del chat (AC-158…165)", async
 test("a11y mis propios problemas y el grafo por profundidad (AC-170, AC-173)", async ({ app, screen, browser }) => {
   for (const theme of ["Tema oscuro", "Tema claro"] as const) {
     await app.open("/");
-    await setThemeInSettings(screen, theme);
+    await setTheme(screen, theme);
     await screen.getByRole("navigation", "Navegación").getByRole("button", "Práctica").click();
     const card = screen.getByRole("region", "Practicar mis problemas");
     await card.getByRole("button", "Traer mis problemas").click();

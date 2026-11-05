@@ -118,10 +118,15 @@ export async function walk(seed: number, { app, screen, browser }: Fixtures, tur
         expect(await pending(screen).count(), `reabrir conserva la pregunta (${where})`).toBe(before);
         break;
       }
-      case "theme":
-        await screen.getByRole("radio", a.which).click();
-        await expect(screen.getByRole("radio", a.which)).toHaveAttribute("aria-checked", "true");
+      case "theme": {
+        // The theme lives in Ajustes → Mi espacio; the palette switches it from any screen.
+        await screen.getByRole("button", "Buscar o ejecutar").click();
+        const box = screen.getByLabel("Buscar comando");
+        await box.fill(a.which.replace("Tema ", "Tema: "));
+        await box.press("Enter");
+        await expect(screen.getByRole("dialog", "Paleta de comandos")).toBeHidden();
         break;
+      }
       case "palette":
         await screen.getByRole("button", "Buscar o ejecutar").click();
         await expect(screen.getByRole("dialog", "Paleta de comandos")).toBeVisible();

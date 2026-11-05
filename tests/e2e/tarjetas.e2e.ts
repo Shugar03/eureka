@@ -2,6 +2,7 @@
 import { readFile } from "node:fs/promises";
 import { test } from "@e2e-dev/web";
 import { expect } from "e2e";
+import { goTo } from "./helpers.ts";
 import type { App, Screen } from "e2e";
 import { SAMPLE_GUIDE } from "../../src/e2e/examScript.ts";
 
@@ -106,7 +107,7 @@ test("AC-57 lo fallado se vuelve tarjeta: simulacros y errores de la consola", a
   await screen.getByRole("button", "Entregar").click(); // all blank → 10 failed
   await expect(screen.getByTestId("elapsed")).toContainText("mazo «Falladas: AWS Certified Cloud Practitioner»", { timeout: 10_000 });
 
-  await nav(screen).getByRole("button", "Código").click();
+  await goTo(screen, "Código");
   await screen.getByLabel("Código").fill("x = 1/0");
   await screen.getByRole("button", "Ejecutar").click();
   await screen.getByRole("button", "Explicar este error").click();
