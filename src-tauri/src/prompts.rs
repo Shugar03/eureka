@@ -115,17 +115,24 @@ impl Prompts {
     }
 
     /// shared + the phase's fragment: what the agent loop sends as the system
-    /// prompt. It only changes with the phase, so it caches well (audit M3);
-    /// the state block goes as the last message (`context::state_message`).
+    /// prompt; the state block goes as the last message (`context::state_message`).
+    ///
+    /// Probe, plan, teach and done send the same text, every fragment of the method in
+    /// order: providers cache from the start of the request, so a prompt that changed with
+    /// the phase broke the cache at every transition (live measurement, docs/tokens.md).
+    /// The current phase is in the state block, which says which fragment applies.
     pub fn phase_prompt(&self, s: &Session) -> Result<String> {
-        let phase = match s.phase {
-            Phase::Chat => "chat",
-            Phase::Probe => "probe",
-            Phase::Plan => "plan",
-            Phase::Teach => "teach",
-            Phase::Done => "done",
-        };
-        Ok(format!("{}\n\n{}", self.get("shared")?, self.get(phase)?))
+        if s.phase == Phase::Chat {
+            return Ok(format!("{}\n\n{}", self.get("shared")?, self.get("chat")?));
+        }
+        Ok(format!(
+            "{}\n\n# Las fases del método\n\nAbajo están las instrucciones de cada fase. Seguí **solo las de la fase actual**, la que dice «Estado actual de la sesión».\n\n{}\n\n{}\n\n{}\n\n{}",
+            self.get("shared")?,
+            self.get("probe")?,
+            self.get("plan")?,
+            self.get("teach")?,
+            self.get("done")?
+        ))
     }
 }
 
@@ -233,6 +240,24 @@ mod tests {
         let sp = p.system_prompt(&s, &[]).unwrap();
         assert!(sp.contains("Fase: ENSEÑAR"));
         assert!(sp.contains("entender derivadas"));
+    }
+
+    #[test]
+    fn the_method_sends_one_system_prompt_in_every_phase() {
+        // AC-201: the provider's cache survives phase changes; the state block says which applies.
+        let p = Prompts::new(&tmp());
+        let mut s = Session::new("entender derivadas");
+        let mut seen = Vec::new();
+        for phase in [Phase::Probe, Phase::Plan, Phase::Teach, Phase::Done] {
+            s.phase = phase;
+            seen.push(p.phase_prompt(&s).unwrap());
+        }
+        assert!(seen.windows(2).all(|w| w[0] == w[1]));
+        for frag in ["Fase: MEDIR", "Fase: PLANIFICAR", "Fase: ENSEÑAR", "Fase: TERMINADA", "solo las de la fase actual"] {
+            assert!(seen[0].contains(frag), "{frag}");
+        }
+        s.phase = Phase::Chat;
+        assert!(!p.phase_prompt(&s).unwrap().contains("Fase: MEDIR"), "the chat keeps its own prompt");
     }
 
     #[test]

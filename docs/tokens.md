@@ -300,3 +300,30 @@ y se commitea la línea base nueva junto con el cambio que la explica.
 ## Memoria del estudiante (AC-195..AC-200)
 
 La línea base se actualizó al mergear la memoria nueva: `recall` suma el parámetro opcional `id` (pedir el registro entero de una vista previa), **+22 tokens de herramientas** y −5 de sistema por llamada del profesor (≈ +17 netos, +0,2 %), y aparece el prompt nuevo `memory_conflict` (55 tokens), que solo usa la pasada en segundo plano para contradicciones ambiguas (hasta 3 por pasada). La pasada de memoria en segundo plano no cambia (2439).
+
+## Un solo prefijo para el método (AC-201)
+
+La propuesta 3, hecha después de medirla en vivo (OpenCode Go, `deepseek-v4.1-flash`, 5/11/2026). En esa sesión real
+la caché iba al 85–95 % dentro de una fase pero caía a **2 048 tokens** en cada cambio de fase: el proveedor arma el
+prefijo con las **tools primero**, después el sistema y el historial, y las tools y el fragmento de cada fase cambiaban.
+
+Ahora probe, plan, teach y done mandan **las mismas tools** (las de enseñar) y **el mismo sistema** (`shared` + los
+cuatro fragmentos, con la consigna de seguir solo el de la fase actual, que dice el estado). El chat queda aparte. Lo
+que la app deja hacer en cada fase no cambió: antes también ejecutaba cualquier tool en cualquier fase del método; solo
+cambió lo que se le muestra al modelo.
+
+Benchmark (turnos 03–08, diagnóstico a cierre):
+
+| | Antes | Ahora |
+|---|---|---|
+| Tokens mandados | 45 218 | 67 665 (+50 %) |
+| Sin caché (lo que no repite el prefijo) | 19 707 | 3 346 (−83 %) |
+| Costo de entrada con OpenCode Go (caché a $0,003 contra $0,15 por M, 2 %) | ≈ 20 200 equivalentes | ≈ 4 600 (−77 %) |
+
+En vivo, la primera llamada de enseñar pasó de **7,8 k sin caché a 1,5 k**. Cuánto conviene depende del precio de
+la caché del proveedor: con la caché al 2 % (OpenCode Go) o al 10 % (Anthropic, DeepSeek) gana claro; cerca del
+50 % queda parejo; con un proveedor que no cachea empeora (+20–30 % de tokens). Costo fijo: la primera llamada de
+diagnóstico, después del chat, manda ~2,4 k más sin caché, y cada llamada de enseñar ~1,1 k más (en caché).
+
+Ojo con los prompts editados (Ajustes → Prompts): ahora cada fragmento viaja en todas las fases del método, así que
+uno que diga «estás en el diagnóstico» también se lee mientras se enseña.

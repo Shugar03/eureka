@@ -88,3 +88,10 @@ Característica: Configurar modelos, keys y prompts
     Cuando le escribo al profesor
     Entonces el profesor responde igual
     Y esa llamada queda contada como "sin datos del proveedor", no como 0 tokens
+
+  @AC-201
+  Escenario: Cambiar de fase no tira la caché del proveedor
+    Dado una sesión que pasa de diagnóstico a plan y a enseñar
+    Cuando el profesor responde en cada fase
+    Entonces las herramientas y el prompt de sistema que recibe son los mismos en las tres
+    Y la fase actual la dice el estado de la sesión

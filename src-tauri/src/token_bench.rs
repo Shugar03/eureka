@@ -111,8 +111,11 @@ struct Report {
 
 fn phase_of(req: &Value) -> String {
     let sys = messages(req).first().and_then(|m| m["content"].as_str().map(String::from)).unwrap_or_default();
-    for (mark, name) in [("Fase: MEDIR", "probe"), ("Fase: PLANIFICAR", "plan"), ("Fase: ENSEÑAR", "teach"), ("Fase: TERMINADA", "done")] {
-        if sys.contains(mark) {
+    // AC-201: the method's system prompt is the same in every phase; the state block
+    // (the last message) says which one it is.
+    let state = messages(req).last().and_then(|m| m["content"].as_str().map(String::from)).unwrap_or_default();
+    for name in ["probe", "plan", "teach", "done"] {
+        if sys.contains("Fase: MEDIR") && state.contains(&format!("- Fase: {name}\n")) {
             return name.into();
         }
     }

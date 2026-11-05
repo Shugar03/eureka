@@ -240,9 +240,10 @@ async fn phase_change_switches_prompt_and_model_within_one_turn() {
     assert_eq!(reqs.len(), 2);
     assert_eq!(reqs[0]["model"], "p-model", "probe phase uses the prober model");
     assert!(reqs[0]["messages"][0]["content"].as_str().unwrap().contains("Fase: MEDIR"));
-    assert_eq!(reqs[0]["tools"].as_array().unwrap().len(), crate::tools::definitions_for(Phase::Probe).as_array().unwrap().len(), "probe sees only its tools");
-    assert!(reqs[0]["tools"].as_array().unwrap().len() < crate::tools::definitions().as_array().unwrap().len() / 2);
     assert_eq!(reqs[1]["tools"], crate::tools::definitions_for(Phase::Teach), "teach sees its own tools (AC-186)");
+    // AC-201: probe and teach send the same tools and system prompt, so the provider's cache survives the phase change.
+    assert_eq!(reqs[0]["tools"], reqs[1]["tools"], "one tool list for the whole method");
+    assert_eq!(reqs[0]["messages"][0]["content"], reqs[1]["messages"][0]["content"], "one system prompt for the whole method");
     assert_eq!(reqs[1]["model"], "t-model", "teach phase uses the teacher model");
     let sys = reqs[1]["messages"][0]["content"].as_str().unwrap();
     assert!(sys.contains("Fase: ENSEÑAR"));

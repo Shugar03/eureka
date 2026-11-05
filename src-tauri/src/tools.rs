@@ -704,18 +704,17 @@ fn phase_hint(p: Phase) -> &'static str {
     }
 }
 
-/// Audit item 21: fewer tools per phase is less confusion, and each phase's
-/// list is fixed (cache-friendly). Teach and done see everything but `begin_learning`.
+/// The tools the model is shown. The chat has its own list; the method (probe, plan,
+/// teach, done) shares one, what teaching uses (AC-186, docs/tokens.md): providers cache
+/// from the start of the request and the tools come first, so a list that changed with
+/// the phase broke the cache at every transition (AC-201, live measurement). What each
+/// phase should do is in its prompt fragment; the app's controls (`ui_command`) and the
+/// door to every screen (`propose_action`, AC-124) are within reach everywhere. The
+/// specific proposals and `app_status` belong to the chat (chat.md asks for them).
 pub fn definitions_for(phase: Phase) -> Value {
     let keep: &[&str] = match phase {
         Phase::Chat => &["begin_learning", "recall", "library_search", "library_read", "research", "show_diagram", "show_demo", "show_code", "make_cards", "propose_action", "propose_timetable", "propose_exam", "propose_deck", "propose_practice", "propose_own_problems", "propose_code", "app_status", "ui_command"],
-        // The app's controls are within reach in every phase ("pausá el pomodoro" mid-diagnosis).
-        Phase::Probe => &["ask_question", "record_finding", "recall", "set_phase", "library_search", "research", "ui_command"],
-        Phase::Plan => &["ask_question", "record_finding", "recall", "set_phase", "library_search", "library_read", "research", "set_plan", "update_node", "show_diagram", "ui_command"],
-        // Teach and done: what teaching uses (AC-186, docs/tokens.md). The specific
-        // proposals and `app_status` belong to the chat (chat.md is the only prompt that
-        // asks for them); `propose_action` stays as the door to every screen (AC-124).
-        Phase::Teach | Phase::Done => &["ask_question", "record_finding", "recall", "set_phase", "library_search", "library_read", "research", "set_plan", "update_node", "show_diagram", "show_demo", "show_code", "make_cards", "propose_action", "ui_command"],
+        Phase::Probe | Phase::Plan | Phase::Teach | Phase::Done => &["ask_question", "record_finding", "recall", "set_phase", "library_search", "library_read", "research", "set_plan", "update_node", "show_diagram", "show_demo", "show_code", "make_cards", "propose_action", "ui_command"],
     };
     Value::Array(definitions().as_array().unwrap().iter().filter(|d| keep.contains(&d["function"]["name"].as_str().unwrap_or(""))).cloned().collect())
 }
@@ -1220,9 +1219,10 @@ mod tests {
     fn definitions_cover_every_tool() {
         let names: Vec<String> = definitions().as_array().unwrap().iter().map(|d| d["function"]["name"].as_str().unwrap().to_string()).collect();
         assert_eq!(names, ["ask_question", "record_finding", "set_plan", "update_node", "show_diagram", "show_demo", "show_code", "make_cards", "recall", "library_search", "library_read", "research", "set_phase", "begin_learning", "propose_timetable", "propose_exam", "propose_deck", "propose_practice", "propose_own_problems", "propose_code", "propose_action", "app_status", "ui_command"]);
-        let probe: Vec<String> = definitions_for(Phase::Probe).as_array().unwrap().iter().map(|d| d["function"]["name"].as_str().unwrap().to_string()).collect();
-        assert_eq!(probe, ["ask_question", "record_finding", "recall", "library_search", "research", "set_phase", "ui_command"]);
-        assert!(definitions_for(Phase::Plan).as_array().unwrap().iter().any(|d| d["function"]["name"] == "set_plan"));
+        // AC-201: the method shows one list in every phase (the provider's cache survives the change).
+        for p in [Phase::Probe, Phase::Plan, Phase::Done] {
+            assert_eq!(definitions_for(p), definitions_for(Phase::Teach), "{p:?} shows the method's list");
+        }
         let teach: Vec<String> = definitions_for(Phase::Teach).as_array().unwrap().iter().map(|d| d["function"]["name"].as_str().unwrap().to_string()).collect();
         // AC-186: teaching keeps its tools and the door to every screen; the chat's proposals stay in the chat.
         assert_eq!(teach, ["ask_question", "record_finding", "set_plan", "update_node", "show_diagram", "show_demo", "show_code", "make_cards", "recall", "library_search", "library_read", "research", "set_phase", "propose_action", "ui_command"]);

@@ -1,6 +1,6 @@
 # Fase: MEDIR
 
-Estás en la fase de diagnóstico. Todavía **no enseñás**.
+En esta fase medís: todavía **no enseñás**.
 
 ## Objetivo
 

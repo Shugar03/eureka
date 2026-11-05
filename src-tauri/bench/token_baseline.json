@@ -38,19 +38,19 @@
           "total": 7521
         },
         {
-          "system": 2604,
-          "tools": 1292,
+          "system": 3661,
+          "tools": 2583,
           "history": 158,
           "state": 66,
-          "total": 4120
+          "total": 6468
         }
       ],
       "turn": {
-        "system": 6210,
-        "tools": 5022,
+        "system": 7267,
+        "tools": 6313,
         "history": 225,
         "state": 184,
-        "total": 11641
+        "total": 13989
       },
       "cached_prefix": 7352
     },
@@ -61,21 +61,21 @@
       "calls": 1,
       "per_call": [
         {
-          "system": 2604,
-          "tools": 1292,
+          "system": 3661,
+          "tools": 2583,
           "history": 281,
           "state": 66,
-          "total": 4243
+          "total": 6591
         }
       ],
       "turn": {
-        "system": 2604,
-        "tools": 1292,
+        "system": 3661,
+        "tools": 2583,
         "history": 281,
         "state": 66,
-        "total": 4243
+        "total": 6591
       },
-      "cached_prefix": 4054
+      "cached_prefix": 6402
     },
     "04-diagnostico-a-plan": {
       "phases": [
@@ -85,28 +85,28 @@
       "calls": 2,
       "per_call": [
         {
-          "system": 2604,
-          "tools": 1292,
+          "system": 3661,
+          "tools": 2583,
           "history": 464,
           "state": 78,
-          "total": 4438
+          "total": 6786
         },
         {
-          "system": 2101,
-          "tools": 1665,
+          "system": 3661,
+          "tools": 2583,
           "history": 612,
           "state": 98,
-          "total": 4476
+          "total": 6954
         }
       ],
       "turn": {
-        "system": 4705,
-        "tools": 2957,
+        "system": 7322,
+        "tools": 5166,
         "history": 1076,
         "state": 176,
-        "total": 8914
+        "total": 13740
       },
-      "cached_prefix": 4177
+      "cached_prefix": 13233
     },
     "05-ensenar-diagrama-demo": {
       "phases": [
@@ -116,28 +116,28 @@
       "calls": 2,
       "per_call": [
         {
-          "system": 2101,
-          "tools": 1665,
+          "system": 3661,
+          "tools": 2583,
           "history": 913,
           "state": 236,
-          "total": 4915
+          "total": 7393
         },
         {
-          "system": 2558,
+          "system": 3661,
           "tools": 2583,
           "history": 992,
           "state": 236,
-          "total": 6369
+          "total": 7472
         }
       ],
       "turn": {
-        "system": 4659,
-        "tools": 4248,
+        "system": 7322,
+        "tools": 5166,
         "history": 1905,
         "state": 472,
-        "total": 11284
+        "total": 14865
       },
-      "cached_prefix": 4378
+      "cached_prefix": 14013
     },
     "06-ensenar-chequeo": {
       "phases": [
@@ -146,21 +146,21 @@
       "calls": 1,
       "per_call": [
         {
-          "system": 2558,
+          "system": 3661,
           "tools": 2583,
           "history": 1327,
           "state": 236,
-          "total": 6704
+          "total": 7807
         }
       ],
       "turn": {
-        "system": 2558,
+        "system": 3661,
         "tools": 2583,
         "history": 1327,
         "state": 236,
-        "total": 6704
+        "total": 7807
       },
-      "cached_prefix": 6133
+      "cached_prefix": 7236
     },
     "07-ensenar-a-cierre": {
       "phases": [
@@ -170,28 +170,28 @@
       "calls": 2,
       "per_call": [
         {
-          "system": 2558,
+          "system": 3661,
           "tools": 2583,
           "history": 1576,
           "state": 237,
-          "total": 6954
+          "total": 8057
         },
         {
-          "system": 1918,
+          "system": 3661,
           "tools": 2583,
           "history": 1800,
           "state": 236,
-          "total": 6537
+          "total": 8280
         }
       ],
       "turn": {
-        "system": 4476,
+        "system": 7322,
         "tools": 5166,
         "history": 3376,
         "state": 473,
-        "total": 13491
+        "total": 16337
       },
-      "cached_prefix": 6468
+      "cached_prefix": 15391
     },
     "08-cierre": {
       "phases": [
@@ -200,21 +200,21 @@
       "calls": 1,
       "per_call": [
         {
-          "system": 1918,
+          "system": 3661,
           "tools": 2583,
           "history": 1845,
           "state": 236,
-          "total": 6582
+          "total": 8325
         }
       ],
       "turn": {
-        "system": 1918,
+        "system": 3661,
         "tools": 2583,
         "history": 1845,
         "state": 236,
-        "total": 6582
+        "total": 8325
       },
-      "cached_prefix": 6301
+      "cached_prefix": 8044
     },
     "09-memoria-en-segundo-plano": {
       "phases": [
@@ -277,21 +277,21 @@
       "calls": 1,
       "per_call": [
         {
-          "system": 2558,
+          "system": 3661,
           "tools": 2583,
           "history": 32430,
           "state": 180,
-          "total": 37751
+          "total": 38854
         }
       ],
       "turn": {
-        "system": 2558,
+        "system": 3661,
         "tools": 2583,
         "history": 32430,
         "state": 180,
-        "total": 37751
+        "total": 38854
       },
-      "cached_prefix": 0
+      "cached_prefix": 6244
     },
     "12-sesion-larga-b": {
       "phases": [
@@ -300,21 +300,21 @@
       "calls": 1,
       "per_call": [
         {
-          "system": 2558,
+          "system": 3661,
           "tools": 2583,
           "history": 21748,
           "state": 180,
-          "total": 27069
+          "total": 28172
         }
       ],
       "turn": {
-        "system": 2558,
+        "system": 3661,
         "tools": 2583,
         "history": 21748,
         "state": 180,
-        "total": 27069
+        "total": 28172
       },
-      "cached_prefix": 5157
+      "cached_prefix": 6260
     },
     "13-sesion-larga-c": {
       "phases": [
@@ -323,21 +323,21 @@
       "calls": 1,
       "per_call": [
         {
-          "system": 2558,
+          "system": 3661,
           "tools": 2583,
           "history": 22031,
           "state": 180,
-          "total": 27352
+          "total": 28455
         }
       ],
       "turn": {
-        "system": 2558,
+        "system": 3661,
         "tools": 2583,
         "history": 22031,
         "state": 180,
-        "total": 27352
+        "total": 28455
       },
-      "cached_prefix": 26889
+      "cached_prefix": 27992
     },
     "14-sesion-larga-d": {
       "phases": [
@@ -346,21 +346,21 @@
       "calls": 1,
       "per_call": [
         {
-          "system": 2558,
+          "system": 3661,
           "tools": 2583,
           "history": 22314,
           "state": 180,
-          "total": 27635
+          "total": 28738
         }
       ],
       "turn": {
-        "system": 2558,
+        "system": 3661,
         "tools": 2583,
         "history": 22314,
         "state": 180,
-        "total": 27635
+        "total": 28738
       },
-      "cached_prefix": 27172
+      "cached_prefix": 28275
     },
     "15-sesion-larga-e": {
       "phases": [
@@ -369,21 +369,21 @@
       "calls": 1,
       "per_call": [
         {
-          "system": 2558,
+          "system": 3661,
           "tools": 2583,
           "history": 22597,
           "state": 180,
-          "total": 27918
+          "total": 29021
         }
       ],
       "turn": {
-        "system": 2558,
+        "system": 3661,
         "tools": 2583,
         "history": 22597,
         "state": 180,
-        "total": 27918
+        "total": 29021
       },
-      "cached_prefix": 27455
+      "cached_prefix": 28558
     },
     "16-sesion-larga-f": {
       "phases": [
@@ -392,21 +392,21 @@
       "calls": 1,
       "per_call": [
         {
-          "system": 2558,
+          "system": 3661,
           "tools": 2583,
           "history": 22880,
           "state": 180,
-          "total": 28201
+          "total": 29304
         }
       ],
       "turn": {
-        "system": 2558,
+        "system": 3661,
         "tools": 2583,
         "history": 22880,
         "state": 180,
-        "total": 28201
+        "total": 29304
       },
-      "cached_prefix": 27738
+      "cached_prefix": 28841
     }
   },
   "tools": {
@@ -463,7 +463,7 @@
     "practice_grade": 382,
     "practice_hint": 288,
     "practice_own": 403,
-    "probe": 753,
+    "probe": 749,
     "remember_session": 344,
     "research": 126,
     "shared": 1851,
