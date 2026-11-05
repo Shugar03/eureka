@@ -31,6 +31,9 @@ El benchmark tiene dos mitades:
 | Conversión en la app, desde el segundo documento | **0,4 s** |
 | Guardar + indexar (Rust) | 7 ms + 35 ms |
 | Libro de 500 páginas sintético (importar + indexar + buscar) | 0,19 s |
+| 50 libros de 40 páginas: índice entero (primera búsqueda) | 0,54 s |
+| Agregar un libro más (guardar + indexar solo ese, AC-190) | **13 ms** (antes: guardar + rearmar los 51, ~0,55 s) |
+| Quitar un libro | 1 ms |
 | **Tokens del modelo gastados al indexar** | **0** |
 | Tamaño del libro en tokens (si se mandara entero) | ~13.979 |
 | Títulos detectados | 12/12 (2 capítulos + 10 secciones) |

@@ -1202,7 +1202,10 @@ fn create_backup(app: tauri::AppHandle, state: State<'_, AppState>) -> CmdResult
 #[tauri::command]
 fn restore_backup(state: State<'_, AppState>, bytes: Vec<u8>) -> CmdResult<usize> {
     let safety = state.data_dir.join(format!("antes-de-restaurar-{}.zip", chrono::Local::now().format("%Y%m%d-%H%M%S")));
-    backup::restore(&state.data_dir, &bytes, &safety).map_err(err)
+    let restored = backup::restore(&state.data_dir, &bytes, &safety).map_err(err)?;
+    // AC-190: the library's files changed under the index.
+    state.library.invalidate();
+    Ok(restored)
 }
 
 /// Creates a deck from imported cards (Anki's plain text or .apkg, a shared deck).

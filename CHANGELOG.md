@@ -10,6 +10,7 @@ Lo que cambia en cada versión de Eureka, de la más nueva a la más vieja. El f
 - **Vista «Uso»** en Ajustes → Avanzado: cuántos tokens gastó cada sesión, fase y modelo, contados en tu PC (AC-186).
 
 ### Mejorado
+- **Agregar un documento a una biblioteca grande es instantáneo:** el índice de búsqueda se actualiza solo para ese libro, también mientras el OCR le suma páginas (AC-190).
 - **El profesor busca mejor en tu biblioteca:** si lo que encontró coincide poco con lo que buscaba, prueba una vez más con otras palabras antes de decirte que no está (AC-189).
 - **Cada turno manda menos tokens:** el historial se recorta por bloques para aprovechar la caché del proveedor, enseñar y cerrar llevan menos herramientas, y Claude (por OpenRouter) y ChatGPT reciben pistas de caché. En una sesión típica, de ~81k a ~70k tokens; detalle en [docs/tokens.md](docs/tokens.md) (AC-186).
 

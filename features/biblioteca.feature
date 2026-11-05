@@ -51,3 +51,11 @@ Característica: Biblioteca local de bibliografía
     Entonces el resultado le pide buscar una vez más con sinónimos o como lo diría un libro
     Y si la segunda búsqueda del mismo turno también es débil, el resultado le dice que lo diga y use research
     Y una búsqueda que encuentra bien no agrega ningún aviso
+
+  @AC-190
+  Escenario: Agregar un libro no rearma toda la biblioteca
+    Dado que la biblioteca tiene 50 libros y ya se buscó una vez
+    Cuando agrego un libro, el OCR le suma páginas a otro y quito un tercero
+    Entonces cada cambio actualiza solo ese libro en el índice
+    Y buscar da lo mismo que con el índice rearmado entero
+    Y después de restaurar un respaldo, la búsqueda siguiente rearma el índice
