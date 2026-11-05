@@ -296,3 +296,7 @@ TOKEN_BASELINE_UPDATE=1 cargo test --lib token_budget -- --nocapture
 ```
 
 y se commitea la línea base nueva junto con el cambio que la explica.
+
+## Memoria del estudiante (AC-195..AC-200)
+
+La línea base se actualizó al mergear la memoria nueva: `recall` suma el parámetro opcional `id` (pedir el registro entero de una vista previa), **+22 tokens de herramientas** y −5 de sistema por llamada del profesor (≈ +17 netos, +0,2 %), y aparece el prompt nuevo `memory_conflict` (55 tokens), que solo usa la pasada en segundo plano para contradicciones ambiguas (hasta 3 por pasada). La pasada de memoria en segundo plano no cambia (2439).

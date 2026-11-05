@@ -7,19 +7,19 @@
       "calls": 1,
       "per_call": [
         {
-          "system": 3611,
-          "tools": 3708,
+          "system": 3606,
+          "tools": 3730,
           "history": 16,
           "state": 118,
-          "total": 7453
+          "total": 7470
         }
       ],
       "turn": {
-        "system": 3611,
-        "tools": 3708,
+        "system": 3606,
+        "tools": 3730,
         "history": 16,
         "state": 118,
-        "total": 7453
+        "total": 7470
       },
       "cached_prefix": 0
     },
@@ -31,28 +31,28 @@
       "calls": 2,
       "per_call": [
         {
-          "system": 3611,
-          "tools": 3708,
+          "system": 3606,
+          "tools": 3730,
           "history": 67,
           "state": 118,
-          "total": 7504
+          "total": 7521
         },
         {
-          "system": 2609,
-          "tools": 1270,
+          "system": 2604,
+          "tools": 1292,
           "history": 158,
           "state": 66,
-          "total": 4103
+          "total": 4120
         }
       ],
       "turn": {
-        "system": 6220,
-        "tools": 4978,
+        "system": 6210,
+        "tools": 5022,
         "history": 225,
         "state": 184,
-        "total": 11607
+        "total": 11641
       },
-      "cached_prefix": 7335
+      "cached_prefix": 7352
     },
     "03-diagnostico": {
       "phases": [
@@ -61,21 +61,21 @@
       "calls": 1,
       "per_call": [
         {
-          "system": 2609,
-          "tools": 1270,
+          "system": 2604,
+          "tools": 1292,
           "history": 281,
           "state": 66,
-          "total": 4226
+          "total": 4243
         }
       ],
       "turn": {
-        "system": 2609,
-        "tools": 1270,
+        "system": 2604,
+        "tools": 1292,
         "history": 281,
         "state": 66,
-        "total": 4226
+        "total": 4243
       },
-      "cached_prefix": 4037
+      "cached_prefix": 4054
     },
     "04-diagnostico-a-plan": {
       "phases": [
@@ -85,28 +85,28 @@
       "calls": 2,
       "per_call": [
         {
-          "system": 2609,
-          "tools": 1270,
+          "system": 2604,
+          "tools": 1292,
           "history": 464,
           "state": 78,
-          "total": 4421
+          "total": 4438
         },
         {
-          "system": 2106,
-          "tools": 1643,
+          "system": 2101,
+          "tools": 1665,
           "history": 612,
           "state": 98,
-          "total": 4459
+          "total": 4476
         }
       ],
       "turn": {
-        "system": 4715,
-        "tools": 2913,
+        "system": 4705,
+        "tools": 2957,
         "history": 1076,
         "state": 176,
-        "total": 8880
+        "total": 8914
       },
-      "cached_prefix": 4160
+      "cached_prefix": 4177
     },
     "05-ensenar-diagrama-demo": {
       "phases": [
@@ -116,28 +116,28 @@
       "calls": 2,
       "per_call": [
         {
-          "system": 2106,
-          "tools": 1643,
+          "system": 2101,
+          "tools": 1665,
           "history": 913,
           "state": 236,
-          "total": 4898
+          "total": 4915
         },
         {
-          "system": 2563,
-          "tools": 2561,
+          "system": 2558,
+          "tools": 2583,
           "history": 992,
           "state": 236,
-          "total": 6352
+          "total": 6369
         }
       ],
       "turn": {
-        "system": 4669,
-        "tools": 4204,
+        "system": 4659,
+        "tools": 4248,
         "history": 1905,
         "state": 472,
-        "total": 11250
+        "total": 11284
       },
-      "cached_prefix": 4361
+      "cached_prefix": 4378
     },
     "06-ensenar-chequeo": {
       "phases": [
@@ -146,21 +146,21 @@
       "calls": 1,
       "per_call": [
         {
-          "system": 2563,
-          "tools": 2561,
+          "system": 2558,
+          "tools": 2583,
           "history": 1327,
           "state": 236,
-          "total": 6687
+          "total": 6704
         }
       ],
       "turn": {
-        "system": 2563,
-        "tools": 2561,
+        "system": 2558,
+        "tools": 2583,
         "history": 1327,
         "state": 236,
-        "total": 6687
+        "total": 6704
       },
-      "cached_prefix": 6116
+      "cached_prefix": 6133
     },
     "07-ensenar-a-cierre": {
       "phases": [
@@ -170,28 +170,28 @@
       "calls": 2,
       "per_call": [
         {
-          "system": 2563,
-          "tools": 2561,
+          "system": 2558,
+          "tools": 2583,
           "history": 1576,
           "state": 237,
-          "total": 6937
+          "total": 6954
         },
         {
-          "system": 1924,
-          "tools": 2561,
+          "system": 1918,
+          "tools": 2583,
           "history": 1800,
           "state": 236,
-          "total": 6521
+          "total": 6537
         }
       ],
       "turn": {
-        "system": 4487,
-        "tools": 5122,
+        "system": 4476,
+        "tools": 5166,
         "history": 3376,
         "state": 473,
-        "total": 13458
+        "total": 13491
       },
-      "cached_prefix": 6451
+      "cached_prefix": 6468
     },
     "08-cierre": {
       "phases": [
@@ -200,21 +200,21 @@
       "calls": 1,
       "per_call": [
         {
-          "system": 1924,
-          "tools": 2561,
+          "system": 1918,
+          "tools": 2583,
           "history": 1845,
           "state": 236,
-          "total": 6566
+          "total": 6582
         }
       ],
       "turn": {
-        "system": 1924,
-        "tools": 2561,
+        "system": 1918,
+        "tools": 2583,
         "history": 1845,
         "state": 236,
-        "total": 6566
+        "total": 6582
       },
-      "cached_prefix": 6285
+      "cached_prefix": 6301
     },
     "09-memoria-en-segundo-plano": {
       "phases": [
@@ -224,11 +224,11 @@
       "calls": 2,
       "per_call": [
         {
-          "system": 346,
+          "system": 344,
           "tools": 136,
           "history": 602,
           "state": 0,
-          "total": 1084
+          "total": 1082
         },
         {
           "system": 493,
@@ -239,11 +239,11 @@
         }
       ],
       "turn": {
-        "system": 839,
+        "system": 837,
         "tools": 396,
         "history": 1204,
         "state": 0,
-        "total": 2439
+        "total": 2437
       },
       "cached_prefix": 0
     },
@@ -254,19 +254,19 @@
       "calls": 1,
       "per_call": [
         {
-          "system": 481,
+          "system": 480,
           "tools": 150,
           "history": 110,
           "state": 0,
-          "total": 741
+          "total": 740
         }
       ],
       "turn": {
-        "system": 481,
+        "system": 480,
         "tools": 150,
         "history": 110,
         "state": 0,
-        "total": 741
+        "total": 740
       },
       "cached_prefix": 0
     },
@@ -277,19 +277,19 @@
       "calls": 1,
       "per_call": [
         {
-          "system": 2563,
-          "tools": 2561,
+          "system": 2558,
+          "tools": 2583,
           "history": 32430,
           "state": 180,
-          "total": 37734
+          "total": 37751
         }
       ],
       "turn": {
-        "system": 2563,
-        "tools": 2561,
+        "system": 2558,
+        "tools": 2583,
         "history": 32430,
         "state": 180,
-        "total": 37734
+        "total": 37751
       },
       "cached_prefix": 0
     },
@@ -300,21 +300,21 @@
       "calls": 1,
       "per_call": [
         {
-          "system": 2563,
-          "tools": 2561,
+          "system": 2558,
+          "tools": 2583,
           "history": 21748,
           "state": 180,
-          "total": 27052
+          "total": 27069
         }
       ],
       "turn": {
-        "system": 2563,
-        "tools": 2561,
+        "system": 2558,
+        "tools": 2583,
         "history": 21748,
         "state": 180,
-        "total": 27052
+        "total": 27069
       },
-      "cached_prefix": 5140
+      "cached_prefix": 5157
     },
     "13-sesion-larga-c": {
       "phases": [
@@ -323,21 +323,21 @@
       "calls": 1,
       "per_call": [
         {
-          "system": 2563,
-          "tools": 2561,
+          "system": 2558,
+          "tools": 2583,
           "history": 22031,
           "state": 180,
-          "total": 27335
+          "total": 27352
         }
       ],
       "turn": {
-        "system": 2563,
-        "tools": 2561,
+        "system": 2558,
+        "tools": 2583,
         "history": 22031,
         "state": 180,
-        "total": 27335
+        "total": 27352
       },
-      "cached_prefix": 26872
+      "cached_prefix": 26889
     },
     "14-sesion-larga-d": {
       "phases": [
@@ -346,21 +346,21 @@
       "calls": 1,
       "per_call": [
         {
-          "system": 2563,
-          "tools": 2561,
+          "system": 2558,
+          "tools": 2583,
           "history": 22314,
           "state": 180,
-          "total": 27618
+          "total": 27635
         }
       ],
       "turn": {
-        "system": 2563,
-        "tools": 2561,
+        "system": 2558,
+        "tools": 2583,
         "history": 22314,
         "state": 180,
-        "total": 27618
+        "total": 27635
       },
-      "cached_prefix": 27155
+      "cached_prefix": 27172
     },
     "15-sesion-larga-e": {
       "phases": [
@@ -369,21 +369,21 @@
       "calls": 1,
       "per_call": [
         {
-          "system": 2563,
-          "tools": 2561,
+          "system": 2558,
+          "tools": 2583,
           "history": 22597,
           "state": 180,
-          "total": 27901
+          "total": 27918
         }
       ],
       "turn": {
-        "system": 2563,
-        "tools": 2561,
+        "system": 2558,
+        "tools": 2583,
         "history": 22597,
         "state": 180,
-        "total": 27901
+        "total": 27918
       },
-      "cached_prefix": 27438
+      "cached_prefix": 27455
     },
     "16-sesion-larga-f": {
       "phases": [
@@ -392,21 +392,21 @@
       "calls": 1,
       "per_call": [
         {
-          "system": 2563,
-          "tools": 2561,
+          "system": 2558,
+          "tools": 2583,
           "history": 22880,
           "state": 180,
-          "total": 28184
+          "total": 28201
         }
       ],
       "turn": {
-        "system": 2563,
-        "tools": 2561,
+        "system": 2558,
+        "tools": 2583,
         "history": 22880,
         "state": 180,
-        "total": 28184
+        "total": 28201
       },
-      "cached_prefix": 27721
+      "cached_prefix": 27738
     }
   },
   "tools": {
@@ -423,7 +423,7 @@
     "propose_own_problems": 187,
     "propose_practice": 145,
     "propose_timetable": 473,
-    "recall": 161,
+    "recall": 183,
     "record_finding": 101,
     "research": 59,
     "set_phase": 68,
@@ -435,18 +435,18 @@
     "update_node": 75
   },
   "prompts": {
-    "academic_parse": 583,
+    "academic_parse": 581,
     "cards_generate": 280,
     "career_parse": 384,
     "chat": 1755,
-    "class_notes": 338,
+    "class_notes": 336,
     "code_exercise": 622,
     "code_explain": 193,
     "code_project": 782,
     "code_review": 224,
-    "companion": 995,
-    "companion_entry": 405,
-    "done": 68,
+    "companion": 992,
+    "companion_entry": 403,
+    "done": 67,
     "exam_cheat_sheet": 267,
     "exam_check": 158,
     "exam_explain": 202,
@@ -457,16 +457,17 @@
     "lang_listening": 235,
     "lang_path": 370,
     "lang_speaking": 273,
+    "memory_conflict": 55,
     "plan": 250,
-    "practice_generate": 481,
-    "practice_grade": 384,
-    "practice_hint": 289,
-    "practice_own": 404,
+    "practice_generate": 480,
+    "practice_grade": 382,
+    "practice_hint": 288,
+    "practice_own": 403,
     "probe": 753,
-    "remember_session": 346,
-    "research": 128,
-    "shared": 1854,
-    "summarize_history": 251,
+    "remember_session": 344,
+    "research": 126,
+    "shared": 1851,
+    "summarize_history": 248,
     "teach": 707,
     "vision_transcribe": 211
   }
