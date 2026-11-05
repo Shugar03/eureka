@@ -24,6 +24,9 @@ Para correrlo y ver las tablas: `cargo test --lib token_ -- --nocapture` (con la
 Una sesión guionada: charla → diagnóstico → plan → enseñar (con diagrama y una demo de 3,5 KB) → cierre; después
 el pase de memoria en segundo plano, un set de práctica y una sesión larga (200 mensajes) que pasa la ventana.
 
+> Las tablas de esta sección son la **medición inicial** (antes de optimizar). Lo que cambió con las optimizaciones
+> aplicadas está en «Optimizaciones aplicadas: antes y después», más abajo.
+
 | turno | fases | llamadas | sistema | tools | historial | estado | total turno | prefijo repetido |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
 | 01 charla | chat | 1 | 3 611 | 3 984 | 16 | 118 | 7 729 | 0 (primera) |
@@ -114,11 +117,11 @@ Donde **sí** se rompe (por diseño, no por un bug):
 3. **La ventana que se desliza (`context::window`)**: pasado el 60 % del presupuesto (64 k por defecto), cada turno
    que agrega una respuesta larga saca mensajes viejos y cambia el aviso «Se omitieron N mensajes», que va en la
    posición 2. Todo el historial se corre: en el turno B de la sesión larga solo se repiten **6 953 de 39 830
-   tokens (17 %)**; cuando no se saca nada (respuesta corta) se repite el 99 %. **Es la mayor pérdida medida.**
+   tokens (17 %)**; cuando no se saca nada (respuesta corta) se repite el 99 %. **Era la mayor pérdida medida;
+   corregida con la ventana por bloques (ver abajo).**
 4. **Llega una investigación en segundo plano (`research::patch`)**: el mensaje «Investigación en curso» se
    reescribe en su lugar con el resultado, así que el turno siguiente corta el caché en ese mensaje.
-5. **Suscripción ChatGPT (Responses API)**: no manda `prompt_cache_key`; el caché depende solo del enrutado del
-   proveedor.
+5. **Suscripción ChatGPT (Responses API)**: no mandaba `prompt_cache_key`; ahora manda el id de la conversación.
 
 No encontré un bug que rompa el caché que se pueda arreglar con un cambio trivial; los cinco puntos son decisiones
 de diseño y quedan como optimizaciones.
@@ -136,7 +139,90 @@ de diseño y quedan como optimizaciones.
   reintento con el error de validación → hasta 6 llamadas por tarea.
 - En la práctica: unas 2 llamadas por sesión de estudio, una vez que la sesión se calma.
 
-## Las optimizaciones con más ahorro (no implementadas todavía)
+## Optimizaciones aplicadas: antes y después
+
+Cuatro cambios, cada uno en su commit y medido con el mismo benchmark (la línea base quedó con los números nuevos,
+así que `token_budget` falla si vuelven a crecer).
+
+### Por fase (tokens por llamada, o200k)
+
+| fase | sistema | tools antes → después | historial | estado | por llamada antes → después |
+|---|---:|---:|---:|---:|---:|
+| chat | 3 611 | 3 984 → **3 708** | 16–67 | 118 | 7 729 → **7 453** |
+| probe | 2 609 | 1 513 → **1 270** | 158–464 | 66–78 | 4 469 → **4 226** |
+| plan | 2 106 | 1 886 → **1 643** | 612–913 | 98–236 | 4 702–5 141 → **4 459–4 898** |
+| teach | 2 563 | 4 374 → **2 561** | 992–1 576 | 236 | 8 165–8 750 → **6 352–6 937** |
+| done | 1 924 | 4 374 → **2 561** | 1 800–1 845 | 236 | 8 334–8 379 → **6 521–6 566** |
+
+Sistema, historial y estado no cambiaron en la sesión guionada (no toqué los prompts).
+
+### Por turno del aprendiz
+
+| turno | antes | después | prefijo repetido antes → después |
+|---|---:|---:|---:|
+| 01 charla | 7 729 | 7 453 | 0 → 0 |
+| 02 charla → diagnóstico | 12 126 | 11 607 | 63 % → 63 % |
+| 03 diagnóstico | 4 469 | 4 226 | 96 % → 96 % |
+| 04 diagnóstico → plan | 9 366 | 8 880 | 47 % → 47 % |
+| 05 plan → enseñar | 13 306 | 11 250 | 35 % → 39 % |
+| 06 enseñar | 8 500 | 6 687 | 93 % → 91 % |
+| 07 enseñar → cierre | 17 084 | 13 458 | 48 % → 48 % |
+| 08 cierre | 8 379 | 6 566 | 97 % → 96 % |
+| **turnos 01–08** | **80 959** | **70 127 (−13 %)** | 56 % → 55 % |
+
+### Sesión larga (pasada la ventana)
+
+| | antes | después |
+|---|---:|---:|
+| entrada por turno | ~39 800 | ~27 600 |
+| prefijo repetido entre turnos seguidos | **17 %** | **98 %** (y 83 % de promedio en los turnos b–f, contando el turno en que cae un bloque) |
+| tokens sin repetir por turno | ~32 900 | ~460 (≈ 22 k el turno en que cae un bloque) |
+
+### Qué se hizo
+
+1. **Ventana del historial por bloques** (`context::window`). El corte solo cae en marcas fijas, una cada ~20 % del
+   presupuesto contada desde el principio del historial y siempre en un límite seguro (nunca en un resultado de tool):
+   las marcas dependen solo de lo que está antes, así que los mensajes nuevos no las mueven. El techo sigue siendo
+   el 60 % y el aviso «Se omitieron N» cambia solo cuando cae un bloque (cada ~20 % del presupuesto de mensajes
+   nuevos). Como deja entre 40 y 60 % en vez de pegarse al 60 %, además manda menos historial. Lo prueban
+   `context::the_window_moves_in_blocks…` y la sesión larga de `the_static_prefix_is_byte_stable_between_steps`
+   (exige más de 75 % repetido en los turnos b–f).
+2. **Dieta de tools** (`tools::definitions_for`). En enseñar y cerrar salieron `propose_timetable`, `propose_exam`,
+   `propose_deck`, `propose_practice`, `propose_own_problems`, `propose_code` y `app_status` (−1 577 tokens):
+   - **por qué**: el único prompt que los pide es `chat.md`; `teach.md`, `done.md` y `shared.md` no los nombran, y el
+     guion de prueba (`src/e2e/teacherScript.ts`) solo los usa en la fase `chat`. Ningún flujo e2e los necesita
+     fuera de la charla.
+   - **qué quedó y por qué**: `make_cards` y `show_*` (los pide `teach.md`); `ui_command` (`shared.md`: «en cualquier
+     fase»); `recall`, `library_*`, `research` (`shared.md`); `set_plan`/`set_phase` (`done.md` permite ampliar el
+     plan); **`propose_action`**, aunque ningún prompt de enseñar lo pide, porque es la puerta a cada pantalla
+     (examen, mazo, práctica, pomodoro) desde una sesión y AC-124 pide que todo se pueda pedir por chat.
+   - **diagnóstico y plan** no cambiaron de lista: sus tools son todas del método o están en `shared.md`.
+   - `ui_command`: los rangos y el sentido de cada campo van una sola vez, en la descripción, en vez de repetirse en
+     cada propiedad (808 → 565). `propose_timetable`: descripción y tres textos de campos más cortos (506 → 473).
+     No moví nada al prompt: cualquier texto en `shared.md` costaría en todas las llamadas, incluso las que no tienen
+     esas tools.
+3. **Caché del proveedor** (`llm::completions_body`, `responses_body`).
+   - **Claude por OpenRouter** (host `openrouter.ai` y modelo `anthropic/…` o con «claude»): dos puntos de corte
+     con el formato documentado (un bloque de texto con `cache_control: {"type": "ephemeral"}`). Uno va en el
+     mensaje de sistema, que en Anthropic va después de las tools, así que cubre las dos. El otro va en el último
+     mensaje con texto del historial, justo antes del estado. Anthropic permite cuatro.
+   - Con los números de la sesión guionada, ~39 k tokens repetidos se leerían a 0,1×, menos el recargo de 1,25× al
+     escribir: **~30 k tokens-equivalentes menos de 70 k (~40 %)** para quien usa Claude por OpenRouter.
+   - Los pedidos a los demás proveedores quedan byte a byte iguales; lo prueba
+     `llm::other_providers_get_exactly_the_body_they_got_before`.
+   - **Suscripción ChatGPT**: `prompt_cache_key` con el id de la conversación (`eureka-<sesión>`).
+4. **Pase de memoria en una sola llamada: no lo hice.** Hoy son dos tareas forzadas, cada una con su prompt, su
+   esquema, su validación y su reintento. `extract` además alimenta el perfil del aprendiz y lo usan otros flujos
+   (apuntes, la re-extracción de la pantalla). Fusionarlas exige un prompt y una validación nuevos, y un fallo de una
+   obligaría a reintentar las dos. El ahorro es chico en términos absolutos (~1 k tokens por sesión que pasa, dos
+   veces por sesión de estudio como mucho), y el riesgo para la calidad del grafo no se puede medir sin un modelo
+   real. Queda para cuando haya una evaluación con modelo.
+5. **Un solo prefijo para todas las fases: no se hizo, a propósito.** Cambia cómo enseña el profesor y necesita su
+   propia evaluación.
+
+## Las optimizaciones estimadas (informe inicial)
+
+Estado: la 1, la 2 y la 4 están aplicadas (ver arriba); la 3 y la 5 no.
 
 Estimaciones con los números de arriba. «Sin caché» = tokens que el proveedor cobra a precio lleno. Lo que cuesta
 leer del caché, según la documentación de OpenRouter (consultada el 4/11/2026): DeepSeek y Claude 0,1× el precio de
