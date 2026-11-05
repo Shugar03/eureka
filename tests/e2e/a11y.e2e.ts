@@ -107,6 +107,7 @@ for (const theme of ["Tema oscuro", "Tema claro"] as const) {
         return dest.stream;
       };
       (window as unknown as { __eurekaSegmentMs: number }).__eurekaSegmentMs = 1500;
+      return null;
     }, null);
     await screen.getByRole("navigation", "Navegación").getByRole("button", "Clases").click();
     await screen.getByRole("button", "Empezar a grabar").click();

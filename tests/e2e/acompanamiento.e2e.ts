@@ -14,7 +14,7 @@ async function open(app: App, screen: Screen, query = "") {
 async function say(screen: Screen, text: string) {
   await screen.getByRole("textbox", "Mensaje").fill(text);
   await screen.getByRole("button", "Enviar").click();
-  await expect(screen.getByRole("log", "Conversación").getByText(text)).toBeVisible();
+  await expect(screen.getByLabel("Conversación").getByText(text)).toBeVisible();
 }
 
 test("AC-82 antes de empezar dice qué es, qué no es y a dónde viajan los mensajes", async ({ app, screen }) => {

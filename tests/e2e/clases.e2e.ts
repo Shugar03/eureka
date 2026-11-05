@@ -31,6 +31,7 @@ async function fakeClassroom(browser: Browser) {
     };
     Object.defineProperty(window, "speechSynthesis", { value: synth, configurable: true });
     (window as unknown as { __spoken: () => string | undefined }).__spoken = () => current?.text;
+    return null;
   }, null);
 }
 

@@ -56,7 +56,7 @@ test("AC-73 los ajustes se aplican al instante y se recuerdan, sin pedir diagnó
   await screen.getByRole("radio", "Muy grande").click();
   await screen.getByRole("checkbox", /Más espacio entre letras/).click();
   await screen.getByRole("checkbox", /Sin animaciones/).click();
-  const attrs = () => browser.evaluate(() => ({ ...document.documentElement.dataset }), null);
+  const attrs = () => browser.evaluate(() => JSON.parse(JSON.stringify(document.documentElement.dataset)) as Record<string, string>, null);
   await expect.poll(attrs).toMatchObject({ textSize: "larger", spacing: "on", motion: "reduce" });
   // The zoomed shell fills the window exactly: no black band, nothing cut off.
   const fits = await browser.evaluate(() => Math.abs(document.querySelector(".shell")!.getBoundingClientRect().bottom - window.innerHeight) <= 2, null);
@@ -78,7 +78,7 @@ test("AC-74 escuchar un mensaje marca la palabra que se lee, y se detiene", asyn
   await expect(reading).toBeVisible();
   const marked = () => browser.evaluate(() => document.querySelector('[data-testid="reading"] mark')?.textContent ?? "", null);
   await expect.poll(marked).not.toBe("");
-  const spoken = await browser.evaluate(() => (window as unknown as { __spoken: () => string | undefined }).__spoken(), null);
+  const spoken = await browser.evaluate(() => (window as unknown as { __spoken: () => string | undefined }).__spoken() ?? null, null);
   expect(spoken).toBeTruthy();
   expect(spoken).not.toMatch(/[*$`#]/);
   await q.getByRole("button", "Detener lectura").click();

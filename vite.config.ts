@@ -32,8 +32,10 @@ export default defineConfig(({ mode }) => ({
         }
       : undefined,
     watch: {
-      // 3. tell Vite to ignore watching `src-tauri`
-      ignored: ["**/src-tauri/**"],
+      // 3. tell Vite to ignore watching `src-tauri`, and generated output: `.e2e/` grows to
+      //    tens of thousands of files and watching it makes the first page load take ~30 s
+      //    (the first e2e of a run then finds a blank page).
+      ignored: ["**/src-tauri/**", "**/.e2e/**", "**/coverage/**", "**/reports/**", "**/dist/**", "**/marketing/**", "**/mutants.out*/**"],
     },
   },
 

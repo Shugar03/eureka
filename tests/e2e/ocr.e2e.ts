@@ -3,7 +3,8 @@
 // fixed sentence; the PDFs are synthetic image-only fixtures (make-scanned-pdf.py).
 import { test } from "@e2e-dev/web";
 import { expect } from "e2e";
-import type { App, Browser, Screen } from "e2e";
+import type { App, Screen } from "e2e";
+import type { Browser } from "@e2e-dev/web";
 
 const nav = (screen: Screen) => screen.getByRole("navigation", "Navegación");
 const reader = (screen: Screen) => screen.getByRole("article", "Lector");
@@ -50,7 +51,7 @@ test("AC-187 más de 10 páginas escaneadas: primero la estimación; cancelar y 
   // The same file again: same book (no duplicate), only the pages left.
   await pick(browser, "fotocopia-larga.pdf");
   const again = screen.getByRole("group", "Leer las páginas escaneadas");
-  if (await again.isVisible({ timeout: 5_000 }).catch(() => false)) await again.getByRole("button", "Leer con OCR").click();
+  if (await expect(again).toBeVisible({ timeout: 5_000 }).then(() => true).catch(() => false)) await again.getByRole("button", "Leer con OCR").click();
   await expect(screen.getByText("terminé de leerlo con OCR.", { exact: false })).toBeVisible({ timeout: 40_000 });
   await expect(screen.getByRole("complementary", "Documentos").getByRole("listitem")).toHaveCount(1);
   await expect(screen.getByRole("complementary", "Documentos")).toContainText("leído con OCR");

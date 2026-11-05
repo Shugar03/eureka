@@ -33,14 +33,8 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci --no-audit --no-fund
-      # npm run typecheck, in two steps: the app's types block; the e2e tests' types
-      # (tests/tsconfig.json) had 9 errors against the e2e package's types when CI was added,
-      # so they are reported without blocking until they're fixed.
-      - name: Tipos de la app
-        run: npx tsc --noEmit
-      - name: Tipos de los tests e2e (no bloquea todavía)
-        continue-on-error: true
-        run: npx tsc -p tests/tsconfig.json
+      - name: Tipos de la app y de los tests
+        run: npm run typecheck
       - run: npx vitest run
       - name: Tests de los scripts (changelog del release)
         run: npm run test:scripts

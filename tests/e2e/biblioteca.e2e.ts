@@ -1,7 +1,8 @@
 // features/biblioteca.feature — AC-69 … AC-71 (web, scripted backend).
 import { test } from "@e2e-dev/web";
 import { expect } from "e2e";
-import type { App, Browser, Screen } from "e2e";
+import type { App, Screen } from "e2e";
+import type { Browser } from "@e2e-dev/web";
 
 const nav = (screen: Screen) => screen.getByRole("navigation", "Navegación");
 const toc = (screen: Screen) => screen.getByRole("navigation", "Índice");

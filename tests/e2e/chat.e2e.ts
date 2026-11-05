@@ -71,7 +71,7 @@ test("AC-121 con una pregunta pendiente se puede escribir libremente en el chat"
 test("AC-122 el asistente maneja el pomodoro, el tema y el sonido cuando se lo pedís", async ({ app, screen, browser }) => {
   await app.open("/");
   const pomo = screen.getByRole("region", "Pomodoro");
-  const html = () => browser.evaluate(() => document.documentElement.dataset.theme, null);
+  const html = () => browser.evaluate(() => document.documentElement.dataset.theme ?? null, null);
   await screen.getByLabel("Mensaje").fill("empezá un pomodoro de 40 min");
   await screen.getByRole("button", "Enviar").click();
   await expect(pomo.getByRole("button", "Pausar")).toBeVisible({ timeout: 30_000 });
