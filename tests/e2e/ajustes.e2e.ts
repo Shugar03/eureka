@@ -1,4 +1,4 @@
-// features/ajustes.feature — AC-09, AC-10, AC-11, AC-12
+// features/ajustes.feature — AC-09, AC-10, AC-11, AC-12, AC-186
 import { test } from "@e2e-dev/web";
 import { expect } from "e2e";
 
@@ -86,4 +86,20 @@ test("NF-21 el tamaño de contexto del profesor se guarda", async ({ app, screen
   await screen.getByRole("button", "Ajustes").click();
   await screen.getByRole("tab", "Avanzado").click();
   await expect(screen.getByLabel("Contexto de Profesor (miles de tokens)")).toHaveValue("200");
+});
+
+test("AC-186 Avanzado muestra el uso de tokens de hoy, de la semana, por tarea y por sesión", async ({ app, screen }) => {
+  await app.open("/");
+  await screen.getByRole("button", "Ajustes").click();
+  await screen.getByRole("tab", "Avanzado").click();
+
+  const uso = screen.getByRole("region", "Uso");
+  await expect(uso).toBeVisible();
+  await expect(uso.getByRole("table", "Totales")).toContainText("98.400");
+  await expect(uso.getByRole("table", "Totales")).toContainText("63 %");
+  await expect(uso.getByRole("table", "Totales")).toContainText("US$ 0,0213");
+  await expect(uso.getByRole("table", "Por tarea")).toContainText("Diagnóstico");
+  await expect(uso.getByRole("table", "Por sesión")).toContainText("qué es una derivada");
+  await expect(uso.getByTestId("usage-unknown")).toContainText("2 llamadas");
+  await expect(uso.getByText("solo en esta PC", { exact: false })).toBeVisible();
 });

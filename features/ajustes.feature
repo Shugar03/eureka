@@ -72,3 +72,19 @@ Característica: Configurar modelos, keys y prompts
     Dado que la Voz es "En esta PC" con "Liviano, mejor (Whisper base)"
     Cuando abro Ajustes
     Entonces sigue elegido "Liviano, mejor (Whisper base)"
+
+  @AC-186
+  Escenario: Ver cuántos tokens gastó Eureka
+    Dado que el profesor ya respondió varias veces hoy
+    Cuando abro Ajustes → Avanzado
+    Entonces la sección "Uso" muestra hoy y los últimos 7 días con llamadas, entrada, "En caché", salida y costo
+    Y muestra el uso por tarea (por ejemplo "Diagnóstico") y por sesión
+    Y dice cuántas llamadas no trajeron datos del proveedor
+    Y aclara que se guarda solo en esta PC y no entra en el respaldo
+
+  @AC-186
+  Escenario: Un proveedor que no informa el uso no rompe nada
+    Dado un proveedor que rechaza "stream_options"
+    Cuando le escribo al profesor
+    Entonces el profesor responde igual
+    Y esa llamada queda contada como "sin datos del proveedor", no como 0 tokens
