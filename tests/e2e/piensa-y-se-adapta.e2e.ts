@@ -64,6 +64,7 @@ test("AC-168 un empujón desde lo que vengo pensando", async ({ app, screen }) =
   await expect(hints).toContainText(/empujón 1/i);
   await expect(hints.getByRole("button", "Necesito un empujón (1/3)")).toBeVisible();
 
+  await pending(screen).getByRole("button", "+ Contar cómo lo pensé").click();
   await pending(screen).getByRole("textbox", "Pensando en voz alta").fill("2 por 3 es 6, listo");
   await hints.getByRole("button", "Necesito un empujón (1/3)").click();
   await expect(hints.getByRole("status")).toContainText("mandalo como respuesta", { timeout: 10_000 });

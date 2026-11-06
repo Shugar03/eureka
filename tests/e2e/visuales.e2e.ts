@@ -84,6 +84,21 @@ test("AC-29 investigar con fuentes", async ({ app, screen }) => {
   await expect(card.getByRole("link", "Costo marginal")).toHaveAttribute("target", "_blank");
 });
 
+test("AC-206 un PDF abierto que encontró la investigación se suma a la biblioteca", async ({ app, screen }) => {
+  await toTangent(app, screen);
+  await answer(screen, { option: "En la tangente", confidence: 4 });
+  await answer(screen, { option: "6", confidence: 5 });
+  await expect(phase(screen, "Listo")).toHaveAttribute("aria-current", "step", { timeout: 10_000 });
+  await screen.getByRole("textbox", "Mensaje").fill("¿y para qué sirve?");
+  await screen.getByRole("textbox", "Mensaje").press("Enter");
+  const card = screen.getByRole("region", "Investigación");
+  const docs = card.getByRole("list", "Documentos abiertos");
+  await expect(docs).toContainText("Apuntes de física", { timeout: 15_000 });
+  await expect(card.getByText("Sin resultados útiles para: derivada en biología.")).toBeVisible();
+  await docs.getByRole("button", "Sumar a mi biblioteca: Apuntes de física").click();
+  await expect(docs.getByText("✓ En tu biblioteca")).toBeVisible({ timeout: 20_000 });
+});
+
 test("AC-30 sin búsqueda configurada la sesión sigue", async ({ app, screen }) => {
   await toTangent(app, screen, "?noSearch");
   await answer(screen, { option: "En la tangente", confidence: 4 });

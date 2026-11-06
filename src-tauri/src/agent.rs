@@ -449,11 +449,26 @@ pub fn library_read(state: &AppState, s: &Session, args: &str) -> String {
     let Some(sec) = book.sections.iter().find(|x| Some(x.id as u64) == r["section_id"].as_u64()) else {
         return "error: esa sección ya no existe".into();
     };
-    let body = sec.markdown.lines().map(|l| match l.trim().strip_prefix("<!-- p:").and_then(|x| x.strip_suffix("-->")) {
-        Some(p) => format!("(p. {})", p.trim()),
-        None => l.to_string(),
-    }).collect::<Vec<_>>().join("\n");
-    format!("«{}» · {}\n\n{}\n\n(Citá esta sección como [L{}].)", book.title, book.path(sec.id), clip(&body, SECTION_CHARS), r["n"])
+    let page_of = |l: &str| l.trim().strip_prefix("<!-- p:").and_then(|x| x.strip_suffix("-->")).map(|p| p.trim().to_string());
+    let lines: Vec<&str> = sec.markdown.lines().collect();
+    // AC-205: a long section (a scanned book with no headings is one section) is read from
+    // the page the passage is on, not from its start: otherwise every passage reads page 1.
+    let whole: usize = lines.iter().map(|l| l.len() + 1).sum();
+    let wanted = r["page"].as_u64().map(|p| p.to_string());
+    let from = match &wanted {
+        Some(p) if whole > SECTION_CHARS => lines.iter().position(|l| page_of(l).as_deref() == Some(p.as_str())).unwrap_or(0),
+        _ => 0,
+    };
+    let body = lines[from..]
+        .iter()
+        .map(|l| match page_of(l) {
+            Some(p) => format!("(p. {p})"),
+            None => l.to_string(),
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    let note = if from > 0 { format!(" (desde la p. {}, donde está el fragmento)", wanted.unwrap_or_default()) } else { String::new() };
+    format!("«{}» · {}{note}\n\n{}\n\n(Citá esta sección como [L{}].)", book.title, book.path(sec.id), clip(&body, SECTION_CHARS), r["n"])
 }
 
 /// AC-169: writes finished research into the session, exactly once. From the
@@ -622,12 +637,13 @@ pub async fn run_turn(state: &AppState, session_id: &str, ch: &Channel<AgentEven
                     continue;
                 };
                 // AC-169: without a search key it fails now; otherwise it runs in the background.
+                let queries: Vec<String> = q["queries"].as_array().map(|a| a.iter().filter_map(|x| x.as_str().map(String::from)).collect()).unwrap_or_default();
                 if !state.settings.keys().get(crate::settings::SEARCH_KEY).is_some_and(|k| !k.is_empty()) {
-                    let result = crate::research::run(state, question).await;
+                    let result = crate::research::run(state, question, &queries).await;
                     s.messages.push(Msg::tool(&call.id, result.for_teacher(), Some(result.meta())));
                     continue;
                 }
-                let job = crate::research::Job { session_id: s.id.clone(), call_id: call.id.clone(), question: question.trim().into() };
+                let job = crate::research::Job { session_id: s.id.clone(), call_id: call.id.clone(), question: question.trim().into(), queries };
                 match state.research.enqueue(job) {
                     Ok(()) => s.messages.push(Msg::tool(&call.id, crate::research::pending_text(question.trim()), Some(crate::research::pending_meta(question.trim())))),
                     Err(why) => s.messages.push(Msg::tool(&call.id, format!("ignorada: {why}."), None)),

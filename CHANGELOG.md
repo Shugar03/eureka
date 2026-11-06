@@ -4,10 +4,15 @@ Lo que cambia en cada versión de Eureka, de la más nueva a la más vieja. El f
 
 ## Sin publicar
 
+### Nuevo
+- **Preguntas en siete formatos:** además de responder con tus palabras, verdadero o falso, ordenar, unir con flechas, completar huecos y opción múltiple de una o varias. Nunca dos seguidas del mismo tipo, la confianza se pide solo cuando importa y «pensando en voz alta» queda plegado (AC-204).
+- **La investigación consigue la bibliografía:** busca de a un autor o tema, descarta perfiles y fichas de empresas, lee más texto de las mejores fuentes y, si encuentra PDFs abiertos, los podés **sumar a tu biblioteca** con un botón (con OCR si son escaneados). Si le pasás un programa, investiga lo que falta sin que se lo pidas (AC-206).
+
 ### Mejorado
 - **Actualizar ya no muestra un instalador:** la descarga se ve en una barra dentro de Eureka, se reinstala sola en segundos y al abrirse te cuenta las novedades de la versión nueva, una vez. La primera instalación tiene un instalador con la cara de Eureka, en español (AC-202).
 
 ### Corregido
+- **El profesor lee la página que cita:** en un PDF escaneado sin títulos, leer un fragmento de la página 16 devolvía la página 1 (AC-205).
 - **Una sesión ya no queda trabada con «429 overloaded»:** cuando el proveedor dice que está saturado, Eureka reintenta sola por otro camino (OpenCode Go ataba la conversación a un servidor lleno). Si sigue saturado, el error lo explica en castellano (AC-203).
 
 ## [0.6.0] - 2026-11-05

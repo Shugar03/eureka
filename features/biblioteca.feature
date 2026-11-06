@@ -75,3 +75,10 @@ Característica: Biblioteca local de bibliografía
   Escenario: El «+» del chat también acepta una presentación
     Cuando adjunto "clase-volcanes.pptx" con el «+» del chat
     Entonces queda "en tu biblioteca"
+
+  @AC-205
+  Escenario: El profesor lee la página del fragmento que encontró
+    Dado un PDF escaneado sin títulos en mi biblioteca
+    Cuando el profesor lee un fragmento de la página 16
+    Entonces recibe el texto desde la página 16, no desde el principio del libro
+

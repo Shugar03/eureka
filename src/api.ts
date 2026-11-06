@@ -288,6 +288,11 @@ export const projectApi = {
 };
 
 /** AC-69…71: the library, converted on this PC and searched locally (BM25). */
+/** AC-206: an open PDF the research found, downloaded by Rust (no CORS, size and type checked). */
+export const researchApi = {
+  fetchDocument: (url: string) => invoke<ArrayBuffer>("fetch_document", { url }),
+};
+
 export const libraryApi = {
   list: () => invoke<BookSummary[]>("list_books"),
   get: (id: string) => invoke<Book>("get_book", { id }),

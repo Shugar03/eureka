@@ -64,3 +64,11 @@ Característica: Sesión de aprendizaje Medir → Planificar → Enseñar
     Cuando escribo "¿y para qué sirve?" en el mensaje y presiono Enter
     Entonces veo mi mensaje en el chat
     Y el agente responde
+
+  @AC-204
+  Escenario: Las preguntas cambian de formato
+    Dado que el profesor ya me hizo una pregunta para responder con mis palabras
+    Cuando me hace la siguiente
+    Entonces es de otro tipo: verdadero o falso, ordenar, unir, completar huecos u opciones
+    Y «pensando en voz alta» aparece solo si toco «+ Contar cómo lo pensé»
+

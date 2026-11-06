@@ -50,6 +50,10 @@ export interface ResearchMeta {
   pending?: boolean;
   /** AC-169: the teacher already got it after it arrived. */
   told?: boolean;
+  /** AC-206: open PDFs found, offered for the library. */
+  documents?: { title: string; url: string }[];
+  /** AC-206: searches that found nothing useful. */
+  uncovered?: string[];
 }
 
 export interface Msg {
@@ -507,7 +511,15 @@ export type AgentEvent =
 export interface QuestionArgs {
   question: string;
   purpose: "probe" | "predict" | "check";
+  /** AC-204: how it is answered; without it, options make it a choice and no options an open question. */
+  format?: "open" | "choice" | "multi" | "true_false" | "order" | "match" | "cloze";
   options?: string[];
+  /** true_false: each one is marked true or false. */
+  statements?: string[];
+  /** order: in the right order (the card shuffles them). */
+  items?: string[];
+  /** match: the right pairs (the card shuffles the right column). */
+  pairs?: { left: string; right: string }[];
   /** Diagnostic questions the teacher expects to ask in total (probe only), for «pregunta 2 de ~3». */
   of?: number;
 }

@@ -1110,6 +1110,26 @@ async fn the_teacher_searches_the_library_and_cites_numbered_passages() {
 }
 
 #[tokio::test]
+async fn a_long_scanned_book_is_read_from_the_page_of_the_passage() {
+    // AC-205: an OCR'd PDF with no headings is one section; L2 on p. 9 used to read p. 1.
+    let f = fake(vec![Reply::Sse(vec![text("ok")])]).await;
+    let (st, dir) = state(&f, true, "");
+    let pages: Vec<String> = (1..=20)
+        .map(|p| format!("<!-- p:{p} -->\n\nPágina {p}. {}{}", "relleno ".repeat(120), if p == 16 { "La reunión de 1983 redefinió la planificación." } else { "" }))
+        .collect();
+    st.library.import("Argüello", "a.pdf", &pages.join("\n\n"), 20, vec![], None).unwrap();
+    let id = new_session(&st);
+    let mut s = st.sessions.load(&id).unwrap();
+    let (text, meta) = library_search(&st, &s, r#"{"query": "reunión 1983 redefinió planificación"}"#);
+    assert_eq!(meta["refs"][0]["page"], 16, "{text}");
+    s.messages.push(crate::llm::Msg { role: "tool".into(), content: Some(text), tool_calls: None, tool_call_id: Some("x".into()), meta: Some(meta) });
+    let read = library_read(&st, &s, r#"{"ref": "L1"}"#);
+    assert!(read.contains("desde la p. 16") && read.contains("(p. 16)") && read.contains("La reunión de 1983"), "{}", read.chars().take(300).collect::<String>());
+    assert!(!read.contains("Página 1. "), "not from the start of the book");
+    std::fs::remove_dir_all(dir).ok();
+}
+
+#[tokio::test]
 async fn the_teachers_state_carries_the_accessibility_settings_in_every_phase() {
     let f = fake(vec![Reply::Sse(vec![text("Hola.")]), Reply::Sse(vec![text("Seguimos.")])]).await;
     let (st, dir) = state(&f, true, "");

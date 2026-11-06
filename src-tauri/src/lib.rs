@@ -1569,6 +1569,13 @@ async fn update_install(app: tauri::AppHandle, state: State<'_, AppState>, on_pr
     update::install(&app, &state.data_dir, on_progress).await.map_err(err)
 }
 
+/// AC-206: an open PDF the research found, downloaded when the learner taps «Sumar a mi
+/// biblioteca»; the frontend reads it like a dropped file (with OCR if it is scanned).
+#[tauri::command]
+async fn fetch_document(url: String) -> CmdResult<tauri::ipc::Response> {
+    research::download_pdf(&url).await.map(tauri::ipc::Response::new).map_err(err)
+}
+
 /// AC-202: right after updating itself, what the new version brings (once).
 #[tauri::command]
 fn update_whats_new(app: tauri::AppHandle, state: State<'_, AppState>) -> Option<update::WhatsNew> {
@@ -1651,6 +1658,7 @@ pub fn run() {
             update_check,
             update_install,
             update_whats_new,
+            fetch_document,
             get_settings,
             save_settings,
             chatgpt_status,

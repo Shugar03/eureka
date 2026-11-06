@@ -24,7 +24,10 @@ export async function answer(
   if (opts.option) await q.getByRole("radio", opts.option).click();
   if (opts.text) await q.getByRole("textbox", opts.option ? "Comentario" : "Tu respuesta").fill(opts.text);
   await q.getByRole("radio", new RegExp(`^Confianza ${opts.confidence ?? 4}:`)).click();
-  if (opts.thinking) await q.getByRole("textbox", "Pensando en voz alta").fill(opts.thinking);
+  if (opts.thinking) {
+    await q.getByRole("button", "+ Contar cómo lo pensé").click();
+    await q.getByRole("textbox", "Pensando en voz alta").fill(opts.thinking);
+  }
   await q.getByRole("button", "Responder").click();
 }
 

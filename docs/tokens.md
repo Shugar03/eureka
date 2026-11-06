@@ -327,3 +327,15 @@ diagnóstico, después del chat, manda ~2,4 k más sin caché, y cada llamada de
 
 Ojo con los prompts editados (Ajustes → Prompts): ahora cada fragmento viaja en todas las fases del método, así que
 uno que diga «estás en el diagnóstico» también se lee mientras se enseña.
+
+## Preguntas variadas e investigación por autor (AC-204, AC-206)
+
+`ask_question` describe siete formatos y sus campos (192 → 486 tokens) y `research` pide una búsqueda por autor
+(59 → 152); el prompt suma la guía para variar las preguntas y cuándo investigar la bibliografía (+355 en el método,
++370 en el chat). En el benchmark, cada llamada manda ~740 tokens más (p. ej. `06-ensenar-chequeo` de 7 807 a 8 592),
+**todos en el prefijo fijo**: con caché (AC-201) se cobran como leídos de la caché salvo en la primera llamada del método.
+La línea base se actualizó con esto. El investigador lee más texto por fuente (hasta 2 500 caracteres de las 6 mejores,
+antes 1 200 del fragmento), con hasta 6 búsquedas por investigación: más tokens del rol Investigación, que suele ser el
+modelo barato. Su prompt pasa de 179 a 240 tokens: recibe las búsquedas del profesor y la regla de que un resultado
+sobre un autor buscado es pertinente (en la prueba en vivo había descartado los libros pedidos como «temas ajenos»).
+

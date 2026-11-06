@@ -56,3 +56,11 @@ Característica: Diagramas, demos e investigación
     Entonces la demo se abre a la derecha, en el lugar del plan, y en el chat queda un aviso
     Y al tocar "Maximizar" se ve entera, ilustración y controles, sin barra de desplazamiento, lo más grande que entra
     Y la demo sigue en el estado en que la dejé
+
+  @AC-206
+  Escenario: Un PDF abierto que encontró la investigación se suma a la biblioteca
+    Dado que el profesor investigó y encontró un PDF abierto
+    Cuando toco «Sumar a mi biblioteca»
+    Entonces el documento queda en mi biblioteca, leído con OCR si es escaneado
+    Y la tarjeta dice qué búsquedas no encontraron nada útil
+

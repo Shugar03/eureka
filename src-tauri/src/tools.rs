@@ -13,14 +13,19 @@ pub fn definitions() -> Value {
     };
     json!([
         f("ask_question",
-          "Le muestra UNA pregunta al aprendiz y termina el turno hasta que responda. El aprendiz responde con texto, confianza (1-5) y su razonamiento.",
+          "Le muestra UNA pregunta al aprendiz y termina el turno hasta que responda. Elegí el formato que mejor mida lo que querés ver y variá: dos preguntas seguidas no pueden tener el mismo formato.",
           json!({
             "type": "object",
             "properties": {
-              "question": { "type": "string", "description": "La pregunta, en Markdown." },
+              "question": { "type": "string", "description": "La consigna, en Markdown. Las opciones, afirmaciones, elementos o pares NO van acá: van en su campo." },
               "purpose": { "type": "string", "enum": ["probe", "predict", "check"] },
-              "options": { "type": "array", "items": { "type": "string" },
-                           "description": "Opcional: opciones de opción múltiple. Omitir para respuesta abierta." },
+              "format": { "type": "string", "enum": ["open", "choice", "multi", "true_false", "order", "match", "cloze"],
+                          "description": "open: respuesta con sus palabras (explicar, justificar). choice: una opción correcta (options). multi: varias correctas (options). true_false: marcar verdadero o falso en cada afirmación (statements); ideal para destapar confusiones típicas. order: ordenar en el tiempo o en un proceso (items, en el orden CORRECTO: la app los mezcla). match: unir cada concepto con su par (pairs con left y right correctos: la app mezcla la derecha). cloze: completar huecos; escribí ___ en question donde va cada palabra. Por defecto: choice si hay options, si no open." },
+              "options": { "type": "array", "items": { "type": "string" }, "description": "choice y multi: entre 2 y 6 opciones." },
+              "statements": { "type": "array", "items": { "type": "string" }, "description": "true_false: entre 2 y 6 afirmaciones." },
+              "items": { "type": "array", "items": { "type": "string" }, "description": "order: entre 3 y 7 elementos, en el orden correcto." },
+              "pairs": { "type": "array", "items": { "type": "object", "properties": { "left": { "type": "string" }, "right": { "type": "string" } }, "required": ["left", "right"] },
+                         "description": "match: entre 3 y 6 pares correctos." },
               "of": { "type": "integer", "minimum": 1, "maximum": 4,
                       "description": "Solo con purpose probe: cuántas preguntas de diagnóstico calculás hacer en total (2 o 3 lo normal, 4 el tope). El aprendiz ve «pregunta 2 de ~3»; corregilo si cambia tu cálculo." }
             },
@@ -140,10 +145,14 @@ pub fn definitions() -> Value {
             "required": ["ref"]
           })),
         f("research",
-          "Busca en la web y devuelve un resumen con fuentes numeradas. Usalo para datos actuales o cuando necesites verificar algo.",
+          "Busca en la web y devuelve un resumen con fuentes numeradas y los PDF abiertos que encuentre (el aprendiz puede sumarlos a su biblioteca). Para datos actuales, para verificar algo o para conseguir la bibliografía que falta.",
           json!({
             "type": "object",
-            "properties": { "question": { "type": "string" } },
+            "properties": {
+              "question": { "type": "string", "description": "Qué querés averiguar." },
+              "queries": { "type": "array", "items": { "type": "string" },
+                           "description": "Entre 1 y 6 búsquedas cortas, UNA por autor, obra o tema (ej.: «Carballeda La intervención en lo social pdf»). Nunca juntes varios autores en una búsqueda: el buscador mezcla los nombres." }
+            },
             "required": ["question"]
           })),
         f("set_phase",
@@ -655,9 +664,103 @@ struct QuestionArgs {
     #[serde(default)]
     purpose: Option<String>,
     #[serde(default)]
+    format: Option<String>,
+    #[serde(default)]
     options: Option<Vec<String>>,
     #[serde(default)]
+    statements: Option<Vec<String>>,
+    #[serde(default)]
+    items: Option<Vec<String>>,
+    #[serde(default)]
+    pairs: Option<Vec<Pair>>,
+    #[serde(default)]
     of: Option<u8>,
+}
+
+#[derive(Deserialize)]
+struct Pair {
+    left: String,
+    right: String,
+}
+
+/// AC-204: the ways a question can be answered.
+pub const FORMATS: [&str; 7] = ["open", "choice", "multi", "true_false", "order", "match", "cloze"];
+
+impl QuestionArgs {
+    /// The format, with the old default: options make it a choice, otherwise open.
+    fn format(&self) -> String {
+        match self.format.as_deref().map(str::trim).filter(|f| !f.is_empty()) {
+            Some(f) => f.to_string(),
+            None if self.options.as_ref().is_some_and(|o| !o.is_empty()) => "choice".into(),
+            None => "open".into(),
+        }
+    }
+}
+
+/// The format of an `ask_question` call, as the learner saw it.
+fn format_of(arguments: &str) -> Option<String> {
+    serde_json::from_str::<QuestionArgs>(arguments).ok().map(|q| q.format())
+}
+
+/// A list of options written inside the question ("1. …", "b) …") shows as a text
+/// box: the learner would have to type what should be a click.
+fn options_in_text(question: &str) -> bool {
+    let listed = question
+        .lines()
+        .map(str::trim)
+        .filter(|l| {
+            let mut c = l.chars();
+            match (c.next(), c.next()) {
+                (Some(d), Some('.' | ')')) => d.is_ascii_digit() || ('a'..='f').contains(&d.to_ascii_lowercase()),
+                _ => false,
+            }
+        })
+        .count();
+    listed >= 3
+}
+
+/// AC-204: what each format needs, and variety between consecutive questions.
+fn check_question(q: &QuestionArgs, s: &Session, call_id: &str) -> Result<(), String> {
+    let format = q.format();
+    let n = |v: &Option<Vec<String>>| v.as_ref().map(|v| v.iter().filter(|x| !x.trim().is_empty()).count()).unwrap_or(0);
+    let ok = match format.as_str() {
+        "open" => {
+            if options_in_text(&q.question) {
+                return Err("error: escribiste opciones dentro de la pregunta y el aprendiz las vería como texto para tipear. Pasalas en options con format choice (o multi), o usá true_false si son afirmaciones.".into());
+            }
+            true
+        }
+        "choice" | "multi" => (2..=6).contains(&n(&q.options)),
+        "true_false" => (2..=6).contains(&n(&q.statements)),
+        "order" => (3..=7).contains(&n(&q.items)),
+        "match" => q.pairs.as_ref().is_some_and(|p| (3..=6).contains(&p.len()) && p.iter().all(|x| !x.left.trim().is_empty() && !x.right.trim().is_empty())),
+        "cloze" => (1..=6).contains(&q.question.matches("___").count()),
+        other => return Err(format!("error: format «{other}» no existe; usá {}", FORMATS.join(", "))),
+    };
+    if !ok {
+        return Err(match format.as_str() {
+            "choice" | "multi" => format!("error: {format} necesita entre 2 y 6 options"),
+            "true_false" => "error: true_false necesita entre 2 y 6 statements".into(),
+            "order" => "error: order necesita entre 3 y 7 items, en el orden correcto".into(),
+            "match" => "error: match necesita entre 3 y 6 pairs con left y right".into(),
+            _ => "error: cloze necesita entre 1 y 6 huecos escritos como ___ en question".into(),
+        });
+    }
+    let previous = s
+        .messages
+        .iter()
+        .flat_map(|m| m.tool_calls.iter().flatten())
+        .filter(|c| c.id != call_id && c.function.name == "ask_question")
+        .last()
+        .and_then(|c| format_of(&c.function.arguments));
+    if previous.as_deref() == Some(format.as_str()) {
+        let others: Vec<&str> = FORMATS.iter().copied().filter(|f| *f != format).collect();
+        return Err(format!(
+            "error: la pregunta anterior también fue {format}; para que aprender no se vuelva repetitivo, dos seguidas no pueden tener el mismo formato. Elegí otro ({}) o, si todavía no hace falta preguntar, seguí explicando con un ejemplo, un diagrama o una demo.",
+            others.join(", ")
+        ));
+    }
+    Ok(())
 }
 
 /// The diagnosis is short on purpose: past this many probe questions the agent has to plan with what it has.
@@ -752,17 +855,17 @@ pub fn apply(s: &mut Session, call: &ToolCall) -> Outcome {
                 Ok(q) if q.purpose.as_deref().is_some_and(|p| !["probe", "predict", "check"].contains(&p)) => {
                     Err("error: purpose tiene que ser probe, predict o check".into())
                 }
-                Ok(q) if q.options.as_ref().is_some_and(|o| !o.is_empty() && !(2..=6).contains(&o.len())) => {
-                    Err("error: si das opciones, que sean entre 2 y 6".into())
-                }
                 Ok(q) if q.of.is_some_and(|n| !(1..=PROBE_MAX as u8).contains(&n)) => Err(format!("error: of tiene que estar entre 1 y {PROBE_MAX}")),
                 Ok(q) if q.purpose.as_deref() == Some("probe") && s.phase == Phase::Probe && probe_questions_asked(s, &call.id) >= PROBE_MAX => {
                     return Outcome::Result(format!("ignorada: ya hiciste {PROBE_MAX} preguntas de diagnóstico, que es el tope. Registrá lo que sabés con record_finding y pasá a plan con set_phase."));
                 }
-                Ok(q) if !q.question.trim().is_empty() => {
-                    s.pending_question = Some(call.id.clone());
-                    return Outcome::AwaitLearner;
-                }
+                Ok(q) if !q.question.trim().is_empty() => match check_question(&q, s, &call.id) {
+                    Ok(()) => {
+                        s.pending_question = Some(call.id.clone());
+                        return Outcome::AwaitLearner;
+                    }
+                    Err(e) => Err(e),
+                },
                 Ok(_) => Err("error: la pregunta está vacía".into()),
                 Err(e) => Err(e),
             }
@@ -1016,6 +1119,68 @@ mod tests {
         json!({ "id": id, "title": id, "depends_on": deps, "status": status })
     }
 
+    /// Asks, and if it was shown, records the call as the learner saw it.
+    fn ask(s: &mut Session, id: &str, args: Value) -> Outcome {
+        let c = ToolCall { id: id.into(), ..call("ask_question", args) };
+        let out = apply(s, &c);
+        if out == Outcome::AwaitLearner {
+            s.messages.push(Msg { role: "assistant".into(), content: None, tool_calls: Some(vec![c]), tool_call_id: None, meta: None });
+            s.pending_question = None;
+        }
+        out
+    }
+
+    fn refused(out: Outcome, needle: &str) -> bool {
+        matches!(out, Outcome::Result(r) if r.starts_with("error") && r.contains(needle))
+    }
+
+    #[test]
+    fn every_question_format_checks_what_it_needs() {
+        // AC-204
+        let mut s = Session::new("historia del planeamiento");
+        let ok = [
+            json!({ "question": "¿Por qué planifica un Estado?", "purpose": "probe" }),
+            json!({ "question": "¿Qué impulsó la UNESCO?", "purpose": "probe", "options": ["Capital humano", "Currículos únicos"] }),
+            json!({ "question": "Marcá V o F", "purpose": "check", "format": "true_false", "statements": ["La CEPAL es de 1948", "El IIPE es de 1990"] }),
+            json!({ "question": "Ordená", "purpose": "check", "format": "order", "items": ["Crisis del 30", "CEPAL", "Alianza para el Progreso"] }),
+            json!({ "question": "Uní", "purpose": "check", "format": "match", "pairs": [{ "left": "Carballeda", "right": "intervención en lo social" }, { "left": "Oszlak", "right": "agenda pública" }, { "left": "Argüello", "right": "sentidos de la planificación" }] }),
+            json!({ "question": "Elegí todas", "purpose": "check", "format": "multi", "options": ["a", "b", "c"] }),
+            json!({ "question": "La ___ entra a la agenda cuando se ___.", "purpose": "check", "format": "cloze" }),
+        ];
+        for (i, a) in ok.into_iter().enumerate() {
+            assert_eq!(ask(&mut s, &format!("q{i}"), a.clone()), Outcome::AwaitLearner, "{a}");
+        }
+        let mut t = Session::new("x");
+        assert!(refused(ask(&mut t, "a", json!({ "question": "q", "purpose": "check", "format": "true_false", "statements": ["solo una"] })), "statements"));
+        assert!(refused(ask(&mut t, "b", json!({ "question": "q", "purpose": "check", "format": "order", "items": ["a", "b"] })), "items"));
+        assert!(refused(ask(&mut t, "c", json!({ "question": "q", "purpose": "check", "format": "match", "pairs": [{ "left": "a", "right": "" }, { "left": "b", "right": "c" }, { "left": "d", "right": "e" }] })), "pairs"));
+        assert!(refused(ask(&mut t, "d", json!({ "question": "sin huecos", "purpose": "check", "format": "cloze" })), "___"));
+        assert!(refused(ask(&mut t, "e", json!({ "question": "q", "purpose": "check", "format": "dibujo" })), "no existe"));
+        assert!(refused(ask(&mut t, "f", json!({ "question": "q", "purpose": "check", "options": ["solo"] })), "options"));
+    }
+
+    #[test]
+    fn options_written_inside_the_question_are_sent_back() {
+        // AC-204: the real session wrote «1. … 2. … 3. … 4. …» in the text; the learner had to type.
+        let mut s = Session::new("x");
+        let q = "¿Qué responde esa intervención? Elegí una:\n\n1. A una demanda social.\n2. A un mandato técnico.\n3. A las empresas.\n4. Al crecimiento del Estado.";
+        assert!(refused(ask(&mut s, "a", json!({ "question": q, "purpose": "probe" })), "options"));
+        assert_eq!(ask(&mut s, "b", json!({ "question": "¿Qué responde esa intervención?", "purpose": "probe", "options": ["Demanda social", "Mandato técnico"] })), Outcome::AwaitLearner);
+        // Two numbered lines in an explanation are not a list of options.
+        assert!(!options_in_text("Pasos:\n1. medir\n2. planificar"));
+    }
+
+    #[test]
+    fn two_questions_in_a_row_never_share_a_format() {
+        // AC-204: «siempre el mismo cuadrito» made learning feel slow.
+        let mut s = Session::new("x");
+        assert_eq!(ask(&mut s, "a", json!({ "question": "¿Por qué?", "purpose": "check" })), Outcome::AwaitLearner);
+        let again = ask(&mut s, "b", json!({ "question": "¿Y por qué más?", "purpose": "check" }));
+        assert!(refused(again, "dos seguidas"), "open after open");
+        assert_eq!(ask(&mut s, "c", json!({ "question": "Marcá", "purpose": "check", "format": "true_false", "statements": ["x", "y"] })), Outcome::AwaitLearner);
+        assert_eq!(ask(&mut s, "d", json!({ "question": "¿Por qué?", "purpose": "check" })), Outcome::AwaitLearner, "open again after another format");
+    }
+
     #[test]
     fn ask_question_sets_pending_and_stops_turn() {
         let mut s = Session::new("derivadas");
@@ -1029,7 +1194,9 @@ mod tests {
         let mut s = Session::new("x");
         s.phase = Phase::Probe;
         for i in 0..PROBE_MAX {
-            let c = ToolCall { id: format!("p{i}"), ..call("ask_question", json!({ "question": "q", "purpose": "probe", "of": 3 })) };
+            // Alternating formats: two in a row can't share one (AC-204).
+            let f = if i % 2 == 0 { json!({ "question": "q", "purpose": "probe", "of": 3 }) } else { json!({ "question": "q", "purpose": "probe", "of": 3, "format": "choice", "options": ["a", "b"] }) };
+            let c = ToolCall { id: format!("p{i}"), ..call("ask_question", f) };
             assert_eq!(apply(&mut s, &c), Outcome::AwaitLearner);
             s.messages.push(Msg { role: "assistant".into(), content: None, tool_calls: Some(vec![c]), tool_call_id: None, meta: None });
             s.pending_question = None;

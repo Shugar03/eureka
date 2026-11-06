@@ -178,10 +178,10 @@ async fn scripted() -> (Vec<(String, Vec<Value>)>, Value) {
         Reply::Sse(vec![tool(0, "b1", "begin_learning", json!({ "goal": "qué es una derivada" }))]),
         Reply::Sse(vec![text("Primero veamos de dónde partís."), q("q1", "Si una recta pasa por (0,1) y (2,5), ¿cuál es su pendiente?", "probe", 1)]),
         // probe: finding + next question
-        Reply::Sse(vec![tool(0, "f1", "record_finding", json!({ "concept": "pendiente de una recta", "level": "solid", "evidence": "calculó 2 sin dudar" })), q("q2", "¿Qué te imaginás que es la recta tangente a una curva en un punto?", "probe", 2)]),
+        Reply::Sse(vec![tool(0, "f1", "record_finding", json!({ "concept": "pendiente de una recta", "level": "solid", "evidence": "calculó 2 sin dudar" })), tool(9, "q2", "ask_question", json!({ "question": "Sobre la recta tangente a una curva en un punto, marcá verdadero o falso:", "purpose": "probe", "of": 2, "format": "true_false", "statements": ["Toca la curva en un solo punto", "Su pendiente es la de la curva en ese punto"] }))]),
         // probe → plan
         Reply::Sse(vec![tool(0, "f2", "record_finding", json!({ "concept": "recta tangente", "level": "partial", "evidence": "dice que toca en un punto, sin idea de límite" })), tool(1, "p1", "set_phase", json!({ "phase": "plan" }))]),
-        Reply::Sse(vec![tool(0, "p2", "set_plan", plan), text("Este es el plan: de la pendiente que ya sabés, a la secante, al límite y a la derivada."), q("q3", "¿Arrancamos por la secante?", "check", 1)]),
+        Reply::Sse(vec![tool(0, "p2", "set_plan", plan), text("Este es el plan: de la pendiente que ya sabés, a la secante, al límite y a la derivada."), tool(9, "q3", "ask_question", json!({ "question": "¿Por dónde arrancamos?", "purpose": "check", "format": "choice", "options": ["Por la secante", "Por el límite"] }))]),
         // plan → teach: diagram + demo + predict
         Reply::Sse(vec![tool(0, "t0", "set_phase", json!({ "phase": "teach" }))]),
         Reply::Sse(vec![
@@ -192,7 +192,7 @@ async fn scripted() -> (Vec<(String, Vec<Value>)>, Value) {
             q("q4", "Si h se hace muy chico, ¿qué creés que pasa con la pendiente de la secante en x=1 para f(x)=x²?", "predict", 1),
         ]),
         // teach: check
-        Reply::Sse(vec![tool(0, "u2", "update_node", json!({ "id": "sec", "status": "understood" })), tool(1, "u3", "update_node", json!({ "id": "lim", "status": "current" })), text("Exacto: se acerca a 2. Eso es el límite."), q("q5", "¿Cuánto vale la pendiente de la tangente a x² en x=3?", "check", 1)]),
+        Reply::Sse(vec![tool(0, "u2", "update_node", json!({ "id": "sec", "status": "understood" })), tool(1, "u3", "update_node", json!({ "id": "lim", "status": "current" })), text("Exacto: se acerca a 2. Eso es el límite."), tool(9, "q5", "ask_question", json!({ "question": "La pendiente de la tangente a x² en x=3 vale ___.", "purpose": "check", "format": "cloze" }))]),
         // teach → done
         Reply::Sse(vec![tool(0, "u4", "update_node", json!({ "id": "lim", "status": "understood" })), tool(1, "u5", "update_node", json!({ "id": "der", "status": "understood" })), tool(2, "t1", "set_phase", json!({ "phase": "done" }))]),
         Reply::Sse(vec![text("Llegaste: la derivada es la pendiente de la tangente, el límite de las secantes. Repasalo mañana con tarjetas.")]),

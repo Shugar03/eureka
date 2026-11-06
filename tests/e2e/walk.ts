@@ -96,7 +96,10 @@ export async function walk(seed: number, { app, screen, browser }: Fixtures, tur
           await q.getByRole("textbox", "Tu respuesta").fill(`respuesta ${i}`);
         }
         await q.getByRole("radio", new RegExp(`^Confianza ${a.confidence}:`)).click();
-        if (a.thinking) await q.getByRole("textbox", "Pensando en voz alta").fill("pienso que…");
+        if (a.thinking) {
+          await q.getByRole("button", "+ Contar cómo lo pensé").click();
+          await q.getByRole("textbox", "Pensando en voz alta").fill("pienso que…");
+        }
         await q.getByRole("button", "Responder").click();
         await waitIdle(screen);
         break;

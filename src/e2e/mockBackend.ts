@@ -553,6 +553,9 @@ function mockResearch(question: string): ResearchMeta {
       { title: "Costo marginal", url: "https://economia.example/marginal" },
     ],
     error: null,
+    // AC-206: an open PDF to add to the library (the demo serves a fixture in its place).
+    documents: [{ title: "Apuntes de física", url: "https://fisica.example/apuntes-fisica.pdf" }],
+    uncovered: ["derivada en biología"],
   };
 }
 
@@ -828,6 +831,11 @@ export function install() {
         ch.onmessage({ stage: "installing" });
         // The real app closes here and opens the new version: the demo just stays installing.
         return new Promise(() => {});
+      }
+      case "fetch_document": {
+        if (!String(args.url).endsWith(".pdf")) throw "ese enlace no es un PDF abierto";
+        await sleep(DELAY * 4);
+        return await (await fetch("/tests/fixtures/apuntes-fisica.pdf")).arrayBuffer();
       }
       case "update_whats_new":
         return params.has("whatsNew") ? { version: "0.1.0", from: "0.0.9", notes: UPDATE_NOTES } : null;

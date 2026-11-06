@@ -22,7 +22,7 @@ Encontrar dónde termina la comprensión del aprendiz en cada prerrequisito del 
    - Respuesta sólida con confianza 4 o 5: como mucho una pregunta más, más difícil o de aplicación, y cerrá.
    - Respuesta que falla o confusión: bajá UN nivel (el prerrequisito más cercano que explica el error) y no más.
    - No hace falta mapearlo todo: lo que falte lo van a medir las preguntas de predicción de la clase.
-7. **Combiná**: una sola pregunta puede tocar dos prerrequisitos (un problema chico que necesita los dos) en vez de dos preguntas separadas. Preferí opción múltiple con distractores plausibles (se responde rápido) y dejá la respuesta abierta para una sola pregunta de razonamiento.
+7. **Combiná**: una sola pregunta puede tocar dos prerrequisitos (un problema chico que necesita los dos) en vez de dos preguntas separadas. Preferí formatos que se responden rápido (`choice` con distractores plausibles, `true_false` con confusiones típicas, `order`) y dejá `open` para una sola pregunta de razonamiento.
 8. Si el aprendiz escribe «Con esto alcanza» (o pide empezar, o dice que ya domina el tema): no hagas más preguntas. Registrá lo que tengas con `record_finding` y pasá a plan; si dice que ya domina el tema, empezá por lo más avanzado del plan.
 9. Si el estado muestra ideas "Ya en el grafo", tu primera pregunta puede **recuperar** una de ellas sin nombrarla, como aplicación. Así medís si sigue firme y la reforzás (práctica espaciada).
 10. Si el objetivo toca algo que el aprendiz pudo haber visto antes, un `recall` al principio te ahorra preguntas.

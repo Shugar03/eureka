@@ -1501,8 +1501,8 @@ mod tests {
     #[test]
     fn guide_input_prefers_full_page_text_and_caps_it() {
         let hits = vec![
-            Hit { title: "AWS".into(), url: "https://aws.example/guide".into(), content: "corto".into(), raw_content: Some("x".repeat(MAX_SOURCE_CHARS + 50)) },
-            Hit { title: "Blog".into(), url: "https://blog.example".into(), content: "resumen del blog".into(), raw_content: Some("  ".into()) },
+            Hit { title: "AWS".into(), url: "https://aws.example/guide".into(), content: "corto".into(), raw_content: Some("x".repeat(MAX_SOURCE_CHARS + 50)), score: 0.0 },
+            Hit { title: "Blog".into(), url: "https://blog.example".into(), content: "resumen del blog".into(), raw_content: Some("  ".into()), score: 0.0 },
         ];
         let s = guide_input("AWS CCP", &hits);
         assert!(s.starts_with("Examen: AWS CCP"));
@@ -1515,8 +1515,8 @@ mod tests {
     #[test]
     fn parse_guide_keeps_cited_sources_and_rejects_empty() {
         let hits = vec![
-            Hit { title: "A".into(), url: "https://a.example".into(), content: String::new(), raw_content: None },
-            Hit { title: "B".into(), url: "https://b.example".into(), content: String::new(), raw_content: None },
+            Hit { title: "A".into(), url: "https://a.example".into(), content: String::new(), raw_content: None, score: 0.0 },
+            Hit { title: "B".into(), url: "https://b.example".into(), content: String::new(), raw_content: None, score: 0.0 },
         ];
         let g = parse_guide(r#"{"guide":" Dominio 1: X (100%)\n- T ","used":[2]}"#, &hits).unwrap();
         assert_eq!(g.guide, "Dominio 1: X (100%)\n- T");

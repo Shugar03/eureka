@@ -19,6 +19,92 @@ pub const TOOL: &str = "research";
 pub const MAX_LIVE: usize = 2;
 pub const SUMMARY_TOOL: &str = "submit_research";
 pub const MAX_HITS: usize = 5;
+/// AC-206: one search per author or topic, never one search for everything.
+pub const MAX_QUERIES: usize = 6;
+/// Sources the summary reads, after merging every search.
+pub const MAX_SOURCES: usize = 10;
+/// Open documents offered for the library.
+pub const MAX_DOCUMENTS: usize = 5;
+/// Full text the summary reads from each of the best sources.
+const RAW_CHARS: usize = 2500;
+
+/// Pages that never teach anything: people and company directories, social networks.
+/// A search with several names in it matched «Pichardo» with a LinkedIn profile and
+/// «CEPAL» with a Greek finance company.
+const JUNK: &[&str] = &[
+    "linkedin.com", "rocketreach.co", "zoominfo.com", "crunchbase.com", "dnb.com", "apollo.io", "signalhire.com", "contactout.com",
+    "facebook.com", "instagram.com", "tiktok.com", "twitter.com", "x.com", "pinterest.com", "tavily.com",
+];
+/// Documents behind a login or a paywall: fine as sources, never offered for the library.
+const LOCKED: &[&str] = &["scribd.com", "academia.edu", "studocu.com", "dokumen.pub", "coursehero.com", "perlego.com", "researchgate.net"];
+
+fn on(host: &str, list: &[&str]) -> bool {
+    list.iter().any(|d| host == *d || host.ends_with(&format!(".{d}")))
+}
+
+/// AC-206: a page from a directory or a social network, dropped before the summary.
+pub fn junk(url: &str) -> bool {
+    on(&crate::usage::host(url).to_lowercase(), JUNK)
+}
+
+/// AC-206: a PDF anyone can download, to offer for the library.
+pub fn open_document(url: &str) -> bool {
+    let path = url.split(['?', '#']).next().unwrap_or("").to_lowercase();
+    path.ends_with(".pdf") && !on(&crate::usage::host(url).to_lowercase(), LOCKED)
+}
+
+/// The biggest PDF taken for the library: a whole book fits, a dump does not.
+pub const MAX_DOCUMENT_BYTES: usize = 80 * 1024 * 1024;
+
+/// AC-206: downloads an open PDF the research found, for the library. Only what the
+/// research would offer (a .pdf off a login), only a real PDF, never too big.
+pub async fn download_pdf(url: &str) -> Result<Vec<u8>> {
+    if !(url.starts_with("https://") || url.starts_with("http://")) || !open_document(url) {
+        bail!("ese enlace no es un PDF abierto");
+    }
+    let resp = crate::llm::client()?
+        .get(url)
+        .timeout(std::time::Duration::from_secs(120))
+        .send()
+        .await
+        .context("no pude bajar el documento")?;
+    if !resp.status().is_success() {
+        bail!("el sitio respondió {} al bajar el documento", resp.status());
+    }
+    if resp.content_length().is_some_and(|n| n as usize > MAX_DOCUMENT_BYTES) {
+        bail!("el documento pesa más de {} MB", MAX_DOCUMENT_BYTES / 1024 / 1024);
+    }
+    let mut out: Vec<u8> = Vec::new();
+    let mut stream = resp.bytes_stream();
+    use futures_util::StreamExt;
+    while let Some(chunk) = stream.next().await {
+        out.extend_from_slice(&chunk.context("la descarga se cortó")?);
+        if out.len() > MAX_DOCUMENT_BYTES {
+            bail!("el documento pesa más de {} MB", MAX_DOCUMENT_BYTES / 1024 / 1024);
+        }
+    }
+    if !out.starts_with(b"%PDF") {
+        bail!("lo que bajó no es un PDF (el sitio puede pedir iniciar sesión)");
+    }
+    Ok(out)
+}
+
+/// AC-206: the searches to run: the teacher's, or the question split at «;», capped.
+pub fn queries_for(question: &str, queries: &[String]) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    let given: Vec<String> = queries.iter().map(|q| q.trim().to_string()).filter(|q| !q.is_empty()).collect();
+    let split: Vec<String> = if given.is_empty() { question.split(';').map(|q| q.trim().to_string()).filter(|q| q.chars().count() >= 3).collect() } else { given };
+    for q in split {
+        if !out.iter().any(|o| o.eq_ignore_ascii_case(&q)) {
+            out.push(q);
+        }
+    }
+    if out.is_empty() {
+        out.push(question.trim().to_string());
+    }
+    out.truncate(MAX_QUERIES);
+    out
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Hit {
@@ -29,6 +115,9 @@ pub struct Hit {
     /// Full page text, when the search was asked for it.
     #[serde(default)]
     pub raw_content: Option<String>,
+    /// How well it matches, as the search engine says (0 when it says nothing).
+    #[serde(default)]
+    pub score: f64,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -37,17 +126,21 @@ pub struct SourceRef {
     pub url: String,
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, PartialEq, Default)]
 pub struct ResearchResult {
     pub question: String,
     pub summary: String,
     pub sources: Vec<SourceRef>,
     pub error: Option<String>,
+    /// AC-206: open PDFs found on the way, offered to the learner for the library.
+    pub documents: Vec<SourceRef>,
+    /// AC-206: searches that found nothing useful, said plainly.
+    pub uncovered: Vec<String>,
 }
 
 impl ResearchResult {
     fn failed(question: &str, error: String) -> Self {
-        Self { question: question.into(), summary: String::new(), sources: vec![], error: Some(error) }
+        Self { question: question.into(), error: Some(error), ..Default::default() }
     }
 
     /// What the teacher reads as the tool result.
@@ -59,11 +152,20 @@ impl ResearchResult {
         for (i, src) in self.sources.iter().enumerate() {
             s.push_str(&format!("[{}] {} — {}\n", i + 1, src.title, src.url));
         }
+        if !self.documents.is_empty() {
+            s.push_str("\nDocumentos abiertos (PDF): el aprendiz los ve con un botón «Sumar a mi biblioteca». Contale que los encontraste y cuáles son; no le pidas que los suba.\n");
+            for d in &self.documents {
+                s.push_str(&format!("- {} — {}\n", d.title, d.url));
+            }
+        }
+        if !self.uncovered.is_empty() {
+            s.push_str(&format!("\nSin resultados útiles para: {}. Decíselo si importa; no lo rellenes con lo que no encontraste.\n", self.uncovered.join("; ")));
+        }
         s
     }
 
     pub fn meta(&self) -> Value {
-        json!({ "kind": "research", "question": self.question, "summary": self.summary, "sources": self.sources, "error": self.error })
+        json!({ "kind": "research", "question": self.question, "summary": self.summary, "sources": self.sources, "error": self.error, "documents": self.documents, "uncovered": self.uncovered })
     }
 }
 
@@ -74,6 +176,8 @@ pub struct Job {
     pub session_id: String,
     pub call_id: String,
     pub question: String,
+    /// AC-206: one search per author or topic (empty: the question split at «;»).
+    pub queries: Vec<String>,
 }
 
 /// Jobs waiting for the worker, running, and finished but not yet written into their session.
@@ -151,7 +255,7 @@ pub fn patch(s: &mut crate::session::Session, results: Vec<(String, ResearchResu
 /// Runs one job and hands the result over (the worker spawns one per job).
 pub async fn run_job(state: &AppState, job: Job) {
     // AC-186: the summary counts for the session that asked.
-    let result = crate::usage::in_session(&job.session_id, run(state, &job.question)).await;
+    let result = crate::usage::in_session(&job.session_id, run(state, &job.question, &job.queries)).await;
     state.research.finish(&job, result);
     let _ = crate::agent::deliver_research(state, &job.session_id, false);
 }
@@ -191,10 +295,19 @@ pub fn summary_tool() -> Value {
     }})
 }
 
-pub fn summarize_input(question: &str, hits: &[Hit]) -> String {
-    let mut s = format!("Pregunta: {question}\n\n## Resultados de búsqueda\n");
+pub fn summarize_input(question: &str, queries: &[String], hits: &[Hit]) -> String {
+    let mut s = format!("Pregunta: {question}\n");
+    if queries.len() > 1 || queries.first().is_some_and(|q| q != question) {
+        s.push_str(&format!("Búsquedas que hizo el profesor (una por autor o tema): {}\n", queries.join(" | ")));
+    }
+    s.push_str("\n## Resultados de búsqueda\n");
     for (i, h) in hits.iter().enumerate() {
-        let excerpt: String = h.content.chars().take(1200).collect();
+        // AC-206: the best sources are read in full (as far as RAW_CHARS), not only their snippet.
+        let full = h.raw_content.as_deref().map(str::trim).filter(|r| i < 6 && r.chars().count() > h.content.chars().count());
+        let excerpt: String = match full {
+            Some(r) => r.chars().take(RAW_CHARS).collect(),
+            None => h.content.chars().take(1200).collect(),
+        };
         s.push_str(&format!("\n[{}] {} — {}\n{}\n", i + 1, h.title, h.url, excerpt));
     }
     s
@@ -239,10 +352,15 @@ pub fn pick_sources(hits: &[Hit], used: &[usize]) -> Vec<SourceRef> {
 
 /// `raw` asks the API for each page's full text too (Tavily `include_raw_content`).
 pub async fn search(base_url: &str, key: &str, query: &str, raw: bool) -> Result<Vec<Hit>> {
+    search_with(base_url, key, query, raw, "basic").await
+}
+
+/// AC-206: research searches deep (`advanced`): better hits for names and titles.
+async fn search_with(base_url: &str, key: &str, query: &str, raw: bool, depth: &str) -> Result<Vec<Hit>> {
     let resp = crate::llm::client()?
         .post(format!("{}/search", base_url.trim_end_matches('/')))
         .bearer_auth(key)
-        .json(&json!({ "api_key": key, "query": query, "max_results": MAX_HITS, "search_depth": "basic", "include_raw_content": raw }))
+        .json(&json!({ "api_key": key, "query": query, "max_results": MAX_HITS, "search_depth": depth, "include_raw_content": raw }))
         .timeout(std::time::Duration::from_secs(30))
         .send()
         .await
@@ -254,12 +372,12 @@ pub async fn search(base_url: &str, key: &str, query: &str, raw: bool) -> Result
     Ok(parse_hits(&resp.json::<Value>().await?))
 }
 
-async fn summarize(state: &AppState, question: &str, hits: &[Hit]) -> Result<(String, Vec<SourceRef>)> {
+async fn summarize(state: &AppState, question: &str, queries: &[String], hits: &[Hit]) -> Result<(String, Vec<SourceRef>)> {
     let mut ep = endpoint_for(state, Role::Researcher).await?;
     ep.usage.purpose = "research".into();
     let system = state.prompts.get("research")?;
     let choice = json!({ "type": "function", "function": { "name": SUMMARY_TOOL } });
-    let c = llm::stream_chat(&ep, &system, &[Msg::user(summarize_input(question, hits), None)], &json!([summary_tool()]), Some(&choice), |_| {}, || false).await?;
+    let c = llm::stream_chat(&ep, &system, &[Msg::user(summarize_input(question, queries, hits), None)], &json!([summary_tool()]), Some(&choice), |_| {}, || false).await?;
     let call = c.tool_calls.into_iter().find(|t| t.function.name == SUMMARY_TOOL).ok_or_else(|| anyhow!("el investigador no devolvió {SUMMARY_TOOL}"))?;
     let raw: RawSummary = serde_json::from_str(&call.function.arguments).context("el investigador devolvió datos inválidos")?;
     let summary = raw.summary.trim().to_string();
@@ -270,7 +388,27 @@ async fn summarize(state: &AppState, question: &str, hits: &[Hit]) -> Result<(St
 }
 
 /// AC-29/30: runs the whole research step; errors are reported, not raised.
-pub async fn run(state: &AppState, question: &str) -> ResearchResult {
+/// AC-206: the hits of every search, junk out, merged without repeats, best first.
+pub fn merge(per_query: Vec<Vec<Hit>>) -> Vec<Hit> {
+    let mut all: Vec<Hit> = Vec::new();
+    for hits in per_query {
+        for h in hits.into_iter().filter(|h| !junk(&h.url)) {
+            if !all.iter().any(|x| x.url == h.url) {
+                all.push(h);
+            }
+        }
+    }
+    // Stable: equal scores keep the order of the searches.
+    all.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+    all.truncate(MAX_SOURCES);
+    all
+}
+
+pub fn documents_in(hits: &[Hit]) -> Vec<SourceRef> {
+    hits.iter().filter(|h| open_document(&h.url)).take(MAX_DOCUMENTS).map(|h| SourceRef { title: h.title.clone(), url: h.url.clone() }).collect()
+}
+
+pub async fn run(state: &AppState, question: &str, queries: &[String]) -> ResearchResult {
     let question = question.trim();
     if question.is_empty() {
         return ResearchResult::failed(question, "la pregunta de investigación está vacía".into());
@@ -279,13 +417,39 @@ pub async fn run(state: &AppState, question: &str) -> ResearchResult {
     let Some(key) = state.settings.keys().get(crate::settings::SEARCH_KEY).filter(|k| !k.is_empty()).cloned() else {
         return ResearchResult::failed(question, "búsqueda web no configurada (Ajustes → Búsqueda web)".into());
     };
-    let hits = match search(&settings.search.base_url, &key, question, false).await {
-        Ok(h) if h.is_empty() => return ResearchResult::failed(question, "la búsqueda no encontró resultados".into()),
-        Ok(h) => h,
-        Err(e) => return ResearchResult::failed(question, e.to_string()),
-    };
-    match summarize(state, question, &hits).await {
-        Ok((summary, sources)) => ResearchResult { question: question.into(), summary, sources, error: None },
+    let base = settings.search.base_url.clone();
+    let queries = queries_for(question, queries);
+    let found = futures_util::future::join_all(queries.iter().map(|q| search_with(&base, &key, q, true, "advanced"))).await;
+    let mut per_query: Vec<Vec<Hit>> = Vec::new();
+    let mut uncovered: Vec<String> = Vec::new();
+    let mut first_error: Option<String> = None;
+    for (q, r) in queries.iter().zip(found) {
+        let mut hits = match r {
+            Ok(h) => h,
+            Err(e) => {
+                first_error.get_or_insert(e.to_string());
+                Vec::new()
+            }
+        };
+        hits.retain(|h| !junk(&h.url));
+        // A second pass, only for what came back empty: the documents of a niche subject
+        // are often PDFs that a plainer search finds.
+        if hits.is_empty() && first_error.is_none() {
+            hits = search_with(&base, &key, &format!("{q} pdf"), true, "advanced").await.unwrap_or_default();
+            hits.retain(|h| !junk(&h.url));
+        }
+        if hits.is_empty() {
+            uncovered.push(q.clone());
+        }
+        per_query.push(hits);
+    }
+    let hits = merge(per_query);
+    if hits.is_empty() {
+        return ResearchResult::failed(question, first_error.unwrap_or_else(|| "la búsqueda no encontró resultados útiles".into()));
+    }
+    let documents = documents_in(&hits);
+    match summarize(state, question, &queries, &hits).await {
+        Ok((summary, sources)) => ResearchResult { question: question.into(), summary, sources, error: None, documents, uncovered },
         Err(e) => ResearchResult::failed(question, e.to_string()),
     }
 }
@@ -295,7 +459,7 @@ mod tests {
     use super::*;
 
     fn hit(n: usize) -> Hit {
-        Hit { title: format!("T{n}"), url: format!("https://e.test/{n}"), content: "x".repeat(2000), raw_content: None }
+        Hit { title: format!("T{n}"), url: format!("https://e.test/{n}"), content: "x".repeat(2000), raw_content: None, score: 0.0 }
     }
 
     #[test]
@@ -313,6 +477,65 @@ mod tests {
         assert!(parse_hits(&json!({})).is_empty());
     }
 
+    fn h(url: &str, score: f64) -> Hit {
+        Hit { title: url.into(), url: url.into(), content: "c".into(), raw_content: None, score }
+    }
+
+    #[test]
+    fn one_search_per_author_or_topic() {
+        // AC-206: the real session sent four authors in one search and got LinkedIn profiles.
+        let q = queries_for("Carballeda intervención; Pichardo Muñiz planificación ; ; UNESCO 1958", &[]);
+        assert_eq!(q, ["Carballeda intervención", "Pichardo Muñiz planificación", "UNESCO 1958"]);
+        let given: Vec<String> = (0..9).map(|i| format!("autor {i}")).collect();
+        assert_eq!(queries_for("x", &given).len(), MAX_QUERIES);
+        assert_eq!(queries_for("una sola pregunta", &[" ".into()]), ["una sola pregunta"]);
+        assert_eq!(queries_for("a", &["Oszlak".into(), "oszlak".into()]), ["Oszlak"], "no repeats");
+    }
+
+    #[test]
+    fn directories_are_dropped_and_open_pdfs_offered() {
+        // AC-206
+        for bad in ["https://linkedin.com/in/pichardo", "https://www.linkedin.com/in/x", "https://rocketreach.co/imp", "https://tavily.com/knowledge/company/x"] {
+            assert!(junk(bad), "{bad}");
+        }
+        assert!(!junk("https://www.margen.org/epub/Intervencion_losocial.pdf"));
+        assert!(open_document("https://www.margen.org/epub/Intervencion_losocial.pdf"));
+        assert!(open_document("https://e-tcs.org/x/Oszlak.PDF?dl=1"));
+        assert!(!open_document("https://es.scribd.com/document/1/x.pdf"), "behind a login");
+        assert!(!open_document("https://rieoei.org/RIE/article/view/1180"), "a page, not a PDF");
+        let merged = merge(vec![
+            vec![h("https://www.margen.org/a.pdf", 0.89), h("https://linkedin.com/in/p", 0.95)],
+            vec![h("https://iiep.unesco.org/x", 0.7), h("https://www.margen.org/a.pdf", 0.89)],
+        ]);
+        assert_eq!(merged.iter().map(|h| h.url.as_str()).collect::<Vec<_>>(), ["https://www.margen.org/a.pdf", "https://iiep.unesco.org/x"]);
+        assert_eq!(documents_in(&merged).len(), 1);
+    }
+
+    #[test]
+    fn the_teacher_hears_about_documents_and_gaps() {
+        let r = ResearchResult {
+            question: "q".into(),
+            summary: "s [1]".into(),
+            sources: vec![SourceRef { title: "Carballeda".into(), url: "https://m.org/a.pdf".into() }],
+            documents: vec![SourceRef { title: "Carballeda".into(), url: "https://m.org/a.pdf".into() }],
+            uncovered: vec!["Pichardo Muñiz".into()],
+            ..Default::default()
+        };
+        let t = r.for_teacher();
+        assert!(t.contains("Sumar a mi biblioteca") && t.contains("no le pidas que los suba") && t.contains("- Carballeda — https://m.org/a.pdf"), "{t}");
+        assert!(t.contains("Sin resultados útiles para: Pichardo Muñiz"));
+        assert_eq!(r.meta()["documents"][0]["url"], "https://m.org/a.pdf");
+    }
+
+    #[test]
+    fn the_best_sources_are_read_in_full() {
+        let mut full = hit(1);
+        full.raw_content = Some(format!("TEXTO COMPLETO {}", "y".repeat(5000)));
+        let s = summarize_input("q", &["Carballeda pdf".into(), "Oszlak pdf".into()], &[full, hit(2)]);
+        assert!(s.contains("Búsquedas que hizo el profesor (una por autor o tema): Carballeda pdf | Oszlak pdf"));
+        assert!(s.contains("TEXTO COMPLETO") && s.len() < 2500 + 1200 + 400, "capped: {}", s.len());
+    }
+
     #[test]
     fn picks_cited_sources_in_order_ignoring_bad_numbers() {
         let hits = vec![hit(1), hit(2), hit(3)];
@@ -323,7 +546,7 @@ mod tests {
 
     #[test]
     fn summarize_input_numbers_and_truncates() {
-        let s = summarize_input("¿qué?", &[hit(1), hit(2)]);
+        let s = summarize_input("¿qué?", &[], &[hit(1), hit(2)]);
         assert!(s.contains("Pregunta: ¿qué?") && s.contains("[1] T1 — https://e.test/1") && s.contains("[2] T2"));
         assert!(s.len() < 3000, "excerpts are capped");
     }
@@ -332,7 +555,7 @@ mod tests {
     fn background_jobs_are_deduped_capped_and_patched_once() {
         // AC-169
         let bg = Background::default();
-        let job = |call: &str, q: &str| Job { session_id: "s1".into(), call_id: call.into(), question: q.into() };
+        let job = |call: &str, q: &str| Job { session_id: "s1".into(), call_id: call.into(), question: q.into(), queries: vec![] };
         assert!(bg.enqueue(job("c1", "¿Qué es la derivada?")).is_ok());
         assert!(bg.enqueue(job("c2", "¿qué es la derivada? ")).unwrap_err().contains("misma pregunta"));
         assert!(bg.enqueue(job("c3", "Otra")).is_ok());
@@ -341,7 +564,7 @@ mod tests {
         let taken = bg.take();
         assert_eq!(taken.len(), 3);
         assert!(bg.is_live("c1") && bg.take().is_empty());
-        let ok = ResearchResult { question: "¿Qué es la derivada?".into(), summary: "La pendiente [1].".into(), sources: vec![SourceRef { title: "T".into(), url: "https://t".into() }], error: None };
+        let ok = ResearchResult { question: "¿Qué es la derivada?".into(), summary: "La pendiente [1].".into(), sources: vec![SourceRef { title: "T".into(), url: "https://t".into() }], ..Default::default() };
         bg.finish(&taken[0], ok.clone());
         assert!(!bg.is_live("c1"));
         let mut s = crate::session::Session::new("x");
@@ -357,7 +580,7 @@ mod tests {
 
     #[test]
     fn teacher_text_and_meta() {
-        let ok = ResearchResult { question: "q".into(), summary: "s [1]".into(), sources: vec![SourceRef { title: "T".into(), url: "https://t".into() }], error: None };
+        let ok = ResearchResult { question: "q".into(), summary: "s [1]".into(), sources: vec![SourceRef { title: "T".into(), url: "https://t".into() }], ..Default::default() };
         assert!(ok.for_teacher().starts_with("Investigación: q"));
         assert!(ok.for_teacher().contains("[1] T — https://t"));
         assert_eq!(ok.meta()["kind"], "research");
