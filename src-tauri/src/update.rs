@@ -9,7 +9,9 @@
 
 use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
+use std::path::Path;
 use std::sync::Mutex;
+use tauri::ipc::Channel;
 use tauri::AppHandle;
 #[cfg(desktop)]
 use tauri::Manager;
@@ -27,6 +29,41 @@ pub enum Check {
     Off,
     Current { version: String },
     Available { version: String, current: String, notes: String },
+}
+
+/// AC-202: how the installation goes, for the bar inside Eureka (the installer runs
+/// without a window: `installMode: "quiet"` in tauri.conf.json).
+#[derive(Clone, Debug, Serialize, PartialEq)]
+#[serde(tag = "stage", rename_all = "lowercase")]
+pub enum Progress {
+    Downloading { done: u64, total: Option<u64> },
+    /// Downloaded and verified: Eureka closes and the new version opens by itself.
+    Installing,
+}
+
+/// AC-202: what the new version shows once, when it opens after updating itself.
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+pub struct WhatsNew {
+    pub version: String,
+    pub from: String,
+    pub notes: String,
+}
+
+/// Written right before the installer runs, read (and deleted) by the next start.
+const MARKER: &str = "update-just-installed.json";
+
+pub fn remember_whats_new(dir: &Path, w: &WhatsNew) -> Result<()> {
+    std::fs::write(dir.join(MARKER), serde_json::to_vec(w)?)?;
+    Ok(())
+}
+
+/// The news of the version that is running now, once. A marker left by an
+/// installation that did not finish (another version) is dropped silently.
+pub fn take_whats_new(dir: &Path, current: &str) -> Option<WhatsNew> {
+    let path = dir.join(MARKER);
+    let raw = std::fs::read_to_string(&path).ok()?;
+    let _ = std::fs::remove_file(&path);
+    serde_json::from_str::<WhatsNew>(&raw).ok().filter(|w| w.version == current)
 }
 
 /// The update found by the last check, kept until it is installed.
@@ -61,7 +98,7 @@ pub async fn check(_app: &AppHandle) -> Result<Check> {
 }
 
 #[cfg(mobile)]
-pub async fn install(_app: &AppHandle) -> Result<()> {
+pub async fn install(_app: &AppHandle, _data_dir: &Path, _progress: Channel<Progress>) -> Result<()> {
     Err(anyhow!("En el celular Eureka se actualiza desde la tienda."))
 }
 
@@ -93,12 +130,33 @@ pub async fn check(app: &AppHandle) -> Result<Check> {
     Ok(out)
 }
 
-/// Downloads, verifies the signature and installs; on Windows the installer
-/// closes the app and opens the new version.
+/// Downloads, verifies the signature and installs; on Windows the installer runs
+/// without a window, closes the app and opens the new version.
 #[cfg(desktop)]
-pub async fn install(app: &AppHandle) -> Result<()> {
+pub async fn install(app: &AppHandle, data_dir: &Path, progress: Channel<Progress>) -> Result<()> {
     let update = app.state::<Pending>().0.lock().unwrap().take().ok_or_else(|| anyhow!("Primero buscá la actualización."))?;
-    update.download_and_install(|_, _| {}, || {}).await.context("no se pudo instalar la actualización")?;
+    remember_whats_new(data_dir, &WhatsNew { version: update.version.clone(), from: update.current_version.clone(), notes: update.body.clone().unwrap_or_default() })?;
+    let mut done = 0u64;
+    let mut last = 0u64;
+    let result = update
+        .download_and_install(
+            |chunk, total| {
+                done += chunk as u64;
+                // About every 512 KB: a smooth bar without flooding the IPC.
+                if done - last >= 512 * 1024 || Some(done) == total {
+                    last = done;
+                    let _ = progress.send(Progress::Downloading { done, total });
+                }
+            },
+            || {
+                let _ = progress.send(Progress::Installing);
+            },
+        )
+        .await;
+    if let Err(e) = result {
+        let _ = std::fs::remove_file(data_dir.join(MARKER));
+        return Err(anyhow::Error::new(e).context("no se pudo instalar la actualización"));
+    }
     app.restart();
 }
 
@@ -114,6 +172,29 @@ mod tests {
         assert_eq!(manifest_url(raw).unwrap(), "https://github.com/o/r/releases/download/v0.2.0/latest.json");
         assert!(manifest_url(r#"{"assets":[]}"#).unwrap_err().to_string().contains("latest.json"));
         assert!(manifest_url("{roto").is_err());
+    }
+
+    #[test]
+    fn the_news_show_once_and_only_on_the_new_version() {
+        let dir = std::env::temp_dir().join(format!("la-update-{}", uuid::Uuid::new_v4().simple()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let dir = dir.as_path();
+        let w = WhatsNew { version: "0.7.0".into(), from: "0.6.0".into(), notes: "### Nuevo
+- algo".into() };
+        assert_eq!(take_whats_new(dir, "0.7.0"), None, "nothing installed yet");
+        remember_whats_new(dir, &w).unwrap();
+        assert_eq!(take_whats_new(dir, "0.7.0"), Some(w));
+        assert_eq!(take_whats_new(dir, "0.7.0"), None, "only once");
+        // An installation that did not finish: the old version opens, no news, marker gone.
+        remember_whats_new(dir, &WhatsNew { version: "0.8.0".into(), from: "0.7.0".into(), notes: String::new() }).unwrap();
+        assert_eq!(take_whats_new(dir, "0.7.0"), None);
+        assert!(!dir.join(MARKER).exists());
+    }
+
+    #[test]
+    fn progress_reaches_the_screen_by_stage() {
+        assert_eq!(serde_json::to_value(Progress::Downloading { done: 5, total: Some(10) }).unwrap(), serde_json::json!({ "stage": "downloading", "done": 5, "total": 10 }));
+        assert_eq!(serde_json::to_value(Progress::Installing).unwrap(), serde_json::json!({ "stage": "installing" }));
     }
 
     #[test]

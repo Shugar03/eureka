@@ -163,6 +163,40 @@ pub async fn stream_chat(
     done
 }
 
+/// "Overloaded" answers retried on another route before giving up (AC-203).
+const OVERLOAD_RETRIES: usize = 2;
+
+/// AC-203: OpenCode Go pins every conversation (`x-opencode-session`) to one
+/// upstream server, for its prompt cache. When that server is full it answers
+/// 429 "overloaded" to *that conversation only*, every time, while any other id
+/// goes through. The fix is a new route: the conversation keeps it from then on
+/// (its cache starts again there), in memory for this run.
+static ROUTES: std::sync::Mutex<Vec<(String, String)>> = std::sync::Mutex::new(Vec::new());
+
+/// The id this conversation travels with now (its own, unless it was rerouted).
+pub fn route(session: &str) -> String {
+    ROUTES.lock().unwrap().iter().find(|(s, _)| s == session).map(|(_, r)| r.clone()).unwrap_or_else(|| session.to_string())
+}
+
+fn reroute(session: &str) {
+    let fresh = format!("{session}-{}", &uuid::Uuid::new_v4().simple().to_string()[..8]);
+    let mut routes = ROUTES.lock().unwrap();
+    routes.retain(|(s, _)| s != session);
+    routes.push((session.to_string(), fresh));
+}
+
+/// The server is full (not a quota, not a bad request): another try can work.
+pub fn overloaded(status: u16, body: &str) -> bool {
+    matches!(status, 429 | 503 | 529) && body.to_lowercase().contains("overload")
+}
+
+/// How long the provider asked to wait, capped: a turn never stalls for long.
+fn retry_after(h: &reqwest::header::HeaderMap) -> std::time::Duration {
+    let get = |k: &str| h.get(k).and_then(|v| v.to_str().ok()).and_then(|v| v.trim().parse::<f64>().ok());
+    let ms = get("retry-after-ms").or_else(|| get("retry-after").map(|s| s * 1000.0)).unwrap_or(600.0);
+    std::time::Duration::from_millis(ms.clamp(0.0, 3000.0) as u64)
+}
+
 /// Providers that answered 4xx to `stream_options` (by base URL): asked
 /// without it from then on, and their usage stays unknown unless they send it anyway.
 static NO_STREAM_OPTIONS: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
@@ -194,24 +228,36 @@ async fn stream_completions(
                 // OpenRouter attribution headers; ignored by other providers.
                 .header("HTTP-Referer", "https://github.com/eureka")
                 .header("X-Title", "Eureka")
-                .header("x-opencode-session", &ep.session)
+                .header("x-opencode-session", route(&ep.session))
                 .json(body)
                 .send()
         })
     };
-    let resp = send(&body)?.await.context("no se pudo conectar con el proveedor")?;
-    let resp = if resp.status().is_success() || !ask_usage {
-        check_status(resp).await?
-    } else {
-        let status = resp.status();
-        let text = resp.text().await.unwrap_or_default();
-        if !rejects_stream_options(status.as_u16(), &text) {
-            bail!("el proveedor respondió {status}: {text}");
+    let mut rerouted = 0;
+    let resp = loop {
+        let resp = send(&body)?.await.context("no se pudo conectar con el proveedor")?;
+        if resp.status().is_success() {
+            break resp;
         }
-        // Degrade: the call goes on without usage, never breaks for it.
-        NO_STREAM_OPTIONS.lock().unwrap().push(ep.base_url.clone());
-        body.as_object_mut().unwrap().remove("stream_options");
-        check_status(send(&body)?.await.context("no se pudo conectar con el proveedor")?).await?
+        let status = resp.status();
+        let wait = retry_after(resp.headers());
+        let text = resp.text().await.unwrap_or_default();
+        if body.get("stream_options").is_some() && rejects_stream_options(status.as_u16(), &text) {
+            // Degrade: the call goes on without usage, never breaks for it.
+            NO_STREAM_OPTIONS.lock().unwrap().push(ep.base_url.clone());
+            body.as_object_mut().unwrap().remove("stream_options");
+            continue;
+        }
+        if overloaded(status.as_u16(), &text) {
+            if rerouted < OVERLOAD_RETRIES && !cancelled() {
+                rerouted += 1;
+                reroute(&ep.session);
+                tokio::time::sleep(wait).await;
+                continue;
+            }
+            bail!("El proveedor está saturado: probé {} veces por distintos caminos y no respondió. Probá en unos minutos o elegí otro modelo en Ajustes → Conexión. (respondió {status}: {text})", OVERLOAD_RETRIES + 1);
+        }
+        bail!("el proveedor respondió {status}: {text}");
     };
     let mut parser = SseParser::default();
     pump(resp, &mut parser, on_text, cancelled).await?;

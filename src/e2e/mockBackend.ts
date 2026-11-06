@@ -141,6 +141,7 @@ const OCR_PAGES = [
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const params = new URLSearchParams(location.search);
+const UPDATE_NOTES = "### Nuevo\n- **Lector de fotocopias**: los PDFs escaneados se leen en tu PC.\n\n### Mejorado\n- Cambiar de fase ya no tira la caché del proveedor.";
 const failMode = params.has("fail");
 const failExtract = params.has("failExtract");
 let failGrade = params.has("failGradeOnce");
@@ -814,8 +815,22 @@ export function install() {
       // Distribution: the demo is a development build, it never updates itself.
       case "app_version":
         return "0.1.0";
+      // AC-202: `?update` offers a new version; `?whatsNew` opens as just updated.
       case "update_check":
-        return { status: "off" };
+        return params.has("update") ? { status: "available", version: "0.2.0", current: "0.1.0", notes: UPDATE_NOTES } : { status: "off" };
+      case "update_install": {
+        const ch = args.onProgress as Channel<{ stage: string; done?: number; total?: number | null }>;
+        const total = 34_000_000;
+        for (const f of [0.1, 0.4, 0.7, 1]) {
+          await sleep(DELAY * 4 + 150);
+          ch.onmessage({ stage: "downloading", done: Math.round(total * f), total });
+        }
+        ch.onmessage({ stage: "installing" });
+        // The real app closes here and opens the new version: the demo just stays installing.
+        return new Promise(() => {});
+      }
+      case "update_whats_new":
+        return params.has("whatsNew") ? { version: "0.1.0", from: "0.0.9", notes: UPDATE_NOTES } : null;
       case "get_settings":
         return settingsView();
       case "save_settings": {

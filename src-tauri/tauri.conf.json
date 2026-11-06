@@ -50,9 +50,11 @@
     "windows": {
       "nsis": {
         "installMode": "currentUser",
+        "headerImage": "windows/installer-header.bmp",
+        "sidebarImage": "windows/installer-sidebar.bmp",
+        "installerIcon": "icons/icon.ico",
         "languages": [
-          "Spanish",
-          "English"
+          "Spanish"
         ],
         "displayLanguageSelector": false
       }
@@ -62,7 +64,7 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDUyRjFEMTRBMjRBRkEwMEMKUldRTW9LOGtTdEh4VXZwTGFFdTAzNy9LNmN4Vnk4TXhGM3Z6Nm5ZM00rUGtjTWVqYzlKa2xMUzEK",
       "windows": {
-        "installMode": "passive"
+        "installMode": "quiet"
       }
     }
   }

@@ -1141,6 +1141,40 @@ async fn every_request_names_its_conversation_for_opencode_go() {
     std::fs::remove_dir_all(dir).ok();
 }
 
+#[tokio::test]
+async fn an_overloaded_route_is_left_for_another_and_the_conversation_stays_there() {
+    // AC-203: OpenCode Go pinned this conversation to a full server: 429 "overloaded" every time.
+    let busy = r#"{"error":{"type":"server_error","message":"Upstream request failed: [overloaded] the server is overloaded; retry shortly"}}"#;
+    let f = fake(vec![Reply::Status(429, busy), Reply::Sse(vec![text("Hola.")]), Reply::Sse(vec![text("Sigo.")])]).await;
+    let (st, dir) = state(&f, true, "");
+    let id = new_session(&st);
+    run(&st, &id).await.0.unwrap();
+    run(&st, &id).await.0.unwrap();
+    let routes: Vec<String> = f.requests.lock().unwrap().iter().map(|r| r["_headers"]["x-opencode-session"].as_str().unwrap().to_string()).collect();
+    assert_eq!(routes.len(), 3);
+    assert_eq!(routes[0], format!("eureka-{id}"));
+    assert!(routes[1].starts_with(&format!("eureka-{id}-")), "a new route for the same conversation: {routes:?}");
+    assert_eq!(routes[2], routes[1], "the next turn keeps the new route (and its cache)");
+
+    // Still full after every route: a message that says what happened and what to do.
+    let g = fake(vec![Reply::Status(429, busy)]).await;
+    let (st2, dir2) = state(&g, true, "");
+    let id2 = new_session(&st2);
+    let err = run(&st2, &id2).await.0.unwrap_err().to_string();
+    assert!(err.starts_with("El proveedor está saturado") && err.contains("Ajustes → Conexión"), "{err}");
+    assert_eq!(g.requests.lock().unwrap().len(), 3, "the first try and two more");
+
+    // A quota 429 (not "overloaded") is not retried: another route would not help.
+    let q = fake(vec![Reply::Status(429, r#"{"error":{"message":"Monthly limit reached"}}"#)]).await;
+    let (st3, dir3) = state(&q, true, "");
+    let id3 = new_session(&st3);
+    assert!(run(&st3, &id3).await.0.is_err());
+    assert_eq!(q.requests.lock().unwrap().len(), 1);
+    for d in [dir, dir2, dir3] {
+        std::fs::remove_dir_all(d).ok();
+    }
+}
+
 #[test]
 fn a_weak_library_search_asks_for_one_reformulation_then_to_move_on() {
     // AC-189

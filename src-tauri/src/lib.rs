@@ -1562,10 +1562,17 @@ async fn update_check(app: tauri::AppHandle) -> CmdResult<update::Check> {
     update::check(&app).await.map_err(err)
 }
 
-/// Installs the update found by `update_check` and reopens Eureka.
+/// Installs the update found by `update_check` and reopens Eureka (AC-202: no
+/// installer window; the progress goes to the bar inside Eureka).
 #[tauri::command]
-async fn update_install(app: tauri::AppHandle) -> CmdResult<()> {
-    update::install(&app).await.map_err(err)
+async fn update_install(app: tauri::AppHandle, state: State<'_, AppState>, on_progress: Channel<update::Progress>) -> CmdResult<()> {
+    update::install(&app, &state.data_dir, on_progress).await.map_err(err)
+}
+
+/// AC-202: right after updating itself, what the new version brings (once).
+#[tauri::command]
+fn update_whats_new(app: tauri::AppHandle, state: State<'_, AppState>) -> Option<update::WhatsNew> {
+    update::take_whats_new(&state.data_dir, &app.package_info().version.to_string())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -1643,6 +1650,7 @@ pub fn run() {
             app_version,
             update_check,
             update_install,
+            update_whats_new,
             get_settings,
             save_settings,
             chatgpt_status,

@@ -1,6 +1,6 @@
 # Distribución y actualizaciones
 
-Eureka se instala como cualquier app de Windows (instalador NSIS, sin pedir administrador) y se actualiza sola: al abrirse (y cada 6 horas si queda abierta) busca una versión nueva, muestra **«Eureka X está lista»** y con **Actualizar ahora** la baja, verifica la firma, la instala y se vuelve a abrir. Los datos (`AppData\Roaming\lat.eureka.app`) no se tocan. En Ajustes → Conexión, **Acerca de Eureka** muestra la versión y **Buscar actualizaciones**.
+Eureka se instala como cualquier app de Windows (instalador NSIS, sin pedir administrador) y se actualiza sola: al abrirse (y cada 6 horas si queda abierta) busca una versión nueva, muestra **«Eureka X está lista»** y con **Actualizar ahora** la baja (con una barra de progreso dentro de Eureka), verifica la firma, la instala sin mostrar ninguna ventana (`plugins.updater.windows.installMode: "quiet"`) y se vuelve a abrir; esa primera vez muestra **«Novedades de Eureka X»** con las notas del release (AC-202). El instalador de la primera vez usa `src-tauri/windows/installer-sidebar.bmp` (164×314) y `installer-header.bmp` (150×57), regenerables desde el ícono. Los datos (`AppData\Roaming\lat.eureka.app`) no se tocan. En Ajustes → Conexión, **Acerca de Eureka** muestra la versión y **Buscar actualizaciones**.
 
 ## Cómo funciona
 
