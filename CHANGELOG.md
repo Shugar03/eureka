@@ -4,6 +4,8 @@ Lo que cambia en cada versión de Eureka, de la más nueva a la más vieja. El f
 
 ## Sin publicar
 
+## [0.8.0] - 2026-11-11
+
 ### Nuevo
 - **Sabés al toque si acertaste:** en las preguntas de fichas, «Comprobar» corrige en el momento con una franja verde o roja (con la respuesta correcta), y el profesor llega después con el porqué. Ordenar, unir y completar se responden tocando fichas. Una idea se da por entendida recién cuando la explicás con tus palabras (AC-208).
 
@@ -91,6 +93,7 @@ Primera versión pública.
 - Consola de código en diez lenguajes.
 - Actualizaciones automáticas firmadas.
 
+[0.8.0]: https://github.com/Shugar03/eureka/releases/tag/v0.8.0
 [0.7.0]: https://github.com/Shugar03/eureka/releases/tag/v0.7.0
 [0.6.0]: https://github.com/Shugar03/eureka/releases/tag/v0.6.0
 [0.5.0]: https://github.com/Shugar03/eureka/releases/tag/v0.5.0
