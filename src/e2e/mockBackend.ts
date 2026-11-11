@@ -469,7 +469,7 @@ function applyCall(s: Session, c: Call) {
 }
 
 function addInput(s: Session, input: LearnerInput) {
-  const meta = { kind: "answer" as const, text: input.text, confidence: input.confidence ?? null, thinking: input.thinking ?? "", ...(input.free ? { free: true } : {}), ...(input.reading?.trim() ? { reading: input.reading.trim() } : {}) };
+  const meta = { kind: "answer" as const, text: input.text, confidence: input.confidence ?? null, thinking: input.thinking ?? "", ...(input.free ? { free: true } : {}), ...(input.reading?.trim() ? { reading: input.reading.trim() } : {}), ...(input.grade ? { grade: input.grade } : {}) };
   if (s.pending_question) {
     s.messages.push({ role: "tool", tool_call_id: s.pending_question, content: input.text, meta });
     s.pending_question = null;

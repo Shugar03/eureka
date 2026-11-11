@@ -28,7 +28,8 @@ export async function answer(
     await q.getByRole("button", "+ Contar cómo lo pensé").click();
     await q.getByRole("textbox", "Pensando en voz alta").fill(opts.thinking);
   }
-  await q.getByRole("button", "Responder").click();
+  // AC-208: a question with its key is checked at once («Comprobar»); one without, «Responder».
+  await q.getByRole("button", /^(Comprobar|Responder)$/).click();
 }
 
 /** Answers the two diagnostic questions; the agent then plans and starts teaching. */

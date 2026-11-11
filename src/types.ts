@@ -19,6 +19,8 @@ export interface AnswerMeta {
   free?: boolean;
   /** AC-166: what they thought while reading the explanation before it. */
   reading?: string;
+  /** AC-208: how the app corrected a closed question. */
+  grade?: { correct: boolean; right: number; total: number } | null;
 }
 
 /** AC-120: an exam preparation the agent proposed from what the person said. */
@@ -485,6 +487,8 @@ export interface LearnerInput {
   free?: boolean;
   /** AC-166: notes taken while reading the teacher's last explanation; sent with the next input. */
   reading?: string;
+  /** AC-208: the app's instant correction of a closed question. */
+  grade?: { correct: boolean; right: number; total: number };
 }
 
 /** AC-122: a control of the app the agent runs because the person asked for it in words. */
@@ -520,6 +524,8 @@ export interface QuestionArgs {
   items?: string[];
   /** match: the right pairs (the card shuffles the right column). */
   pairs?: { left: string; right: string }[];
+  /** AC-208: the key (never shown before answering): choice 1-based index, multi indices, true_false booleans, cloze words. */
+  answer?: number | number[] | boolean[] | string[];
   /** Diagnostic questions the teacher expects to ask in total (probe only), for «pregunta 2 de ~3». */
   of?: number;
 }

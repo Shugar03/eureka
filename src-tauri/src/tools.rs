@@ -3,7 +3,7 @@
 
 use crate::llm::{Msg, ToolCall};
 use crate::session::{Finding, Level, NodeStatus, Phase, PlanNode, Session};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::HashSet;
 
@@ -26,6 +26,7 @@ pub fn definitions() -> Value {
               "items": { "type": "array", "items": { "type": "string" }, "description": "order: entre 3 y 7 elementos, en el orden correcto." },
               "pairs": { "type": "array", "items": { "type": "object", "properties": { "left": { "type": "string" }, "right": { "type": "string" } }, "required": ["left", "right"] },
                          "description": "match: entre 3 y 6 pares correctos." },
+              "answer": { "description": "La clave (el aprendiz no la ve; la app corrige al instante y le muestra si acertó). Mandala como valor JSON, no como texto: choice → 2; multi → [1, 3]; true_false → [true, false]; cloze → [\"palabra\"]. choice: el número de la opción correcta (1, 2…). multi: la lista de números correctos. true_false: una lista de true/false, una por afirmación. cloze: una lista con la palabra de cada hueco (alternativas con «|»). order y match no la llevan: su clave es el orden de items y los pares." },
               "of": { "type": "integer", "minimum": 1, "maximum": 4,
                       "description": "Solo con purpose probe: cuántas preguntas de diagnóstico calculás hacer en total (2 o 3 lo normal, 4 el tope). El aprendiz ve «pregunta 2 de ~3»; corregilo si cambia tu cálculo." }
             },
@@ -673,6 +674,9 @@ struct QuestionArgs {
     items: Option<Vec<String>>,
     #[serde(default)]
     pairs: Option<Vec<Pair>>,
+    /// AC-208: the key of a closed format, for the instant correction.
+    #[serde(default)]
+    answer: Option<Value>,
     #[serde(default)]
     of: Option<u8>,
 }
@@ -719,6 +723,109 @@ fn options_in_text(question: &str) -> bool {
     listed >= 3
 }
 
+/// AC-208: the key as models really send it: «"2"», «"[false, true]"», «["false", "true"]»,
+/// the text of the option instead of its number, one word for a single gap. The same
+/// reading lives in src/lib/grade.ts (keyOf), which corrects with it.
+pub fn key_of(answer: Option<&Value>, format: &str, options: &[String]) -> Option<Value> {
+    let mut v = answer?.clone();
+    if let Some(s) = v.as_str() {
+        let t = s.trim();
+        v = serde_json::from_str::<Value>(t).unwrap_or_else(|_| Value::String(t.to_string()));
+    }
+    let scalar = |x: &Value| -> Value {
+        match x {
+            Value::String(s) => {
+                let t = s.trim();
+                match t.to_lowercase().as_str() {
+                    "true" | "verdadero" | "v" => return Value::Bool(true),
+                    "false" | "falso" | "f" => return Value::Bool(false),
+                    _ => {}
+                }
+                if let Ok(n) = t.parse::<u64>() {
+                    return json!(n);
+                }
+                // The option's text instead of its number.
+                match options.iter().position(|o| o.trim().eq_ignore_ascii_case(t)) {
+                    Some(i) if format == "choice" || format == "multi" => json!(i + 1),
+                    _ => Value::String(t.to_string()),
+                }
+            }
+            other => other.clone(),
+        }
+    };
+    let v = match (format, v) {
+        (_, Value::Null) => return None,
+        ("choice", Value::Array(a)) if a.len() == 1 => scalar(&a[0]),
+        ("choice", x) => scalar(&x),
+        ("cloze", Value::String(s)) => json!([s]),
+        (_, Value::Array(a)) => Value::Array(a.iter().map(scalar).collect()),
+        (_, x) => json!([scalar(&x)]),
+    };
+    // A cloze word that looks like a number stays a word.
+    Some(if format == "cloze" { Value::Array(v.as_array().cloned().unwrap_or_default().into_iter().map(|x| if x.is_string() { x } else { Value::String(x.to_string()) }).collect()) } else { v })
+}
+
+/// AC-208: a closed format carries its key, so the app can correct at once.
+fn check_key(q: &QuestionArgs, format: &str) -> Result<(), String> {
+    let count = |v: &Option<Vec<String>>| v.as_ref().map(|v| v.iter().filter(|x| !x.trim().is_empty()).count()).unwrap_or(0);
+    let opts: Vec<String> = q.options.clone().unwrap_or_default();
+    let normalized = key_of(q.answer.as_ref(), format, &opts);
+    let key = normalized.as_ref();
+    let index_ok = |v: &Value, n: usize| v.as_u64().is_some_and(|i| (1..=n as u64).contains(&i));
+    match format {
+        "choice" => {
+            let n = count(&q.options);
+            if !key.is_some_and(|k| index_ok(k, n)) {
+                return Err(format!("error: choice necesita answer: el número de la opción correcta (entre 1 y {n}); la app corrige al instante con eso"));
+            }
+        }
+        "multi" => {
+            let n = count(&q.options);
+            if !key.and_then(Value::as_array).is_some_and(|a| !a.is_empty() && a.iter().all(|v| index_ok(v, n))) {
+                return Err(format!("error: multi necesita answer: la lista de números de las opciones correctas (entre 1 y {n})"));
+            }
+        }
+        "true_false" => {
+            let n = count(&q.statements);
+            if !key.and_then(Value::as_array).is_some_and(|a| a.len() == n && a.iter().all(Value::is_boolean)) {
+                return Err(format!("error: true_false necesita answer: una lista de {n} true/false, una por afirmación"));
+            }
+        }
+        "cloze" => {
+            let n = q.question.matches("___").count();
+            if !key.and_then(Value::as_array).is_some_and(|a| a.len() == n && a.iter().all(|v| v.as_str().is_some_and(|s| !s.trim().is_empty()))) {
+                return Err(format!("error: cloze necesita answer: una lista de {n} palabras, la de cada hueco en orden"));
+            }
+        }
+        _ => {}
+    }
+    Ok(())
+}
+
+/// AC-208: an idea is not understood on taps alone: since it became current, the learner
+/// answered something with their own words (an open question, or writing in the chat).
+fn explained_since_current(s: &Session, node: &str) -> bool {
+    let is_current = |c: &ToolCall| {
+        c.function.name == "update_node" && serde_json::from_str::<Value>(&c.function.arguments).is_ok_and(|v| v["id"] == node && v["status"] == "current")
+    };
+    let from = s.messages.iter().rposition(|m| m.tool_calls.iter().flatten().any(is_current)).unwrap_or(0);
+    let window = &s.messages[from..];
+    let asked: Vec<(&str, String)> = window
+        .iter()
+        .flat_map(|m| m.tool_calls.iter().flatten())
+        .filter(|c| c.function.name == "ask_question")
+        .map(|c| (c.id.as_str(), format_of(&c.function.arguments).unwrap_or_else(|| "open".into())))
+        .collect();
+    // Only taps can't prove it; with no closed question in between, nothing changes.
+    if asked.iter().all(|(_, f)| f == "open") {
+        return true;
+    }
+    window.iter().any(|m| {
+        let Some(v) = m.meta.as_ref().filter(|v| v["kind"] == "answer") else { return false };
+        v["free"] == true || m.tool_call_id.as_deref().is_some_and(|id| asked.iter().any(|(q, f)| *q == id && f == "open"))
+    })
+}
+
 /// AC-204: what each format needs, and variety between consecutive questions.
 fn check_question(q: &QuestionArgs, s: &Session, call_id: &str) -> Result<(), String> {
     let format = q.format();
@@ -746,13 +853,8 @@ fn check_question(q: &QuestionArgs, s: &Session, call_id: &str) -> Result<(), St
             _ => "error: cloze necesita entre 1 y 6 huecos escritos como ___ en question".into(),
         });
     }
-    let previous = s
-        .messages
-        .iter()
-        .flat_map(|m| m.tool_calls.iter().flatten())
-        .filter(|c| c.id != call_id && c.function.name == "ask_question")
-        .last()
-        .and_then(|c| format_of(&c.function.arguments));
+    check_key(q, &format)?;
+    let previous = shown_questions(s, call_id).last().and_then(|c| format_of(&c.function.arguments));
     if previous.as_deref() == Some(format.as_str()) {
         let others: Vec<&str> = FORMATS.iter().copied().filter(|f| *f != format).collect();
         return Err(format!(
@@ -766,12 +868,21 @@ fn check_question(q: &QuestionArgs, s: &Session, call_id: &str) -> Result<(), St
 /// The diagnosis is short on purpose: past this many probe questions the agent has to plan with what it has.
 pub const PROBE_MAX: usize = 4;
 
+/// The `ask_question` calls the learner actually saw: answered, or waiting. A call the tool
+/// refused stays in the history with its error and must not count (AC-208: refusals for a
+/// missing key used to make the diagnosis look full, and let two open questions in a row).
+fn shown_questions<'a>(s: &'a Session, current_call: &'a str) -> impl Iterator<Item = &'a ToolCall> + 'a {
+    s.messages.iter().flat_map(|m| m.tool_calls.iter().flatten()).filter(move |c| {
+        c.id != current_call
+            && c.function.name == "ask_question"
+            && (s.pending_question.as_deref() == Some(c.id.as_str())
+                || s.messages.iter().any(|m| m.tool_call_id.as_deref() == Some(c.id.as_str()) && m.meta.as_ref().is_some_and(|v| v["kind"] == "answer")))
+    })
+}
+
 /// How many diagnostic questions were already asked, not counting the call being applied.
 fn probe_questions_asked(s: &Session, current_call: &str) -> usize {
-    s.messages
-        .iter()
-        .flat_map(|m| m.tool_calls.iter().flatten())
-        .filter(|c| c.id != current_call && c.function.name == "ask_question")
+    shown_questions(s, current_call)
         .filter(|c| serde_json::from_str::<serde_json::Value>(&c.function.arguments).ok().and_then(|v| v.get("purpose").and_then(|p| p.as_str()).map(str::to_owned)).as_deref() == Some("probe"))
         .count()
 }
@@ -878,6 +989,9 @@ pub fn apply(s: &mut Session, call: &ToolCall) -> Outcome {
         }),
         "set_plan" => parse::<PlanArgs>(call).and_then(|a| set_plan(s, a)),
         "update_node" => parse::<UpdateArgs>(call).and_then(|a| {
+            if a.status == NodeStatus::Understood && !explained_since_current(s, &a.id) {
+                return Err(format!("error: `{}` no se da por entendido solo con fichas: antes hacé una pregunta open (que explique o aplique la idea con sus palabras) o pedile que lo explique en el chat", a.id));
+            }
             let ids: Vec<String> = s.plan.iter().map(|n| n.id.clone()).collect();
             let node = s.plan.iter_mut().find(|n| n.id == a.id).ok_or(format!("error: no existe el nodo '{}'; los ids son: {}", a.id, ids.join(", ")))?;
             node.status = a.status;
@@ -1061,6 +1175,16 @@ pub struct LearnerInput {
     /// AC-166: what they thought while reading the teacher's last explanation.
     #[serde(default)]
     pub reading: String,
+    /// AC-208: how the app corrected a closed format, already shown to the learner.
+    #[serde(default)]
+    pub grade: Option<Grade>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct Grade {
+    pub correct: bool,
+    pub right: u32,
+    pub total: u32,
 }
 
 /// Appends the learner's input. If a question is pending, the input becomes
@@ -1074,6 +1198,7 @@ pub fn add_learner_input(s: &mut Session, input: LearnerInput) {
         "thinking": input.thinking,
         "free": input.free,
         "reading": input.reading,
+        "grade": input.grade,
     });
     // AC-166: the notes taken while reading travel with whatever is sent next.
     let reading = match input.reading.trim() {
@@ -1094,6 +1219,17 @@ pub fn add_learner_input(s: &mut Session, input: LearnerInput) {
             }
             if !input.thinking.trim().is_empty() {
                 body.push_str(&format!("\nSu razonamiento: {}", input.thinking));
+            }
+            // AC-208: the app already showed whether it was right; the teacher brings the why.
+            if let Some(g) = &input.grade {
+                if g.correct {
+                    body.push_str(&format!("\nCorrección de la app (ya se la mostró): acertó todo ({} de {}). No repitas «¡bien!»: seguí, y si ves algo para profundizar, decilo en una frase.", g.right, g.total));
+                } else {
+                    body.push_str(&format!("\nCorrección de la app (ya se la mostró, con la respuesta correcta): {} de {}. Explicá el porqué del error, no solo cuál era la respuesta.", g.right, g.total));
+                    if input.confidence.is_some_and(|c| c >= 4) {
+                        body.push_str(" Falló con mucha confianza: antes revisá que tu clave sea correcta; si te equivocaste vos, decíselo con claridad.");
+                    }
+                }
             }
             body.push_str(&reading);
             s.messages.push(Msg::tool(id, body, Some(meta)));
@@ -1125,7 +1261,7 @@ mod tests {
         let out = apply(s, &c);
         if out == Outcome::AwaitLearner {
             s.messages.push(Msg { role: "assistant".into(), content: None, tool_calls: Some(vec![c]), tool_call_id: None, meta: None });
-            s.pending_question = None;
+            add_learner_input(s, LearnerInput { text: "respuesta".into(), confidence: Some(3), ..Default::default() });
         }
         out
     }
@@ -1140,12 +1276,12 @@ mod tests {
         let mut s = Session::new("historia del planeamiento");
         let ok = [
             json!({ "question": "¿Por qué planifica un Estado?", "purpose": "probe" }),
-            json!({ "question": "¿Qué impulsó la UNESCO?", "purpose": "probe", "options": ["Capital humano", "Currículos únicos"] }),
-            json!({ "question": "Marcá V o F", "purpose": "check", "format": "true_false", "statements": ["La CEPAL es de 1948", "El IIPE es de 1990"] }),
+            json!({ "question": "¿Qué impulsó la UNESCO?", "purpose": "probe", "options": ["Capital humano", "Currículos únicos"], "answer": 1 }),
+            json!({ "question": "Marcá V o F", "purpose": "check", "format": "true_false", "statements": ["La CEPAL es de 1948", "El IIPE es de 1990"], "answer": [true, false] }),
             json!({ "question": "Ordená", "purpose": "check", "format": "order", "items": ["Crisis del 30", "CEPAL", "Alianza para el Progreso"] }),
             json!({ "question": "Uní", "purpose": "check", "format": "match", "pairs": [{ "left": "Carballeda", "right": "intervención en lo social" }, { "left": "Oszlak", "right": "agenda pública" }, { "left": "Argüello", "right": "sentidos de la planificación" }] }),
-            json!({ "question": "Elegí todas", "purpose": "check", "format": "multi", "options": ["a", "b", "c"] }),
-            json!({ "question": "La ___ entra a la agenda cuando se ___.", "purpose": "check", "format": "cloze" }),
+            json!({ "question": "Elegí todas", "purpose": "check", "format": "multi", "options": ["a", "b", "c"], "answer": [1, 3] }),
+            json!({ "question": "La ___ entra a la agenda cuando se ___.", "purpose": "check", "format": "cloze", "answer": ["cuestión social", "problematiza"] }),
         ];
         for (i, a) in ok.into_iter().enumerate() {
             assert_eq!(ask(&mut s, &format!("q{i}"), a.clone()), Outcome::AwaitLearner, "{a}");
@@ -1165,9 +1301,99 @@ mod tests {
         let mut s = Session::new("x");
         let q = "¿Qué responde esa intervención? Elegí una:\n\n1. A una demanda social.\n2. A un mandato técnico.\n3. A las empresas.\n4. Al crecimiento del Estado.";
         assert!(refused(ask(&mut s, "a", json!({ "question": q, "purpose": "probe" })), "options"));
-        assert_eq!(ask(&mut s, "b", json!({ "question": "¿Qué responde esa intervención?", "purpose": "probe", "options": ["Demanda social", "Mandato técnico"] })), Outcome::AwaitLearner);
+        assert_eq!(ask(&mut s, "b", json!({ "question": "¿Qué responde esa intervención?", "purpose": "probe", "options": ["Demanda social", "Mandato técnico"], "answer": 1 })), Outcome::AwaitLearner);
         // Two numbered lines in an explanation are not a list of options.
         assert!(!options_in_text("Pasos:\n1. medir\n2. planificar"));
+    }
+
+    #[test]
+    fn closed_formats_carry_their_key() {
+        // AC-208: the app corrects at once with it.
+        let mut s = Session::new("x");
+        assert!(refused(ask(&mut s, "a", json!({ "question": "q", "purpose": "check", "options": ["a", "b"] })), "answer"));
+        assert!(refused(ask(&mut s, "b", json!({ "question": "q", "purpose": "check", "options": ["a", "b"], "answer": 3 })), "entre 1 y 2"));
+        assert!(refused(ask(&mut s, "c", json!({ "question": "q", "purpose": "check", "format": "true_false", "statements": ["x", "y"], "answer": [true] })), "2 true/false"));
+        assert!(refused(ask(&mut s, "d", json!({ "question": "La ___ y la ___", "purpose": "check", "format": "cloze", "answer": ["una"] })), "2 palabras"));
+        assert!(refused(ask(&mut s, "e", json!({ "question": "q", "purpose": "check", "format": "multi", "options": ["a", "b"], "answer": [] })), "multi necesita answer"));
+        // order and match: the key is their own order.
+        assert_eq!(ask(&mut s, "f", json!({ "question": "Ordená", "purpose": "check", "format": "order", "items": ["a", "b", "c"] })), Outcome::AwaitLearner);
+    }
+
+    #[test]
+    fn keys_are_read_the_way_models_send_them() {
+        // AC-208: the live run sent «"2"» and «"[false, true]"» and was refused six times.
+        let o: Vec<String> = ["a", "Capital humano", "c"].iter().map(|s| s.to_string()).collect();
+        let k = |v: Value, f: &str| key_of(Some(&v), f, &o);
+        assert_eq!(k(json!("2"), "choice"), Some(json!(2)));
+        assert_eq!(k(json!("capital humano"), "choice"), Some(json!(2)));
+        assert_eq!(k(json!(["3"]), "choice"), Some(json!(3)));
+        assert_eq!(k(json!("[false, true, true]"), "true_false"), Some(json!([false, true, true])));
+        assert_eq!(k(json!(["false", "Verdadero"]), "true_false"), Some(json!([false, true])));
+        assert_eq!(k(json!("[1, 3]"), "multi"), Some(json!([1, 3])));
+        assert_eq!(k(json!("problematiza"), "cloze"), Some(json!(["problematiza"])));
+        assert_eq!(k(json!([1948]), "cloze"), Some(json!(["1948"])), "a year in a gap is a word");
+        let mut s = Session::new("x");
+        assert_eq!(ask(&mut s, "a", json!({ "question": "q", "purpose": "check", "options": ["a", "b"], "answer": "2" })), Outcome::AwaitLearner);
+    }
+
+    #[test]
+    fn refused_questions_do_not_count() {
+        // AC-208: a refused call stays in the history; it neither fills the diagnosis nor sets the format.
+        let mut s = Session::new("x");
+        s.phase = Phase::Probe;
+        let push = |s: &mut Session, id: &str, args: Value, result: Outcome| {
+            s.messages.push(Msg { role: "assistant".into(), content: None, tool_calls: Some(vec![ToolCall { id: id.into(), ..call("ask_question", args) }]), tool_call_id: None, meta: None });
+            if let Outcome::Result(r) = result {
+                s.messages.push(Msg::tool(id, r, None));
+            }
+        };
+        for i in 0..5 {
+            let args = json!({ "question": "q", "purpose": "probe", "options": ["a", "b"] });
+            let out = apply(&mut s, &ToolCall { id: format!("r{i}"), ..call("ask_question", args.clone()) });
+            assert!(matches!(&out, Outcome::Result(r) if r.contains("answer")), "{out:?}");
+            push(&mut s, &format!("r{i}"), args, out);
+        }
+        assert_eq!(ask(&mut s, "ok1", json!({ "question": "¿Por qué?", "purpose": "probe" })), Outcome::AwaitLearner, "five refusals are not five questions");
+        s.pending_question = Some("ok1".into());
+        add_learner_input(&mut s, LearnerInput { text: "porque sí".into(), confidence: Some(3), ..Default::default() });
+        assert!(refused(ask(&mut s, "ok2", json!({ "question": "¿Y?", "purpose": "probe" })), "dos seguidas"), "the open question shown before still sets the format");
+    }
+
+    #[test]
+    fn the_teacher_hears_how_the_app_corrected() {
+        // AC-208
+        let mut s = Session::new("x");
+        s.pending_question = Some("q1".into());
+        add_learner_input(&mut s, LearnerInput { text: "Elegí: A".into(), confidence: Some(5), grade: Some(Grade { correct: false, right: 1, total: 3 }), ..Default::default() });
+        let m = s.messages.last().unwrap();
+        let body = m.content.as_deref().unwrap();
+        assert!(body.contains("Corrección de la app (ya se la mostró, con la respuesta correcta): 1 de 3") && body.contains("revisá que tu clave sea correcta"), "{body}");
+        assert_eq!(m.meta.as_ref().unwrap()["grade"]["right"], 1);
+        s.pending_question = Some("q2".into());
+        add_learner_input(&mut s, LearnerInput { text: "x".into(), confidence: Some(2), grade: Some(Grade { correct: true, right: 2, total: 2 }), ..Default::default() });
+        let body = s.messages.last().unwrap().content.clone().unwrap();
+        assert!(body.contains("acertó todo (2 de 2)") && body.contains("No repitas"), "{body}");
+    }
+
+    #[test]
+    fn an_idea_is_not_understood_on_taps_alone() {
+        // AC-208: recognising is not understanding; an open answer (or the chat) closes the idea.
+        let mut s = Session::new("x");
+        s.phase = Phase::Teach;
+        s.plan = vec![PlanNode { id: "agenda".into(), title: "Agenda".into(), summary: String::new(), depends_on: vec![], status: NodeStatus::Pending, note: String::new() }];
+        let push = |s: &mut Session, c: ToolCall| s.messages.push(Msg { role: "assistant".into(), content: None, tool_calls: Some(vec![c]), tool_call_id: None, meta: None });
+        let cur = ToolCall { id: "u1".into(), ..call("update_node", json!({ "id": "agenda", "status": "current" })) };
+        apply(&mut s, &cur);
+        push(&mut s, cur);
+        assert_eq!(ask(&mut s, "t1", json!({ "question": "Marcá", "purpose": "check", "format": "true_false", "statements": ["x", "y"], "answer": [true, false] })), Outcome::AwaitLearner);
+        s.pending_question = Some("t1".into());
+        add_learner_input(&mut s, LearnerInput { text: "1. x: verdadero".into(), confidence: Some(4), grade: Some(Grade { correct: true, right: 2, total: 2 }), ..Default::default() });
+        let done = call("update_node", json!({ "id": "agenda", "status": "understood" }));
+        assert!(matches!(apply(&mut s, &done), Outcome::Result(r) if r.starts_with("error") && r.contains("solo con fichas")));
+        assert_eq!(ask(&mut s, "o1", json!({ "question": "¿Por qué?", "purpose": "check" })), Outcome::AwaitLearner);
+        s.pending_question = Some("o1".into());
+        add_learner_input(&mut s, LearnerInput { text: "porque alguien lo nombra".into(), confidence: Some(4), ..Default::default() });
+        assert!(matches!(apply(&mut s, &done), Outcome::Result(r) if r.starts_with("ok")), "with an answer in their own words");
     }
 
     #[test]
@@ -1177,7 +1403,7 @@ mod tests {
         assert_eq!(ask(&mut s, "a", json!({ "question": "¿Por qué?", "purpose": "check" })), Outcome::AwaitLearner);
         let again = ask(&mut s, "b", json!({ "question": "¿Y por qué más?", "purpose": "check" }));
         assert!(refused(again, "dos seguidas"), "open after open");
-        assert_eq!(ask(&mut s, "c", json!({ "question": "Marcá", "purpose": "check", "format": "true_false", "statements": ["x", "y"] })), Outcome::AwaitLearner);
+        assert_eq!(ask(&mut s, "c", json!({ "question": "Marcá", "purpose": "check", "format": "true_false", "statements": ["x", "y"], "answer": [true, true] })), Outcome::AwaitLearner);
         assert_eq!(ask(&mut s, "d", json!({ "question": "¿Por qué?", "purpose": "check" })), Outcome::AwaitLearner, "open again after another format");
     }
 
@@ -1195,11 +1421,11 @@ mod tests {
         s.phase = Phase::Probe;
         for i in 0..PROBE_MAX {
             // Alternating formats: two in a row can't share one (AC-204).
-            let f = if i % 2 == 0 { json!({ "question": "q", "purpose": "probe", "of": 3 }) } else { json!({ "question": "q", "purpose": "probe", "of": 3, "format": "choice", "options": ["a", "b"] }) };
+            let f = if i % 2 == 0 { json!({ "question": "q", "purpose": "probe", "of": 3 }) } else { json!({ "question": "q", "purpose": "probe", "of": 3, "format": "choice", "options": ["a", "b"], "answer": 2 }) };
             let c = ToolCall { id: format!("p{i}"), ..call("ask_question", f) };
             assert_eq!(apply(&mut s, &c), Outcome::AwaitLearner);
             s.messages.push(Msg { role: "assistant".into(), content: None, tool_calls: Some(vec![c]), tool_call_id: None, meta: None });
-            s.pending_question = None;
+            add_learner_input(&mut s, LearnerInput { text: "respuesta".into(), confidence: Some(3), ..Default::default() });
         }
         let over = apply(&mut s, &ToolCall { id: "p-extra".into(), ..call("ask_question", json!({ "question": "otra", "purpose": "probe" })) });
         assert!(matches!(over, Outcome::Result(r) if r.starts_with("ignorada") && r.contains("pasá a plan")), "the fifth probe question is refused");

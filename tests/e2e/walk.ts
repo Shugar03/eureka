@@ -100,7 +100,7 @@ export async function walk(seed: number, { app, screen, browser }: Fixtures, tur
           await q.getByRole("button", "+ Contar cómo lo pensé").click();
           await q.getByRole("textbox", "Pensando en voz alta").fill("pienso que…");
         }
-        await q.getByRole("button", "Responder").click();
+        await q.getByRole("button", /^(Comprobar|Responder)$/).click();
         await waitIdle(screen);
         break;
       }

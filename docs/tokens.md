@@ -339,3 +339,10 @@ antes 1 200 del fragmento), con hasta 6 búsquedas por investigación: más toke
 modelo barato. Su prompt pasa de 179 a 240 tokens: recibe las búsquedas del profesor y la regla de que un resultado
 sobre un autor buscado es pertinente (en la prueba en vivo había descartado los libros pedidos como «temas ajenos»).
 
+## Corrección al instante (AC-208)
+
+`ask_question` describe la clave `answer` (486 → 589 tokens) y el prompt suma cómo usarla y la regla de cerrar cada
+idea con una pregunta abierta (+156). En el benchmark, cada llamada del método manda ~270 tokens más (p. ej.
+`06-ensenar-chequeo` de 8 592 a 8 862), todos en el prefijo fijo que se cachea. A cambio, en las preguntas de fichas
+el profesor ya no tiene que corregir: recibe el resultado y solo explica el porqué cuando hace falta.
+

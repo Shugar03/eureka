@@ -88,7 +88,20 @@ test("AC-02 cambiar de opción antes de responder", async ({ app, screen }) => {
   await q.getByRole("radio", "A 0").click();
   await expect(q.getByRole("radio", "A 0")).toHaveAttribute("aria-checked", "true");
   await expect(q.getByRole("radio", "A 1")).toHaveAttribute("aria-checked", "false");
-  await expect(q.getByRole("button", "Responder")).toBeDisabled(); // still no confidence
+  // AC-208: a tap question is checked at once; saying how sure is optional there.
+  await expect(q.getByRole("button", "Comprobar")).toBeEnabled();
+});
+
+test("AC-208 la app corrige al instante y muestra la respuesta correcta", async ({ app, screen }) => {
+  await startSession(app, screen);
+  await answer(screen, { text: "sube 2", confidence: 4 });
+  const q = pending(screen);
+  await expect(q).toContainText("Crece sin límite", { timeout: 10_000 });
+  await q.getByRole("radio", "A 1").click();
+  await q.getByRole("button", "Comprobar").click();
+  const verdict = screen.getByTestId("verdict");
+  await expect(verdict).toContainText("No era así");
+  await expect(verdict).toContainText("Respuesta correcta: A 0");
 });
 
 test("AC-13 Shift+Enter agrega una línea y Enter envía", async ({ app, screen }) => {

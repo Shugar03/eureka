@@ -72,3 +72,11 @@ Característica: Sesión de aprendizaje Medir → Planificar → Enseñar
     Entonces es de otro tipo: verdadero o falso, ordenar, unir, completar huecos u opciones
     Y «pensando en voz alta» aparece solo si toco «+ Contar cómo lo pensé»
 
+  @AC-208
+  Escenario: La app corrige las fichas al instante
+    Dado una pregunta para unir autores con sus ideas
+    Cuando uno los pares tocando las fichas y toco «Comprobar»
+    Entonces veo enseguida una franja verde, o roja con la respuesta correcta
+    Y el profesor me explica el porqué después
+    Y la idea se da por entendida recién cuando la explico con mis palabras
+

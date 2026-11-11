@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QuestionCard, formatOf, shuffled } from "./QuestionCard";
 
@@ -149,33 +149,70 @@ describe("QuestionCard formats (AC-204)", () => {
     expect(onSubmit).toHaveBeenCalledWith({ text: "1. «La CEPAL es de 1948»: verdadero\n2. «El IIPE es de 1990»: falso", confidence: 4, thinking: "" });
   });
 
-  it("order: shuffled at first, moved with the arrows, sent in the learner's order", async () => {
+  it("order: tiles tapped into the slots, a placed one taps back out; checked at once", async () => {
     const onSubmit = vi.fn();
     const items = ["Crisis del 30", "CEPAL", "Alianza para el Progreso"];
     render(<QuestionCard args={{ question: "Ordená", purpose: "check", format: "order", items }} answer={null} pending busy={false} onSubmit={onSubmit} />);
-    const shown = () => screen.getAllByRole("listitem").map((li) => li.querySelector(".order-text")?.textContent);
-    expect(shown()).not.toEqual(items);
-    expect([...shown()].sort()).toEqual([...items].sort());
-    // Put it right: each item where it belongs.
-    for (const [target, x] of items.entries()) {
-      while (shown().indexOf(x) > target) await userEvent.click(screen.getByRole("button", { name: `Subir «${x}»` }));
-    }
-    expect(shown()).toEqual(items);
-    await sure();
-    await send();
-    expect(onSubmit).toHaveBeenCalledWith({ text: "Mi orden: 1) Crisis del 30 2) CEPAL 3) Alianza para el Progreso", confidence: 4, thinking: "" });
+    const bank = screen.getByRole("group", { name: "Fichas para ordenar" });
+    const shown = within(bank).getAllByRole("button").map((b) => b.textContent);
+    expect(shown).not.toEqual(items);
+    await userEvent.click(screen.getByRole("button", { name: "Ubicar «CEPAL»" }));
+    await userEvent.click(screen.getByRole("button", { name: "Sacar «CEPAL»" }));
+    for (const x of items) await userEvent.click(screen.getByRole("button", { name: `Ubicar «${x}»` }));
+    await userEvent.click(screen.getByRole("button", { name: "Comprobar" }));
+    expect(onSubmit).toHaveBeenCalledWith({ text: "Mi orden: 1) Crisis del 30 2) CEPAL 3) Alianza para el Progreso", confidence: null, thinking: "", grade: { correct: true, right: 3, total: 3 } });
   });
 
-  it("match: each left gets one of the shuffled rights", async () => {
+  it("match: tap a left tile, then its pair; the grade counts each pair", async () => {
     const onSubmit = vi.fn();
     const pairs = [{ left: "Carballeda", right: "intervención" }, { left: "Oszlak", right: "agenda" }, { left: "Argüello", right: "sentidos" }];
     render(<QuestionCard args={{ question: "Uní", purpose: "check", format: "match", pairs }} answer={null} pending busy={false} onSubmit={onSubmit} />);
-    await sure();
-    for (const p of pairs.slice(0, 2)) await userEvent.selectOptions(screen.getByRole("combobox", { name: `Par de «${p.left}»` }), p.right);
-    expect(screen.getByRole("button", { name: "Responder" })).toBeDisabled();
-    await userEvent.selectOptions(screen.getByRole("combobox", { name: "Par de «Argüello»" }), "agenda");
-    await send();
-    expect(onSubmit).toHaveBeenCalledWith({ text: "«Carballeda» → «intervención»\n«Oszlak» → «agenda»\n«Argüello» → «agenda»", confidence: 4, thinking: "" });
+    const link = async (l: string, r: string) => {
+      await userEvent.click(screen.getByRole("button", { name: l }));
+      await userEvent.click(screen.getByRole("button", { name: r }));
+    };
+    await link("Carballeda", "intervención");
+    await link("Oszlak", "sentidos");
+    expect(screen.getByRole("button", { name: "Comprobar" })).toBeDisabled();
+    await link("Argüello", "agenda");
+    // Tapping a linked tile unlinks it, and it can be linked again.
+    await userEvent.click(screen.getByRole("button", { name: "Oszlak, unido con «sentidos»" }));
+    await link("Oszlak", "sentidos");
+    await userEvent.click(screen.getByRole("button", { name: "Comprobar" }));
+    expect(onSubmit).toHaveBeenCalledWith({
+      text: "«Carballeda» → «intervención»\n«Oszlak» → «sentidos»\n«Argüello» → «agenda»",
+      confidence: null,
+      thinking: "",
+      grade: { correct: false, right: 1, total: 3 },
+    });
+  });
+
+  it("the verdict: green when right, red with the right answer when not", () => {
+    const args = { question: "¿Qué impulsó?", purpose: "check" as const, options: ["Currículos", "Capital humano"], answer: 2 };
+    const { rerender } = render(<QuestionCard args={args} answer={{ kind: "answer", text: "Capital humano", confidence: null, thinking: "", grade: { correct: true, right: 1, total: 1 } }} pending={false} busy={false} onSubmit={() => {}} />);
+    expect(screen.getByTestId("verdict")).toHaveTextContent("¡Bien!");
+    expect(screen.getByTestId("verdict")).not.toHaveTextContent("Respuesta correcta");
+    rerender(<QuestionCard args={args} answer={{ kind: "answer", text: "Currículos", confidence: null, thinking: "", grade: { correct: false, right: 0, total: 1 } }} pending={false} busy={false} onSubmit={() => {}} />);
+    expect(screen.getByTestId("verdict")).toHaveTextContent("No era así");
+    expect(screen.getByTestId("verdict")).toHaveTextContent("Respuesta correcta: Capital humano");
+  });
+
+  it("a question with its key says Comprobar; one without, Responder (old sessions, the demo)", () => {
+    const { rerender } = render(<QuestionCard args={{ question: "q", purpose: "check", options: ["a", "b"], answer: 1 }} answer={null} pending busy={false} onSubmit={() => {}} />);
+    expect(screen.getByRole("button", { name: "Comprobar" })).toBeInTheDocument();
+    rerender(<QuestionCard args={{ question: "q2", purpose: "check", options: ["a", "b"] }} answer={null} pending busy={false} onSubmit={() => {}} />);
+    expect(screen.getByRole("button", { name: "Responder" })).toBeInTheDocument();
+  });
+
+  it("cloze with a word bank: words are tapped into the gaps", async () => {
+    const onSubmit = vi.fn();
+    render(<QuestionCard args={{ question: "La ___ entra cuando se ___.", purpose: "check", format: "cloze", options: ["cuestión social", "problematiza", "privatiza"], answer: ["cuestión social", "problematiza"] }} answer={null} pending busy={false} onSubmit={onSubmit} />);
+    await userEvent.click(screen.getByRole("button", { name: "cuestión social" }));
+    await userEvent.click(screen.getByRole("button", { name: "privatiza" }));
+    await userEvent.click(screen.getByRole("button", { name: "Vaciar el hueco 2" }));
+    await userEvent.click(screen.getByRole("button", { name: "problematiza" }));
+    await userEvent.click(screen.getByRole("button", { name: "Comprobar" }));
+    expect(onSubmit).toHaveBeenCalledWith({ text: "La [cuestión social] entra cuando se [problematiza].", confidence: null, thinking: "", grade: { correct: true, right: 2, total: 2 } });
   });
 
   it("cloze: the gaps are filled back into the sentence", async () => {

@@ -32,9 +32,9 @@ export const PLAN: Omit<PlanNode, "note">[] = [
   { id: "derivada", title: "La derivada", summary: "La pendiente de la tangente en cada punto", depends_on: ["tangente"], status: "pending" },
 ];
 
-const ask = (question: string, purpose: string, options?: string[], of?: number): Call => ({
+const ask = (question: string, purpose: string, options?: string[], of?: number, answer?: number): Call => ({
   name: "ask_question",
-  args: { question, purpose, ...(options ? { options } : {}), ...(of ? { of } : {}) },
+  args: { question, purpose, ...(options ? { options } : {}), ...(of ? { of } : {}), ...(answer ? { answer } : {}) },
 });
 
 export const DEMO = "<!doctype html><html><body style=\"margin:0;font:14px system-ui;background:#0f1011;color:#d0d6e0\">\n<div style=\"padding:12px\"><label>Distancia entre los puntos: <input id=\"h\" type=\"range\" min=\"0.05\" max=\"2\" step=\"0.05\" value=\"1.5\" aria-label=\"Distancia entre los puntos\"></label>\n<p>Pendiente de la secante: <strong id=\"m\"></strong></p><svg id=\"g\" width=\"300\" height=\"160\" viewBox=\"-1 -1 4 5\" style=\"background:#141516;transform:scaleY(-1)\"></svg></div>\n<script>\nconst h=document.getElementById(\"h\"),m=document.getElementById(\"m\"),g=document.getElementById(\"g\");\nfunction draw(){const d=+h.value,x=1,y=x*x,x2=x+d,y2=x2*x2,s=(y2-y)/d;m.textContent=s.toFixed(2);\nlet p=\"\";for(let t=-0.5;t<=2.2;t+=0.05)p+=t+\",\"+t*t+\" \";\ng.innerHTML='<polyline fill=\"none\" stroke=\"#5e6ad2\" stroke-width=\"0.05\" points=\"'+p+'\"/>'+\n'<line x1=\"-0.5\" y1=\"'+(y-1.5*s)+'\" x2=\"3\" y2=\"'+(y+2*s)+'\" stroke=\"#f2994a\" stroke-width=\"0.04\"/>'+\n'<circle cx=\"'+x+'\" cy=\"'+y+'\" r=\"0.08\" fill=\"#fff\"/><circle cx=\"'+x2+'\" cy=\"'+y2+'\" r=\"0.08\" fill=\"#fff\"/>';}\nh.oninput=draw;draw();\nlet net=\"bloqueada\";try{fetch(\"https://example.com\").then(()=>{net=\"abierta\"},()=>{}).finally(()=>{document.body.dataset.net=net})}catch(e){document.body.dataset.net=net}\n</script></body></html>";
@@ -125,7 +125,7 @@ export function nextStep(v: TeacherView): Step | null {
       return {
         calls: [
           { name: "record_finding", args: { concept: "Pendiente", level: "solid", evidence: lastAnswer ?? "" } },
-          ask("¿A qué valor se acerca $\\frac{1}{n}$ cuando $n$ se hace cada vez más grande?", "probe", ["A 1", "A 0", "Crece sin límite"], 2),
+          ask("¿A qué valor se acerca $\\frac{1}{n}$ cuando $n$ se hace cada vez más grande?", "probe", ["A 1", "A 0", "Crece sin límite"], 2, 2),
         ],
       };
     const ok = /0/.test(lastAnswer ?? "");

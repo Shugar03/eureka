@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import type { AnswerMeta, LearnerInput, QuestionArgs } from "../types";
 import { PURPOSE_LABEL } from "../lib/transcript";
+import { expected, formatOf, grade, gradable } from "../lib/grade";
 import { Markdown } from "./Markdown";
 import { ReadAloud } from "./a11y/ReadAloud";
 import { Dictate } from "./a11y/Dictate";
 import { useAccessibility } from "./a11y/AccessibilityContext";
 import { MicButton } from "./chat/ChatTools";
+
+export { formatOf } from "../lib/grade";
+export type { Format } from "../lib/grade";
 
 interface Props {
   args: QuestionArgs;
@@ -27,16 +31,7 @@ interface Props {
 
 const CONFIDENCE = ["Ni idea", "Dudo mucho", "Más o menos", "Bastante seguro", "Seguro"];
 
-export type Format = "open" | "choice" | "multi" | "true_false" | "order" | "match" | "cloze";
-
-/** AC-204: the format the learner sees (the old default: options make it a choice). */
-export function formatOf(args: QuestionArgs): Format {
-  const f = args.format;
-  if (f && ["open", "choice", "multi", "true_false", "order", "match", "cloze"].includes(f)) return f;
-  return args.options?.filter(Boolean).length ? "choice" : "open";
-}
-
-/** A stable shuffle (same question, same order on every render), never the given order. */
+/** A stable shuffle (same question, same order on every render); mostly-in-place is rotated. */
 export function shuffled<T>(items: T[], seed: string): T[] {
   let h = 2166136261;
   for (const c of seed) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0;
@@ -49,28 +44,51 @@ export function shuffled<T>(items: T[], seed: string): T[] {
 /** Cloze: the question with each ___ as a numbered gap. */
 const BLANK = /_{3,}/g;
 
+/** AC-208: right after «Comprobar»: green when right, red with the right answer when not. */
+function Verdict({ args, answer }: { args: QuestionArgs; answer: AnswerMeta }) {
+  const g = answer.grade;
+  if (!g) return null;
+  return (
+    <div className={`verdict ${g.correct ? "is-right" : "is-wrong"}`} role="status" data-testid="verdict">
+      <strong>{g.correct ? "¡Bien!" : g.right > 0 ? "Casi" : "No era así"}</strong>
+      {g.total > 1 && (
+        <span className="verdict-score">
+          {g.right} de {g.total}
+        </span>
+      )}
+      {!g.correct && <span className="verdict-key">Respuesta correcta: {expected(args)}</span>}
+    </div>
+  );
+}
+
 export function QuestionCard({ args, answer, pending, busy, onSubmit, onDraft, tag, inChat, step, onEnough }: Props) {
   const format = formatOf(args);
   const [text, setText] = useState("");
   const [choice, setChoice] = useState<string | null>(null);
   const [picked, setPicked] = useState<string[]>([]);
   const [verdicts, setVerdicts] = useState<Record<number, boolean>>({});
-  const [order, setOrder] = useState<string[]>(() => shuffled(args.items?.filter(Boolean) ?? [], args.question));
+  const items = useMemo(() => args.items?.filter(Boolean) ?? [], [args.items]);
+  const bankOrder = useMemo(() => shuffled(items, args.question), [items, args.question]);
+  const [order, setOrder] = useState<string[]>([]);
   const [matches, setMatches] = useState<Record<number, string>>({});
+  const [leftSel, setLeftSel] = useState<number | null>(null);
   const [gaps, setGaps] = useState<string[]>([]);
   const [confidence, setConfidence] = useState<number | null>(null);
   const [thinking, setThinking] = useState("");
   const [showThinking, setShowThinking] = useState(false);
   const options = args.options?.filter(Boolean) ?? [];
   const statements = args.statements?.filter(Boolean) ?? [];
-  const pairs = args.pairs?.filter((p) => p.left && p.right) ?? [];
-  const rights = useMemo(() => shuffled(pairs.map((p) => p.right), args.question), [args.question, pairs.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  const pairs = useMemo(() => args.pairs?.filter((p) => p.left && p.right) ?? [], [args.pairs]);
+  const rights = useMemo(() => shuffled(pairs.map((p) => p.right), args.question), [pairs, args.question]);
   const blanks = format === "cloze" ? (args.question.match(BLANK) ?? []).length : 0;
+  // Cloze with a word bank (options): the words are tapped into the gaps in order.
+  const wordBank = format === "cloze" && options.length > 0 ? shuffled(options, args.question) : [];
   // «Responder dictando» (Ajustes) adds its own Dictar button; otherwise the microphone is always there, as in the chat box.
   const { a } = useAccessibility();
   const append = (setter: (f: (s: string) => string) => void) => (t: string) => setter((d) => (d.trim() ? `${d.trim()} ${t}` : t));
-  // The confidence is what calibrates the diagnosis and the checks; a prediction is a guess anyway.
-  const needsConfidence = args.purpose !== "predict";
+  const checks = gradable(args);
+  // Calibration matters when explaining; a tap question shows right away whether it was right.
+  const needsConfidence = format === "open" && args.purpose !== "predict";
   const comment = text.trim();
 
   /** What the teacher reads: the learner's answer, spelled out whatever the format. */
@@ -88,7 +106,7 @@ export function QuestionCard({ args, answer, pending, busy, onSubmit, onDraft, t
           ? withComment(statements.map((s, i) => `${i + 1}. «${s}»: ${verdicts[i] ? "verdadero" : "falso"}`).join("\n"))
           : "";
       case "order":
-        return withComment(`Mi orden: ${order.map((x, i) => `${i + 1}) ${x}`).join(" ")}`);
+        return order.length === items.length ? withComment(`Mi orden: ${order.map((x, i) => `${i + 1}) ${x}`).join(" ")}`) : "";
       case "match":
         return Object.keys(matches).length === pairs.length ? withComment(pairs.map((p, i) => `«${p.left}» → «${matches[i]}»`).join("\n")) : "";
       case "cloze": {
@@ -103,20 +121,53 @@ export function QuestionCard({ args, answer, pending, busy, onSubmit, onDraft, t
   useEffect(() => onDraft?.(draft), [draft, onDraft]);
 
   const submit = () => {
-    if (canSend) onSubmit({ text: response, confidence, thinking: thinking.trim() });
+    if (!canSend) return;
+    const g = grade(args, { choice, picked, verdicts, order, matches, gaps });
+    onSubmit({ text: response, confidence, thinking: thinking.trim(), ...(g ? { grade: g } : {}) });
   };
-  const move = (i: number, by: number) =>
-    setOrder((o) => {
-      const j = i + by;
-      if (j < 0 || j >= o.length) return o;
-      const next = [...o];
-      [next[i], next[j]] = [next[j], next[i]];
+
+  // Match: tap a left tile, then a right one; tapping a linked left tile unlinks it.
+  const pickLeft = (i: number) => {
+    if (matches[i] !== undefined) {
+      setMatches((m) => {
+        const next = { ...m };
+        delete next[i];
+        return next;
+      });
+      setLeftSel(null);
+      return;
+    }
+    setLeftSel(leftSel === i ? null : i);
+  };
+  const pickRight = (r: string) => {
+    if (leftSel === null) return;
+    setMatches((m) => {
+      const next = Object.fromEntries(Object.entries(m).filter(([, v]) => v !== r));
+      return { ...next, [leftSel]: r };
+    });
+    setLeftSel(null);
+  };
+  const pairNo = (i: number) => Object.keys(matches).map(Number).sort((x, y) => x - y).indexOf(i) + 1;
+
+  // Cloze: tap a word into the next empty gap, tap a filled gap to empty it.
+  const fillGap = (w: string) =>
+    setGaps((g) => {
+      const next = Array.from({ length: blanks }, (_, i) => g[i] ?? "");
+      const i = next.findIndex((x) => !x);
+      if (i < 0) return g;
+      next[i] = w;
       return next;
     });
 
   let gapNo = 0;
-  const question = format === "cloze" ? args.question.replace(BLANK, () => `**(${++gapNo})** \\_\\_\\_\\_`) : args.question;
-  const listen = [args.question, ...options.map((o, i) => `Opción ${i + 1}: ${o}`), ...statements.map((s, i) => `Afirmación ${i + 1}: ${s}`), ...order.map((x, i) => `Elemento ${i + 1}: ${x}`)].join("\n");
+  const question =
+    format === "cloze"
+      ? args.question.replace(BLANK, () => {
+          const i = gapNo++;
+          return wordBank.length && gaps[i] ? `**(${i + 1})** __${gaps[i]}__` : `**(${i + 1})** \\_\\_\\_\\_`;
+        })
+      : args.question;
+  const listen = [args.question, ...options.map((o, i) => `Opción ${i + 1}: ${o}`), ...statements.map((s, i) => `Afirmación ${i + 1}: ${s}`), ...bankOrder.map((x, i) => `Elemento ${i + 1}: ${x}`)].join("\n");
 
   return (
     <section
@@ -148,6 +199,7 @@ export function QuestionCard({ args, answer, pending, busy, onSubmit, onDraft, t
             {answer.thinking && <span className="answer-thinking">“{answer.thinking}”</span>}
             {answer.reading && <span className="answer-thinking">Mientras leías: “{answer.reading}”</span>}
           </div>
+          <Verdict args={args} answer={answer} />
         </div>
       )}
 
@@ -194,50 +246,89 @@ export function QuestionCard({ args, answer, pending, busy, onSubmit, onDraft, t
             </ol>
           )}
           {format === "order" && (
-            <ol className="order-list" aria-label="Ordená de arriba (primero) a abajo (último)">
-              {order.map((x, i) => (
-                <li key={x} className="order-row">
-                  <span className="order-n">{i + 1}</span>
-                  <span className="order-text">{x}</span>
-                  <button type="button" className="btn ghost small icon" onClick={() => move(i, -1)} disabled={i === 0} aria-label={`Subir «${x}»`}>
-                    ↑
-                  </button>
-                  <button type="button" className="btn ghost small icon" onClick={() => move(i, 1)} disabled={i === order.length - 1} aria-label={`Bajar «${x}»`}>
-                    ↓
-                  </button>
-                </li>
-              ))}
-            </ol>
+            <div className="tiles-order">
+              <ol className="order-slots" aria-label="Tu orden, de primero a último">
+                {items.map((_, i) => (
+                  <li key={i} className={`order-slot ${order[i] ? "is-filled" : ""}`}>
+                    <span className="order-n">{i + 1}</span>
+                    {order[i] ? (
+                      <button type="button" className="tile tile-in" onClick={() => setOrder((o) => o.filter((_, j) => j !== i))} aria-label={`Sacar «${order[i]}»`}>
+                        {order[i]}
+                      </button>
+                    ) : (
+                      <span className="muted small">{i === order.length ? "Tocá la ficha que va acá" : ""}</span>
+                    )}
+                  </li>
+                ))}
+              </ol>
+              <div className="tile-bank" role="group" aria-label="Fichas para ordenar">
+                {bankOrder.map((x) => {
+                  const used = order.includes(x);
+                  return (
+                    <button key={x} type="button" className={`tile ${used ? "is-used" : ""}`} disabled={used} onClick={() => setOrder((o) => [...o, x])} aria-label={`Ubicar «${x}»`}>
+                      {x}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           )}
           {format === "match" && (
-            <div className="match-list" role="group" aria-label="Uní cada uno con su par">
-              {pairs.map((p, i) => (
-                <label key={i} className="match-row">
-                  <span className="match-left">{p.left}</span>
-                  <select value={matches[i] ?? ""} onChange={(e) => setMatches((m) => ({ ...m, [i]: e.target.value }))} aria-label={`Par de «${p.left}»`}>
-                    <option value="" disabled>
-                      Elegí…
-                    </option>
-                    {rights.map((r) => (
-                      <option key={r} value={r}>
-                        {r}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ))}
+            <div className="tiles-match" role="group" aria-label="Tocá uno de la izquierda y después su par">
+              <div className="tile-col">
+                {pairs.map((p, i) => {
+                  const n = matches[i] !== undefined ? pairNo(i) : 0;
+                  return (
+                    <button key={i} type="button" className={`tile ${leftSel === i ? "is-selected" : ""} ${n ? "is-linked" : ""}`} aria-pressed={leftSel === i} onClick={() => pickLeft(i)} aria-label={n ? `${p.left}, unido con «${matches[i]}»` : p.left}>
+                      {n > 0 && <span className="tile-badge">{n}</span>}
+                      {p.left}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="tile-col">
+                {rights.map((r) => {
+                  const owner = Object.entries(matches).find(([, v]) => v === r)?.[0];
+                  const n = owner !== undefined ? pairNo(Number(owner)) : 0;
+                  return (
+                    <button key={r} type="button" className={`tile ${n ? "is-linked" : ""}`} onClick={() => pickRight(r)} disabled={leftSel === null && !n} aria-label={n ? `${r}, unido` : r}>
+                      {n > 0 && <span className="tile-badge">{n}</span>}
+                      {r}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
-          {format === "cloze" && (
-            <div className="cloze-gaps" role="group" aria-label="Huecos">
-              {Array.from({ length: blanks }, (_, i) => (
-                <label key={i} className="cloze-gap">
-                  <span>({i + 1})</span>
-                  <input value={gaps[i] ?? ""} onChange={(e) => setGaps((g) => Object.assign([...g], { [i]: e.target.value }))} aria-label={`Hueco ${i + 1}`} />
-                </label>
-              ))}
-            </div>
-          )}
+          {format === "cloze" &&
+            (wordBank.length ? (
+              <div className="tile-bank" role="group" aria-label="Palabras para completar">
+                {Array.from({ length: blanks }, (_, i) =>
+                  gaps[i] ? (
+                    <button key={`g${i}`} type="button" className="tile tile-in" onClick={() => setGaps((g) => Object.assign([...g], { [i]: "" }))} aria-label={`Vaciar el hueco ${i + 1}`}>
+                      ({i + 1}) {gaps[i]}
+                    </button>
+                  ) : null,
+                )}
+                {wordBank.map((w) => {
+                  const used = gaps.includes(w);
+                  return (
+                    <button key={w} type="button" className={`tile ${used ? "is-used" : ""}`} disabled={used} onClick={() => fillGap(w)}>
+                      {w}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="cloze-gaps" role="group" aria-label="Huecos">
+                {Array.from({ length: blanks }, (_, i) => (
+                  <label key={i} className="cloze-gap">
+                    <span>({i + 1})</span>
+                    <input value={gaps[i] ?? ""} onChange={(e) => setGaps((g) => Object.assign([...g], { [i]: e.target.value }))} aria-label={`Hueco ${i + 1}`} />
+                  </label>
+                ))}
+              </div>
+            ))}
 
           <div className="field-voice">
             <label className="field">
@@ -294,7 +385,7 @@ export function QuestionCard({ args, answer, pending, busy, onSubmit, onDraft, t
               </button>
             )}
             <button className="btn primary" onClick={submit} disabled={!canSend}>
-              Responder
+              {checks ? "Comprobar" : "Responder"}
             </button>
           </div>
         </div>
