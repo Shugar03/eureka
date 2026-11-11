@@ -4,9 +4,12 @@ import App from "./App";
 import { PomodoroProvider } from "./components/pomodoro/PomodoroContext";
 import { applyTheme, loadTheme } from "./lib/theme";
 import { DemoBadge } from "./components/DemoBadge";
+import { watchTitlebar } from "./lib/titlebar";
 
 // Before the first paint, so there is no light flash.
 applyTheme(loadTheme());
+// AC-207: room for Eureka's own title bar on Windows (and its buttons in Spanish).
+watchTitlebar();
 
 function render(demo = false) {
   ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(

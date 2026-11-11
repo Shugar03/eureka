@@ -1593,6 +1593,7 @@ dependencies = [
  "tauri",
  "tauri-build",
  "tauri-plugin-dialog",
+ "tauri-plugin-frame",
  "tauri-plugin-fs",
  "tauri-plugin-notification",
  "tauri-plugin-opener",
@@ -5765,6 +5766,21 @@ dependencies = [
  "tauri-plugin-fs",
  "thiserror 2.0.21",
  "url",
+]
+
+[[package]]
+name = "tauri-plugin-frame"
+version = "1.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e94e490dfa88798fbbb94accec3939648eb47c3afc7306b6f64fac1259495a6e"
+dependencies = [
+ "eyre",
+ "raw-window-handle",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-plugin",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

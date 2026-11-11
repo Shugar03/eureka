@@ -9,5 +9,16 @@
       "ocr-models/ch_ppocr_mobile_v2.0_cls_mobile.onnx": "ocr/ch_ppocr_mobile_v2.0_cls_mobile.onnx",
       "ocr-models/latin_PP-OCRv5_rec_mobile.onnx": "ocr/latin_PP-OCRv5_rec_mobile.onnx"
     }
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "Eureka",
+        "width": 1400,
+        "height": 900,
+        "decorations": false
+      }
+    ]
   }
 }

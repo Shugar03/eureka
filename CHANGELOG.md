@@ -4,6 +4,9 @@ Lo que cambia en cada versión de Eureka, de la más nueva a la más vieja. El f
 
 ## Sin publicar
 
+### Mejorado
+- **La barra de arriba de la ventana es parte de Eureka:** ya no está la franja gris de Windows; el costado y el fondo llegan hasta arriba y los botones de minimizar, maximizar y cerrar quedan integrados. En Windows 11 sigue apareciendo el menú para acomodar ventanas al pasar por maximizar (AC-207).
+
 ## [0.7.0] - 2026-11-06
 
 ### Nuevo

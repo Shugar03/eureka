@@ -69,3 +69,11 @@ Característica: La app de escritorio real con un proveedor falso
   Escenario: Borrar elimina el archivo
     Cuando borro una sesión
     Entonces su archivo ya no existe
+
+  @AC-207
+  Escenario: La barra de título es parte de Eureka
+    Dado que abro Eureka en Windows
+    Entonces no veo la barra gris de Windows: el costado y el fondo llegan hasta arriba
+    Y puedo arrastrar la ventana desde la franja de arriba
+    Y los botones Minimizar, Maximizar y Cerrar están a la derecha, con el color del tema
+

@@ -1818,3 +1818,16 @@ select option:disabled { color: var(--dim); }
   /* Long paths and links break instead of widening the page. */
   p code, li code, .md a { overflow-wrap: anywhere; }
 }
+
+/* AC-207: Eureka's own title bar on Windows (tauri-plugin-frame): a 32 px strip on top of the
+   app to drag the window, with the window buttons on the right. The sidebar and the main area
+   run under it, so the window reads as one surface; their content starts below it. */
+:root { --frame-h: 0px; }
+:root.has-frame { --frame-h: 32px; }
+.has-frame .sidebar { padding-top: calc(var(--frame-h) + 8px); }
+.has-frame .main { padding-top: calc(var(--frame-h) + 2px); }
+[data-tauri-frame-tb] { color: var(--muted); }
+[data-tauri-frame-tb] button:hover { color: var(--text); }
+[data-tauri-frame-tb] button:focus-visible { outline: 2px solid var(--accent-ring); outline-offset: -2px; }
+#frame-tb-close:hover { color: #fff; }
+

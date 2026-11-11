@@ -1607,6 +1607,19 @@ pub fn run() {
     {
         builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
     }
+    // AC-207: Eureka's own title bar: a 32 px strip to drag the window, with the three
+    // Windows buttons on top of the app (the Snap Layout menu still opens on ▢).
+    #[cfg(windows)]
+    {
+        builder = builder.plugin(
+            tauri_plugin_frame::FramePluginBuilder::new()
+                .auto_titlebar(true)
+                .titlebar_height(32)
+                .button_hover_bg_dark("rgba(255,255,255,0.08)")
+                .button_hover_bg_light("rgba(20,22,26,0.07)")
+                .build(),
+        );
+    }
     builder
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
