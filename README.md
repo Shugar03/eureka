@@ -47,14 +47,15 @@ Cada respuesta lleva tu **confianza (1 a 5)** y, si querés, tu **razonamiento e
 ## 🎒 Todo lo que trae
 
 ### Aprender cualquier cosa
-- **Sesiones guiadas** que pasan por medir, planificar, enseñar y cerrar, con preguntas de opción múltiple o abiertas.
+- **Sesiones guiadas** que pasan por medir, planificar, enseñar y cerrar.
+- **Preguntas en siete formatos** (con tus palabras, opción múltiple, varias correctas, verdadero o falso, ordenar, unir y completar) que nunca se repiten dos seguidas. Las de fichas se responden tocando y **se corrigen al instante**; el profesor llega después con el porqué. Una idea se da por entendida recién cuando la explicás con tus palabras.
 - **Diagramas** (Mermaid), **demos interactivas** aisladas y **código** listo para correr, solo cuando el contenido lo pide.
-- **Investigación web** con fuentes citadas [1], [2], solo cuando hace falta.
+- **Investigación web** con fuentes citadas [1], [2]: busca de a un autor o tema y, si encuentra **PDFs abiertos** de tu bibliografía, los sumás a tu biblioteca con un botón.
 - **Tarjetas de memoria** que el propio profesor genera al cerrar cada idea.
 
 ### 🧠 Una memoria que crece con vos
 - **Grafo de conocimiento:** al terminar una sesión, lo que entendiste queda guardado como ideas y razonamientos conectados. Importá tus notas, navegá el grafo y olvidá una fuente con un clic.
-- **Perfil del aprendiz:** tus confusiones (reparadas o no) y cómo aprendés mejor. Lo ves y lo borrás en Ajustes.
+- **Lo que Eureka sabe de vos:** lo que te cuesta, lo que dominás, tus confusiones y cómo aprendés mejor, cada cosa con su evidencia y sin repetirse. Lo corregís o lo borrás, y lo exportás como páginas enlazadas para **Obsidian**.
 - **`recall`:** el profesor consulta tu memoria antes de reenseñarte algo que ya sabés.
 
 ### 📚 Tu biblioteca, digerida en segundos
@@ -174,29 +175,13 @@ flowchart LR
 - **Frontend en React:** interfaz estilo Linear, oscura por defecto, con KaTeX, Mermaid, CodeMirror y pdf.js.
 - **Pedagogía con evidencia:** producir antes de recibir, prioridad a los errores con confianza alta, andamiaje adaptado al nivel y feedback sobre el razonamiento. Ver [docs/marco-pedagogico.md](docs/marco-pedagogico.md).
 
-## 🧪 Hecho con disciplina
-
-Eureka se construyó con **SDD + TDD + BDD**: cada función tiene su criterio de aceptación, su escenario en Gherkin y sus pruebas.
-
-- **Rust:** más de 380 pruebas, incluido el loop del agente contra un proveedor falso y un presupuesto de tokens por fase.
-- **Frontend:** más de 400 pruebas con Vitest.
-- **E2E:** más de 100 escenarios en un navegador visible, más pruebas sobre la app de escritorio real.
-- **Ninguna prueba gasta tokens.**
-
-```bash
-npm test             # tipos + Vitest + cargo test
-npm run test:e2e     # e2e web en un navegador visible
-npm run test:all     # todo
-```
-
 Toda la documentación, ordenada según lo que vengas a hacer, está en [docs/](docs/README.md): la especificación, la arquitectura, las pruebas y las mediciones. Los cambios de cada versión, en el [CHANGELOG](CHANGELOG.md).
 
 ## 🗺️ Lo que viene
 
-- Word, PowerPoint y EPUB en la biblioteca.
-- Búsqueda por significado en tu PC, sin red ([plan](docs/plan-embeddings-estaticos.md)).
-- Una memoria del estudiante que no repite ideas, resuelve contradicciones y se puede ver y exportar ([plan](docs/plan-memoria-estudiante.md)).
-- La interfaz para teléfono y la versión de Android.
+- **Repaso diario de 3 a 5 minutos**, al estilo Duolingo y Mimo: una ronda de fichas con lo que te toca repasar y lo que fallaste, corregida al instante en tu PC.
+- **Fichas para programar:** completar código, ordenar líneas y predecir la salida antes de ejecutar.
+- La interfaz para teléfono y la versión de **Android** (en camino).
 - Ejecución de código aislada.
 
 ## 🤝 Contribuí
