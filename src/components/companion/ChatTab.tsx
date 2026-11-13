@@ -3,7 +3,7 @@ import { companionApi, errorText } from "../../api";
 import type { CompanionView, EntryDraft } from "../../types";
 import { STARTERS } from "../../lib/companion";
 import { ReadAloud } from "../a11y/ReadAloud";
-import { Dictate } from "../a11y/Dictate";
+import { MicButton } from "../chat/ChatTools";
 import { DraftEditor } from "./DraftEditor";
 import { HelpLines } from "./HelpLines";
 
@@ -144,7 +144,8 @@ export function ChatTab({ view, onView }: { view: CompanionView; onView: (v: Com
                 }
               }}
             />
-            <Dictate onText={(t) => setDraft((d) => (d.trim() ? `${d.trim()} ${t}` : t))} />
+            {/* AC-209: talking is as easy as writing here, as in the chat box. */}
+            <MicButton label="Hablar en vez de escribir" onText={(t) => setDraft((d) => (d.trim() ? `${d.trim()} ${t}` : t))} />
             <button className="btn primary" onClick={() => send()} disabled={!draft.trim() || !!pending}>
               Enviar
             </button>

@@ -44,6 +44,15 @@ describe("Acompañamiento: lo que hay que saber antes (AC-82)", () => {
   });
 });
 
+describe("Acompañamiento: hablar con la voz (AC-209)", () => {
+  it("has a microphone next to the box, and its message floats without moving the box", async () => {
+    await accept();
+    await userEvent.click(screen.getByRole("button", { name: "Hablar en vez de escribir" }));
+    const note = await screen.findByText(/Ajustes → Avanzado|micrófono/);
+    expect(note).toHaveClass("mic-pop");
+  });
+});
+
 describe("Acompañamiento: charla (AC-82, AC-84)", () => {
   it("listens, and keeps the message in the box if sending fails", async () => {
     await accept();

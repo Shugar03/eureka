@@ -81,8 +81,8 @@ export function AttachButton({ onFiles, disabled }: { onFiles: (f: FileList | nu
   const input = useRef<HTMLInputElement>(null);
   return (
     <>
-      <button type="button" className="icon-btn" aria-label="Adjuntar archivos" title="Adjuntar: PDF, Word, PowerPoint, EPUB, texto o foto de apuntes" disabled={disabled} onClick={() => input.current?.click()}>
-        <Icon name="plus" size={18} />
+      <button type="button" className="compose-btn" aria-label="Adjuntar archivos" title="Adjuntar: PDF, Word, PowerPoint, EPUB, texto o foto de apuntes" disabled={disabled} onClick={() => input.current?.click()}>
+        <Icon name="clip" size={19} />
       </button>
       <input
         ref={input}
@@ -147,11 +147,12 @@ export function MicButton({ onText, label: idleLabel = "Hablar con el micrófono
   const d = useDictation(onText);
   const hintId = useId();
   const label = d.state === "recording" ? "Terminar de grabar" : d.state === "transcribing" ? "Transcribiendo…" : idleLabel;
+  // The message floats above the button, so the box it sits in never jumps.
   return (
-    <>
+    <span className="mic-wrap">
       <button
         type="button"
-        className={`icon-btn ${d.state === "recording" ? "is-recording" : ""}`}
+        className={`compose-btn mic-btn is-${d.state}`}
         aria-label={label}
         aria-pressed={d.state === "recording"}
         title={d.ready ? label : NO_VOICE}
@@ -159,14 +160,14 @@ export function MicButton({ onText, label: idleLabel = "Hablar con el micrófono
         disabled={d.state === "transcribing"}
         onClick={d.toggle}
       >
-        <Icon name="mic" size={18} />
+        {d.state === "transcribing" ? <span className="mic-spin" aria-hidden /> : <Icon name={d.state === "recording" ? "stop" : "mic"} size={19} />}
       </button>
       {!d.ready && !d.message && (
         <span id={hintId} className="sr-only">
           {NO_VOICE}
         </span>
       )}
-      {d.message && <span id={d.ready ? undefined : hintId} className={`small ${d.isError ? "error-text" : "muted"}`} role={d.isError ? "alert" : "status"}>{d.message}</span>}
-    </>
+      {d.message && <span id={d.ready ? undefined : hintId} className={`mic-pop small ${d.isError ? "is-error" : ""}`} role={d.isError ? "alert" : "status"}>{d.message}</span>}
+    </span>
   );
 }

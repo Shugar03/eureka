@@ -49,3 +49,9 @@ Característica: Acompañamiento
   Escenario: Herramientas
     Cuando uso la respiración guiada y el 5-4-3-2-1
     Entonces me guían paso a paso, sin conexión y sin guardar nada
+
+  @AC-209
+  Escenario: Hablar en vez de escribir
+    Cuando toco el micrófono al lado de la caja
+    Entonces grabo lo que digo y queda escrito en la caja para mandarlo
+    Y si todavía no elegí la Voz, me dice dónde elegirla sin mover la caja
