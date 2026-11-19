@@ -3,6 +3,7 @@ import { classesApi, errorText, languageApi } from "../../api";
 import type { ClassRecord } from "../../types";
 import { recordingForTranscription } from "../../lib/audio";
 import { quietPart, segmentMs } from "../../lib/listen";
+import { micError } from "../../lib/platform";
 
 type Part = { blob: Blob; seconds: number };
 
@@ -77,8 +78,8 @@ export function useClassRecorder(onUpdate: (c: ClassRecord) => void) {
     setError(null);
     try {
       stream.current = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch {
-      setError("No pude usar el micrófono. Dale permiso en los ajustes del sistema y probá de nuevo.");
+    } catch (e) {
+      setError(micError(e));
       return false;
     }
     id.current = c.id;

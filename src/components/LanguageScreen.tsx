@@ -8,6 +8,7 @@ import { ChoiceList, verdictLabel } from "./exam/ChoiceList";
 import { Markdown } from "./Markdown";
 import { useStudyContext } from "./pomodoro/PomodoroContext";
 import { recordingForTranscription } from "../lib/audio";
+import { micError } from "../lib/platform";
 
 /** AC-65: listening and speaking practice for language exams. */
 export function LanguageScreen() {
@@ -224,8 +225,8 @@ function SpeakingPanel({ language, level, code }: { language: string; level: str
       setElapsed(0);
       r.start();
       setRecording(true);
-    } catch {
-      setError("No pude usar el micrófono. Dale permiso o subí un audio grabado.");
+    } catch (e) {
+      setError(`${micError(e)} También podés subir un audio grabado.`);
     }
   };
 

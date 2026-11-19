@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { errorText, languageApi } from "../../api";
 import { useAccessibility } from "./AccessibilityContext";
 import { recordingForTranscription } from "../../lib/audio";
-import { MIC_DENIED, onPhone, systemDictation } from "../../lib/platform";
+import { micError, onPhone, systemDictation } from "../../lib/platform";
 
 const SETUP_HINT = onPhone()
   ? "Para hablar, elegí la Voz en Ajustes → Avanzado."
@@ -39,8 +39,8 @@ export function useDictation(onText: (text: string) => void) {
       rec.current = r;
       r.start();
       setState("recording");
-    } catch {
-      setError(MIC_DENIED);
+    } catch (e) {
+      setError(micError(e));
     }
   };
 
