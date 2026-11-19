@@ -4,6 +4,10 @@ Lo que cambia en cada versión de Eureka, de la más nueva a la más vieja. El f
 
 ## Sin publicar
 
+### Corregido
+- **El código se lee bien en el tema oscuro:** los textos entre comillas ya no salen en un rojo oscuro casi invisible; los colores del editor siguen al tema.
+- **El error del micrófono dice qué pasó:** distingue si no hay micrófono, si otra app lo está usando o si falta el permiso, y dónde activarlo en Windows.
+
 ## [0.9.0] - 2026-11-18
 
 ### Mejorado

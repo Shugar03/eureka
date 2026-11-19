@@ -66,7 +66,7 @@ const theme = EditorView.theme({
 // CodeMirror's default palette is made for white (its #a11 strings read 2:1 on the dark theme).
 const highlight = HighlightStyle.define([
   { tag: [t.keyword, t.controlKeyword, t.definitionKeyword, t.moduleKeyword, t.operatorKeyword], color: "var(--purple)" },
-  { tag: [t.string, t.special(t.string), t.regexp, t.character], color: "var(--ok)" },
+  { tag: [t.string, t.special(t.string), t.regexp, t.character], color: "color-mix(in srgb, var(--ok) 80%, var(--text))" },
   { tag: [t.number, t.bool, t.null, t.atom], color: "var(--warn)" },
   { tag: [t.comment, t.lineComment, t.blockComment], color: "var(--dim)", fontStyle: "italic" },
   { tag: [t.typeName, t.className, t.namespace], color: "var(--accent-ink)" },
