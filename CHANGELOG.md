@@ -4,6 +4,9 @@ Lo que cambia en cada versión de Eureka, de la más nueva a la más vieja. El f
 
 ## Sin publicar
 
+### Corregido
+- **«Conectado» solo si la clave funciona:** Ajustes ahora comprueba la clave guardada con el servicio antes de decir «Conectado». Si la clave no es válida (por ejemplo, un 401 de DeepSeek), lo dice y te pide pegarla de nuevo.
+
 ## [0.9.0] - 2026-11-18
 
 ### Mejorado
