@@ -4,6 +4,8 @@ Lo que cambia en cada versión de Eureka, de la más nueva a la más vieja. El f
 
 ## Sin publicar
 
+## [0.9.0] - 2026-11-18
+
 ### Mejorado
 - **El profesor contesta mucho más rápido:** ya no se queda pensando en silencio antes de responder. La primera palabra aparece en unos 2 segundos en vez de 15 a 25, y la respuesta entera tarda menos de la mitad (AC-212).
 - **Podés releer mientras escribe:** si subís en la conversación, ya no te tira para abajo con cada palabra nueva, y aparece «Ir al final» para volver de un toque (AC-211).
@@ -104,6 +106,7 @@ Primera versión pública.
 - Consola de código en diez lenguajes.
 - Actualizaciones automáticas firmadas.
 
+[0.9.0]: https://github.com/Shugar03/eureka/releases/tag/v0.9.0
 [0.8.0]: https://github.com/Shugar03/eureka/releases/tag/v0.8.0
 [0.7.0]: https://github.com/Shugar03/eureka/releases/tag/v0.7.0
 [0.6.0]: https://github.com/Shugar03/eureka/releases/tag/v0.6.0
