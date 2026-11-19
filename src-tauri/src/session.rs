@@ -97,6 +97,9 @@ pub struct Session {
     pub graph: Option<crate::graph::GraphSummary>,
     #[serde(default)]
     pub exam: Option<ExamLink>,
+    /// AC-216: the class of a learning route this session is.
+    #[serde(default)]
+    pub route: Option<crate::route::RouteLink>,
     /// Audit item 18: rolling summary of the messages the window dropped.
     #[serde(default)]
     pub summary: String,
@@ -124,6 +127,8 @@ pub struct SessionSummary {
     pub plan_done: usize,
     pub archived: bool,
     pub pinned: bool,
+    /// AC-216: a class of a route (Mi progreso shows it inside its route).
+    pub route: Option<String>,
 }
 
 impl Session {
@@ -143,6 +148,7 @@ impl Session {
             messages: vec![Msg::user(format!("Quiero entender: {goal}"), None)],
             graph: None,
             exam: None,
+            route: None,
             summary: String::new(),
             summarized_upto: 0,
             memory: None,
@@ -172,6 +178,7 @@ impl Session {
             plan_done: self.plan.iter().filter(|n| n.status == NodeStatus::Understood).count(),
             archived: self.archived,
             pinned: self.pinned,
+            route: self.route.as_ref().map(|r| r.route_id.clone()),
         }
     }
 }

@@ -2,6 +2,8 @@
 // through here, so tests can swap the backend with @tauri-apps/api/mocks.
 import { Channel, invoke } from "@tauri-apps/api/core";
 import type {
+  RouteProposal,
+  RouteView,
   UsageSummary,
   ClassRecord,
   ClassSummary,
@@ -387,3 +389,12 @@ export const cardsApi = {
 export function errorText(e: unknown): string {
   return typeof e === "string" ? e : e instanceof Error ? e.message : JSON.stringify(e);
 }
+
+/** AC-214..AC-217: learning routes. */
+export const routeApi = {
+  create: (proposal: RouteProposal) => invoke<RouteView>("route_create", { proposal }),
+  list: () => invoke<RouteView[]>("route_list"),
+  get: (id: string) => invoke<RouteView>("route_get", { id }),
+  startClass: (routeId: string, classId: string) => invoke<Session>("route_start_class", { routeId, classId }),
+  remove: (id: string) => invoke<void>("route_delete", { id }),
+};

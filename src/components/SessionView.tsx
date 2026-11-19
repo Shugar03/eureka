@@ -22,6 +22,8 @@ import { ExamProposalCard } from "./ExamProposalCard";
 import { CodeProposalCard, DeckProposalCard, PracticeProposalCard } from "./chat/ProposalCards";
 import { ProposalPreview } from "./academic/ProposalPreview";
 import { OwnProblems } from "./OwnProblems";
+import { RouteProposalCard } from "./routes/RouteProposalCard";
+import { ClassDoneCard, RouteStrip, useRouteOf } from "./routes/RouteInSession";
 
 interface Props {
   id: string;
@@ -44,6 +46,10 @@ interface Props {
   onUiCommand: (c: UiCommand) => void;
   /** What is on screen right now, for the agent (AC-107). */
   uiSnapshot: () => string;
+  /** AC-214, AC-217: opens a learning route (null: the list). */
+  onOpenRoute: (id: string | null) => void;
+  /** AC-216: opens another session (the next class of a route). */
+  onOpenSession: (id: string) => void;
 }
 
 /** Messages added after the last extraction before a finished session is re-extracted. */
@@ -51,7 +57,7 @@ const REEXTRACT_AFTER = 4;
 /** Closer than this to the bottom counts as being at the end (AC-211). */
 const AT_END_PX = 80;
 
-export function SessionView({ id, onBack, onOpenSettings, onChanged, onOpenGraph, onOpenCode, onOpenScreen, onOpenExam, onOpenDeck, onOpenPractice, onUiCommand, uiSnapshot }: Props) {
+export function SessionView({ id, onBack, onOpenSettings, onChanged, onOpenGraph, onOpenCode, onOpenScreen, onOpenExam, onOpenDeck, onOpenPractice, onUiCommand, uiSnapshot, onOpenRoute, onOpenSession }: Props) {
   const [session, setSession] = useState<Session | null>(null);
   // The demo open in the right-hand panel (it takes the plan's place while it is open).
   const [pane, setPane] = useState<{ key: string; title: string; html: string } | null>(null);
@@ -195,6 +201,8 @@ export function SessionView({ id, onBack, onOpenSettings, onChanged, onOpenGraph
   // AC-211: the transcript follows the answer only while the person is at the end.
   // Scrolling up to reread stops it (no more being pulled down mid-answer), and
   // «Ir al final» (or sending something) brings it back.
+  // AC-216: a class of a route shows where it stands, and closes with the next one.
+  const routeView = useRouteOf(session?.route, session?.phase ?? "");
   const [atEnd, setAtEnd] = useState(true);
   const stick = useRef(true);
   const toEnd = useCallback(() => {
@@ -276,6 +284,7 @@ export function SessionView({ id, onBack, onOpenSettings, onChanged, onOpenGraph
             </span>
           )}
         </header>
+        {routeView && session.route && <RouteStrip r={routeView} classId={session.route.class_id} onOpenRoute={onOpenRoute} />}
 
         <div className="transcript-wrap">
         <div className="transcript" aria-live="polite" ref={transcript} onScroll={onTranscriptScroll}>
@@ -329,6 +338,8 @@ export function SessionView({ id, onBack, onOpenSettings, onChanged, onOpenGraph
                 );
               case "exam":
                 return <ExamProposalCard key={it.key} proposal={it.proposal} onOpenExam={onOpenExam} />;
+              case "route":
+                return <RouteProposalCard key={it.key} proposal={it.proposal} onOpenRoute={onOpenRoute} onOpenSession={onOpenSession} />;
               case "action":
                 return <ActionCard key={it.key} action={it.action} onOpenScreen={onOpenScreen} onOpenExam={onOpenExam} onOpenDeck={onOpenDeck} />;
               case "deck":
@@ -405,6 +416,9 @@ export function SessionView({ id, onBack, onOpenSettings, onChanged, onOpenGraph
                 </div>
               ) : null}
             </section>
+          )}
+          {routeView && session.route && session.phase === "done" && !busy && (
+            <ClassDoneCard r={routeView} classId={session.route.class_id} learned={session.plan.filter((n) => n.status === "understood").map((n) => n.title)} onOpenSession={onOpenSession} onOpenRoute={onOpenRoute} />
           )}
           {streaming && (
             <div className="bubble assistant is-streaming">

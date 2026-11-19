@@ -48,7 +48,7 @@ beforeEach(() => {
 afterEach(() => clearMocks());
 
 const renderView = (props: Partial<Parameters<typeof SessionView>[0]> = {}) =>
-  render(<SessionView id="s1" onBack={() => {}} onOpenSettings={() => {}} onChanged={() => {}} onOpenGraph={() => {}} onOpenCode={() => {}} onOpenScreen={() => {}} onOpenExam={() => {}} onOpenDeck={() => {}} onOpenPractice={() => {}} onUiCommand={() => {}} uiSnapshot={() => ""} {...props} />);
+  render(<SessionView id="s1" onBack={() => {}} onOpenSettings={() => {}} onChanged={() => {}} onOpenGraph={() => {}} onOpenCode={() => {}} onOpenScreen={() => {}} onOpenExam={() => {}} onOpenDeck={() => {}} onOpenPractice={() => {}} onUiCommand={() => {}} uiSnapshot={() => ""} onOpenRoute={() => {}} onOpenSession={() => {}} {...props} />);
 
 describe("SessionView", () => {
   it("shows loading, then the transcript, and does not auto-run when the assistant spoke last", async () => {

@@ -1,7 +1,7 @@
 // node --test scripts/changelog.test.cjs  (npm run test:scripts)
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { releaseChangelog, localDate, plainNotes } = require("./changelog.cjs");
+const { releaseChangelog, localDate, appNotes } = require("./changelog.cjs");
 
 const REPO = "Shugar03/eureka";
 const BEFORE = `# Cambios
@@ -94,10 +94,10 @@ test("the real CHANGELOG.md goes through, also twice in a row (empty «Sin publi
   assert.match(twice.text, /\[9\.9\.9\]: .*\r?\n\[9\.9\.8\]: /);
 });
 
-test("plainNotes turns the section into one line of plain text for the app", () => {
-  const md = "### Nuevo\n- **PDFs escaneados** se leen con [OCR](docs/x.md) (AC-187).\n- Fotos `locales` (AC-187, AC-188).\n\n### Cambiado\n- Instalador más grande.";
-  assert.equal(plainNotes(md), "PDFs escaneados se leen con OCR. · Fotos locales. · Instalador más grande.");
-  assert.equal(plainNotes(""), "");
+test("appNotes keeps the sections and the title of each change, not our references", () => {
+  const md = "### Nuevo\n- **PDFs escaneados:** se leen con [OCR](docs/x.md) (AC-187).\n- Fotos `locales` (AC-187, AC-188).\n\n### Corregido\n- Instalador más chico (AC-214..AC-217).\n";
+  assert.equal(appNotes(md), "### Nuevo\n- **PDFs escaneados:** se leen con OCR.\n- Fotos locales.\n\n### Corregido\n- Instalador más chico.");
+  assert.equal(appNotes(""), "");
 });
 
 test("localDate uses the local calendar day", () => {

@@ -3,10 +3,10 @@
 // (development, the e2e demo) answers "off" or has no command: nothing shows.
 // AC-202: the installer runs without a window; the download shows here, and the
 // new version opens with what it brings.
+import { ReleaseNotes } from "./ReleaseNotes";
 import { useEffect, useRef, useState } from "react";
 import { Channel, invoke } from "@tauri-apps/api/core";
 import { errorText } from "../api";
-import { Markdown } from "./Markdown";
 
 type Check = { status: "off" } | { status: "current"; version: string } | { status: "available"; version: string; current: string; notes: string };
 type Progress = { stage: "downloading"; done: number; total: number | null } | { stage: "installing" };
@@ -115,7 +115,7 @@ export function UpdateNotice() {
         <p className="muted small">Tenés la {found.current}. Se baja, Eureka se cierra unos segundos y se vuelve a abrir sola; tus datos no se tocan.</p>
         {found.notes && !installing && (
           <div className="small update-notes">
-            <Markdown text={found.notes} />
+            <ReleaseNotes text={found.notes} />
           </div>
         )}
         {progress && <InstallProgress progress={progress} />}
@@ -163,7 +163,7 @@ function WhatsNewCard() {
         <p className="muted small">Antes tenías la {news.from}. Tus sesiones, tarjetas y biblioteca siguen como estaban.</p>
         {news.notes ? (
           <div className="whats-new-notes">
-            <Markdown text={news.notes} />
+            <ReleaseNotes text={news.notes} />
           </div>
         ) : null}
         <div className="row-end">

@@ -50,23 +50,28 @@ function releaseChangelog(text, version, date, repo) {
 }
 
 /**
- * The moved section as one plain-text line for the in-app update notice (it renders text,
- * not Markdown): the bullets without headings, emphasis, links or the (AC-n) references.
+ * The moved section for the in-app «Novedades» card: Markdown with its sections
+ * (### Nuevo, ### Mejorado…) and one bullet per change, keeping the bold title of
+ * each one. Links become their text and the (AC-n) references go: they are for us.
  */
-function plainNotes(markdown) {
-  return markdown
-    .split(/\r?\n/)
-    .filter((l) => /^\s*[-*]\s+/.test(l))
-    .map((l) =>
-      l
+function appNotes(markdown) {
+  const out = [];
+  for (const raw of markdown.split(/\r?\n/)) {
+    const line = raw.trimEnd();
+    if (/^#{2,4}\s+/.test(line)) {
+      if (out.length) out.push("");
+      out.push(`### ${line.replace(/^#{2,4}\s+/, "").trim()}`);
+    } else if (/^\s*[-*]\s+/.test(line)) {
+      const text = line
         .replace(/^\s*[-*]\s+/, "")
         .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
-        .replace(/\*\*|__|`/g, "")
+        .replace(/`/g, "")
         .replace(/\s*\((?:AC-\d+(?:[,\s]+|\.\.|…)?)+\)/g, "")
-        .trim(),
-    )
-    .filter(Boolean)
-    .join(" · ");
+        .trim();
+      if (text) out.push(`- ${text}`);
+    }
+  }
+  return out.join("\n").trim();
 }
 
-module.exports = { releaseChangelog, localDate, plainNotes };
+module.exports = { releaseChangelog, localDate, appNotes };

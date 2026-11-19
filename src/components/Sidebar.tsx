@@ -7,7 +7,7 @@ import { Icon, type IconName } from "./Icon";
 interface Props {
   sessions: SessionSummary[];
   activeId: string | null;
-  view: "home" | "session" | "graph" | "library" | "practice" | "exams" | "cards" | "agenda" | "academic" | "classes" | "progress" | "code" | "language" | "companion" | "settings";
+  view: "home" | "session" | "graph" | "library" | "practice" | "exams" | "cards" | "agenda" | "academic" | "classes" | "progress" | "routes" | "code" | "language" | "companion" | "settings";
   onHome: () => void;
   onOpen: (id: string) => void;
   onSettings: () => void;
@@ -20,6 +20,7 @@ interface Props {
   onAcademic: () => void;
   onClasses: () => void;
   onProgress: () => void;
+  onRoutes: () => void;
   onCode: () => void;
   onLanguage: () => void;
   onCompanion: () => void;
@@ -36,9 +37,10 @@ const PHASE_ICON: Record<string, string> = { chat: "○", probe: "◔", plan: "�
 type View = Props["view"];
 type Item = { view: View; icon: IconName; label: string; run: () => void };
 
-export function Sidebar({ sessions, activeId, view, onHome, onOpen, onSettings, onGraph, onLibrary, onPractice, onExams, onCards, onAgenda, onAcademic, onClasses, onProgress, onCode, onLanguage, onCompanion, onCommand, footer, name = "", onWorkspace }: Props) {
+export function Sidebar({ sessions, activeId, view, onHome, onOpen, onSettings, onGraph, onLibrary, onPractice, onExams, onCards, onAgenda, onAcademic, onClasses, onProgress, onRoutes, onCode, onLanguage, onCompanion, onCommand, footer, name = "", onWorkspace }: Props) {
   const study: Item[] = [
     { view: "home", icon: "plus", label: "Nueva sesión", run: onHome },
+    { view: "routes", icon: "route", label: "Mis rutas", run: onRoutes },
     { view: "practice", icon: "pencil", label: "Práctica", run: onPractice },
     { view: "exams", icon: "target", label: "Exámenes", run: onExams },
     { view: "cards", icon: "cards", label: "Tarjetas", run: onCards },

@@ -3,7 +3,7 @@ import { parseProposal } from "./academic";
 import { parseExamProposal } from "./examChat";
 import { uiCommandLabel } from "./uiControl";
 import { parseCodeProposal, parseDeckProposal, parseOwnProposal, parsePracticeProposal } from "./proposals";
-import type { AnswerMeta, CodeProposal, DeckProposal, OwnProposal, PracticeProposal, ExamProposal, Level, NodeStatus, Phase, Proposal, ProposedAction, QuestionArgs, ResearchMeta, Session, Lang } from "../types";
+import type { AnswerMeta, CodeProposal, DeckProposal, OwnProposal, PracticeProposal, ExamProposal, RouteProposal, Level, NodeStatus, Phase, Proposal, ProposedAction, QuestionArgs, ResearchMeta, Session, Lang } from "../types";
 
 import { LANG_IDS } from "./code";
 
@@ -18,6 +18,7 @@ export type Item =
   | { kind: "research"; key: string; question: string; result: ResearchMeta | null }
   | { kind: "action"; key: string; action: ProposedAction }
   | { kind: "exam"; key: string; proposal: ExamProposal }
+  | { kind: "route"; key: string; proposal: RouteProposal }
   | { kind: "timetable"; key: string; proposal: Proposal }
   | { kind: "deck"; key: string; proposal: DeckProposal }
   | { kind: "practice"; key: string; proposal: PracticeProposal }
@@ -128,6 +129,8 @@ export function resolveCitations(text: string, refs: Map<number, LibraryRef>): s
 export function buildTranscript(s: Session): Item[] {
   const answers = new Map<string, AnswerMeta>();
   const research = new Map<string, ResearchMeta>();
+  // AC-214: the route the app researched and planned, from the tool result.
+  const routeProposals = new Map<string, RouteProposal>();
   const freeAnswers = new Set<string>();
   const failed = new Set<string>();
   const libraryHits = new Map<string, { query: string; count: number; tokens?: number }>();
@@ -138,6 +141,7 @@ export function buildTranscript(s: Session): Item[] {
     if (m.meta?.kind === "answer" && m.meta.free) freeAnswers.add(m.tool_call_id);
     else if (m.meta?.kind === "answer") answers.set(m.tool_call_id, m.meta);
     else if (m.meta?.kind === "research") research.set(m.tool_call_id, m.meta);
+    else if (m.meta?.kind === "route_proposal") routeProposals.set(m.tool_call_id, m.meta.proposal);
     else if (m.meta?.kind === "library") {
       for (const r of m.meta.refs ?? []) refs.set(r.n, r);
       libraryHits.set(m.tool_call_id, { query: m.meta.query, count: m.meta.refs?.length ?? 0, tokens: m.meta.tokens });
@@ -183,6 +187,9 @@ export function buildTranscript(s: Session): Item[] {
         } else if (c.function.name === "ui_command") {
           const label = failed.has(c.id) ? null : uiCommandLabel(safeJson<Record<string, unknown>>(c.function.arguments) ?? {});
           if (label) items.push({ kind: "event", key: c.id, label });
+        } else if (c.function.name === "propose_route") {
+          const proposal = routeProposals.get(c.id);
+          if (proposal) items.push({ kind: "route", key: c.id, proposal });
         } else if (c.function.name === "propose_exam") {
           const proposal = parseExamProposal(c.function.arguments);
           if (proposal) items.push({ kind: "exam", key: c.id, proposal });
