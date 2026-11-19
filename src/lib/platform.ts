@@ -18,8 +18,8 @@ export function micError(e: unknown): string {
       ? "No encontré ningún micrófono en este celular."
       : "No encontré ningún micrófono. Conectá uno (o revisá que esté activado en Configuración → Sistema → Sonido) y probá de nuevo.";
   if (name === "NotReadableError" || name === "AbortError")
-    return "El micrófono está ocupado por otra app (una llamada, Zoom, Teams…). Cerrala y probá de nuevo.";
+    return "El micrófono está ocupado o no responde. Cerrá otras apps que lo usen (una llamada, Zoom, Teams…) o desconectalo y volvé a conectarlo, y probá de nuevo.";
   return phone
     ? "No tengo permiso para usar el micrófono. Activalo en los ajustes del celular y probá de nuevo."
-    : "No tengo permiso para usar el micrófono. Activalo en Configuración → Privacidad y seguridad → Micrófono y probá de nuevo.";
+    : "No tengo permiso para usar el micrófono. Activalo en la Configuración de Windows, en Privacidad → Micrófono, y probá de nuevo.";
 }
