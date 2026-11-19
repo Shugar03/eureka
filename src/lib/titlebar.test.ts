@@ -18,6 +18,9 @@ describe("Eureka's own title bar (AC-207)", () => {
     expect(document.documentElement.classList.contains("has-frame")).toBe(true);
     expect([...tb.querySelectorAll("button")].map((b) => b.getAttribute("aria-label"))).toEqual(["Minimizar", "Maximizar", "Cerrar"]);
     expect(tb.getAttribute("aria-label")).toBe("Controles de la ventana");
+    // The bar itself has no tooltip: it would follow the mouse all along the top.
+    expect(tb.title).toBe("");
+    expect(tb.querySelectorAll("button")[0].title).toBe("Minimizar");
     // The plugin renames maximize when the window is maximized.
     tb.querySelectorAll("button")[1].setAttribute("aria-label", "Restore window");
     await new Promise((r) => setTimeout(r, 0));

@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/brand/eureka-logo.svg" alt="Eureka" width="220" />
+<img src="assets/brand/eureka-logo-filled.svg" alt="Eureka" width="220" />
 
 # Eureka
 
@@ -200,7 +200,7 @@ Los PDFs escaneados y las fotos de texto impreso se leen en esta PC con los mode
 
 <div align="center">
 <br/>
-<img src="assets/brand/eureka-mark.svg" alt="" width="56" />
+<img src="assets/brand/eureka-mark-filled.svg" alt="" width="56" />
 <br/>
 <sub>Hecho para que cada estudiante tenga su momento <b>¡eureka!</b></sub>
 </div>

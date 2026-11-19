@@ -1422,6 +1422,7 @@ async fn chatgpt_models(state: State<'_, AppState>) -> CmdResult<Vec<llm::ModelI
         session: llm::app_session(),
         subscription: Some(llm::Subscription { account_id: account.account_id, originator: account.originator }),
         usage: Default::default(),
+        quick: false,
     };
     llm::list_chatgpt_models(&ep).await.map_err(err)
 }

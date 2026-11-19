@@ -18,6 +18,7 @@
 //   ?noSpeech      no speech model configured (speaking explains how)
 //   ?withProfile   the learner profile has a confusion and a preference
 //   ?withMemory    the student's memory also has an idea, a pending item and a contradiction
+//   ?progress      a student a few weeks in: «Mi progreso» with paths, dates, cards and a streak (AC-210)
 //   ?noRust        Rust is not installed (the console explains how to install it)
 //   ?noOcr         no local OCR (like the phone): scanned PDFs are refused as before
 //   ?ocrUnsure     the OCR reads photos with low confidence (the vision model reads them)
@@ -83,6 +84,7 @@ import * as lib from "./libraryScript";
 import { scriptedGrade, scriptedProblems } from "./practiceScript";
 import { MemoryMock } from "./memoryMock";
 import { isRight } from "../lib/exam";
+import { progressDays, progressModel, progressSessions } from "./progressDemo";
 import { DEFAULT_ACCESSIBILITY } from "../lib/accessibility";
 import { scriptedExplain } from "./examScript";
 import { scriptedCards } from "./cardsScript";
@@ -235,6 +237,7 @@ function panelAcademic(): AcademicData {
 function seedActivity(): Map<string, Set<string>> {
   const m = new Map<string, Set<string>>();
   if (params.has("streak")) for (const n of [-1, -2, -4, -5, -6, -7]) m.set(dayFromNow(n), new Set(["chat"]));
+  if (params.has("progress")) for (const n of progressDays) m.set(dayFromNow(-n), new Set(["chat"]));
   return m;
 }
 function classOf(id: string): ClassRecord {
@@ -280,7 +283,7 @@ function academicDone(): AcademicData {
 /** The real backend keeps the profile on disk; the demo keeps it in localStorage so a reload remembers it too. */
 const MOCK_IDENTITY_KEY = "la.mock.identity";
 function loadMockIdentity(): Identity {
-  const base: Identity = { first_name: "", last_name: "", school: "", career: "", age: null, treatment: "", treatment_other: "", onboarded: !params.has("onboarding") };
+  const base: Identity = { first_name: params.has("progress") ? "Ana" : "", last_name: "", school: "", career: "", age: null, treatment: "", treatment_other: "", onboarded: !params.has("onboarding") };
   try {
     return { ...base, ...JSON.parse(localStorage.getItem(MOCK_IDENTITY_KEY) ?? "{}") };
   } catch {
@@ -344,7 +347,7 @@ function companionView() {
 }
 
 const store = {
-  sessions: new Map<string, Session>(),
+  sessions: new Map<string, Session>(params.has("progress") ? progressSessions().map((x) => [x.id, x]) : []),
   prompts: {} as Record<string, string>,
   ledger: [] as LedgerLine[],
   books: new Map<string, Book>(),
@@ -707,6 +710,7 @@ const memories = () =>
 
 // AC-111..112: a small student model from the mock's own data (confusions and finished sessions).
 function studentModel(): StudentModel {
+  if (params.has("progress")) return progressModel();
   const now = new Date().toISOString();
   const topics: TopicState[] = [
     ...store.learner.misconceptions.map((m) => ({ key: m.concept.toLowerCase(), name: m.concept, status: (m.fixed ? "practicando" : "le_cuesta") as TopicState["status"], evidence: [m.fixed ? `la confusión «${m.wrong_idea}» quedó reparada` : `confusión: ${m.wrong_idea}`], at: now, sources: ["confusión"], confusion: !m.fixed })),

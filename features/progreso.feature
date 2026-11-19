@@ -15,5 +15,15 @@ Característica: Eureka se adapta y aprende de la persona (AC-111 … AC-113)
 
   Escenario: Ver y corregir lo que Eureka aprendió (AC-113)
     Cuando abre «Mi progreso»
-    Entonces ve sus temas agrupados en Le cuesta, Quedó pendiente, Practicando y Ya lo domina, con la evidencia
+    Entonces ve sus temas en Te cuesta, Quedó pendiente, Practicando y Ya lo dominás, con la evidencia
     Y puede marcar «Esto ya lo sé», repasar o retomar
+
+  @AC-210
+  Escenario: Un coach, los números y un camino por sesión (AC-210)
+    Dado que estudió varios días, tiene sesiones con plan, tarjetas para hoy y un parcial en 4 días
+    Cuando abre «Mi progreso»
+    Entonces el coach le dice cómo viene, qué es lo que más se repite y qué le conviene hoy, con un botón para cada cosa
+    Y ve su racha, sus temas por estado y su semana
+    Y cada sesión es un camino de ideas con el próximo paso marcado y «Seguir desde acá»
+    Y lo que ningún camino muestra queda abajo, sin repetirse
+    Y la memoria para corregir queda plegada al final

@@ -117,8 +117,19 @@ impl Builder {
             t.confusion |= confusion;
             return;
         }
-        self.topics.push(TopicState { key: normalize(name), name: name.chars().take(140).collect(), status, evidence: vec![evidence], at, sources: vec![source.into()], confusion });
+        self.topics.push(TopicState { key: normalize(name), name: clip(name, 140), status, evidence: vec![evidence], at, sources: vec![source.into()], confusion });
     }
+}
+
+/// At most `max` characters, cut at a word and marked with «…» (never mid-word).
+fn clip(s: &str, max: usize) -> String {
+    let s = s.trim();
+    if s.chars().count() <= max {
+        return s.to_string();
+    }
+    let cut: String = s.chars().take(max).collect();
+    let at = cut.rfind(char::is_whitespace).filter(|&i| i > max / 2).unwrap_or(cut.len());
+    format!("{}…", cut[..at].trim_end_matches(|c: char| c.is_whitespace() || ",;:.".contains(c)))
 }
 
 fn date_label(at: DateTime<Utc>) -> String {
@@ -175,9 +186,9 @@ pub fn model(state: &AppState, today: NaiveDate) -> StudentModel {
     let profile = state.learner.load();
     for m in &profile.misconceptions {
         if m.fixed {
-            b.add(&m.concept, Status::Practicando, format!("la confusión «{}» quedó reparada", m.wrong_idea.chars().take(80).collect::<String>()), m.at, "confusión", false);
+            b.add(&m.concept, Status::Practicando, format!("la confusión «{}» quedó reparada", clip(&m.wrong_idea, 80)), m.at, "confusión", false);
         } else {
-            b.add(&m.concept, Status::LeCuesta, format!("confusión: {}", m.wrong_idea.chars().take(100).collect::<String>()), m.at, "confusión", true);
+            b.add(&m.concept, Status::LeCuesta, format!("confusión: {}", clip(&m.wrong_idea, 100)), m.at, "confusión", true);
         }
     }
 
@@ -444,6 +455,18 @@ mod tests {
 
     fn topic<'a>(m: &'a StudentModel, name: &str) -> &'a TopicState {
         m.topics.iter().find(|t| same_topic(&t.name, name)).unwrap_or_else(|| panic!("no topic {name}: {:?}", m.topics.iter().map(|t| &t.name).collect::<Vec<_>>()))
+    }
+
+    #[test]
+    fn long_texts_are_cut_at_a_word() {
+        assert_eq!(clip("corto", 10), "corto");
+        let long = "No sabía qué dirección mover w a partir del signo de la pendiente ni por qué se resta en lugar de sumarla";
+        let c = clip(long, 100);
+        assert!(c.ends_with('…'), "{c}");
+        assert!(c.chars().count() <= 101);
+        assert!(long.starts_with(c.trim_end_matches('…')), "{c}");
+        assert!(!c.contains(" su…"), "never mid-word: {c}");
+        assert!(c.trim_end_matches('…').ends_with("lugar") || c.trim_end_matches('…').ends_with("de"), "{c}");
     }
 
     fn day() -> NaiveDate {

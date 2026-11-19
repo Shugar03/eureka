@@ -31,8 +31,13 @@ pub const PROVIDER: &str = "local";
 /// 80-bin mel filterbank for 16 kHz / n_fft 400 (from candle's whisper example).
 const MEL_FILTERS: &[u8] = include_bytes!("../assets/melfilters.bytes");
 
-/// What a recording can last: two Whisper windows, and the decoding stays quick.
+/// What one piece the engine decodes can last: two Whisper windows, and Parakeet's
+/// attention (and its memory) stays small. A longer recording is cut into pieces.
 pub const MAX_SECONDS: usize = 60;
+/// Where a long recording is cut: around here, at the quietest moment.
+const PIECE_SECONDS: usize = 45;
+/// How far back from PIECE_SECONDS a quiet spot is looked for.
+const SEARCH_SECONDS: usize = 10;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Kind {
@@ -368,23 +373,46 @@ impl Engine {
         if samples.len() < m::SAMPLE_RATE / 4 {
             bail!("La grabación es muy corta. Hablá un poco más.");
         }
-        // Also what keeps Parakeet's attention (and its memory) small: the UI records in parts.
-        if samples.len() > MAX_SECONDS * m::SAMPLE_RATE {
-            bail!("La grabación dura más de {MAX_SECONDS} segundos; probá de a partes.");
-        }
-        let text = match &mut self.backend {
-            Backend::Whisper(w) => w.transcribe(samples, language)?,
-            // Parakeet detects the language by itself (25 European languages).
-            Backend::Parakeet(p) => {
-                let out = p.transcribe_samples(samples.to_vec(), m::SAMPLE_RATE as u32, 1, Some(TimestampMode::Tokens)).map_err(|e| anyhow!("Parakeet no pudo transcribir: {e}"))?;
-                tidy(&out.text)
+        // A long recording is cut at quiet moments and read piece by piece: never refused for its length.
+        let mut parts = Vec::new();
+        for piece in pieces(samples, m::SAMPLE_RATE) {
+            if piece.len() < m::SAMPLE_RATE / 4 {
+                continue;
             }
-        };
+            let text = match &mut self.backend {
+                Backend::Whisper(w) => w.transcribe(piece, language)?,
+                // Parakeet detects the language by itself (25 European languages).
+                Backend::Parakeet(p) => {
+                    let out = p.transcribe_samples(piece.to_vec(), m::SAMPLE_RATE as u32, 1, Some(TimestampMode::Tokens)).map_err(|e| anyhow!("Parakeet no pudo transcribir: {e}"))?;
+                    tidy(&out.text)
+                }
+            };
+            if !text.trim().is_empty() {
+                parts.push(text.trim().to_string());
+            }
+        }
+        let text = tidy(&parts.join(" "));
         if text.trim().is_empty() {
             bail!("No se entendió nada en la grabación. Probá hablar más cerca del micrófono.");
         }
         Ok(text)
     }
+}
+
+/// Cuts a recording into pieces of at most MAX_SECONDS, each ending at the quietest
+/// tenth of a second near PIECE_SECONDS, so a word is rarely split in two.
+fn pieces(samples: &[f32], rate: usize) -> Vec<&[f32]> {
+    let (target, search, frame) = (PIECE_SECONDS * rate, SEARCH_SECONDS * rate, rate / 10);
+    let mut out = Vec::new();
+    let mut rest = samples;
+    while rest.len() > MAX_SECONDS * rate {
+        let energy = |at: usize| rest[at..at + frame].iter().map(|x| x * x).sum::<f32>();
+        let cut = (target - search..target).step_by(frame).min_by(|&a, &b| energy(a).total_cmp(&energy(b))).map_or(target, |at| at + frame / 2);
+        out.push(&rest[..cut]);
+        rest = &rest[cut..];
+    }
+    out.push(rest);
+    out
 }
 
 /// One space between words, none before punctuation (pieces join with stray spaces).
@@ -522,6 +550,24 @@ mod tests {
         v.extend((data.len() as u32).to_le_bytes());
         v.extend(data);
         v
+    }
+
+    #[test]
+    fn a_long_recording_is_cut_at_quiet_moments_never_refused() {
+        let rate = 16_000;
+        // Three minutes of "speech" with a silent half second at 40 s and at 80 s.
+        let mut s = vec![0.5f32; 180 * rate];
+        for quiet in [40, 80] {
+            s[quiet * rate..quiet * rate + rate / 2].fill(0.0);
+        }
+        let parts = pieces(&s, rate);
+        assert!(parts.iter().all(|p| p.len() <= MAX_SECONDS * rate), "{:?}", parts.iter().map(|p| p.len() / rate).collect::<Vec<_>>());
+        assert_eq!(parts.iter().map(|p| p.len()).sum::<usize>(), s.len(), "nothing is lost");
+        // The first cut lands inside the silence at 40 s, not mid-word at 45 s.
+        let first = parts[0].len() as f32 / rate as f32;
+        assert!((40.0..40.5).contains(&first), "first cut at {first}s");
+        // A short recording stays whole.
+        assert_eq!(pieces(&s[..30 * rate], rate).len(), 1);
     }
 
     #[test]

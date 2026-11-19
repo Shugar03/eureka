@@ -15,7 +15,8 @@ export function translateFrame(root: ParentNode = document) {
     const label = el.getAttribute("aria-label");
     if (label && LABELS[label]) {
       el.setAttribute("aria-label", LABELS[label]);
-      el.title = LABELS[label];
+      // Only the buttons get a tooltip: on the bar itself it would follow the mouse everywhere up there.
+      if (el.tagName === "BUTTON") el.title = LABELS[label];
     }
   }
 }

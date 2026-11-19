@@ -81,6 +81,9 @@ pub struct Endpoint {
     pub subscription: Option<Subscription>,
     /// Who is calling and why, and where the call is counted (AC-186).
     pub usage: crate::usage::Tag,
+    /// AC-212: someone is waiting for this answer (a turn of the teacher, the
+    /// companion), so models that think before answering are asked not to.
+    pub quick: bool,
 }
 
 /// What a subscription endpoint needs on every request, beyond the token.
@@ -201,6 +204,21 @@ fn retry_after(h: &reqwest::header::HeaderMap) -> std::time::Duration {
 /// without it from then on, and their usage stays unknown unless they send it anyway.
 static NO_STREAM_OPTIONS: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
 
+/// AC-212: provider + model pairs that refused `thinking: disabled`; they are asked as before.
+static THINKING_REFUSED: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
+
+/// DeepSeek models think before answering by default (in the lab, 60 % of what they
+/// generated and 13 to 24 s before the first visible word). For a live turn that is
+/// switched off; anything else is left as the provider decides.
+pub fn turns_thinking_off(ep: &Endpoint) -> bool {
+    ep.quick && ep.subscription.is_none() && ep.model.to_lowercase().contains("deepseek") && !THINKING_REFUSED.lock().unwrap().contains(&format!("{} {}", ep.base_url, ep.model))
+}
+
+/// A 400/422 that complains about the `thinking` option itself.
+pub fn rejects_thinking(status: u16, body: &str) -> bool {
+    matches!(status, 400 | 422) && body.to_lowercase().contains("thinking")
+}
+
 /// A 400/422 that names the option itself, nothing broader (a bad key or
 /// model must still fail once, with its own message).
 pub fn rejects_stream_options(status: u16, body: &str) -> bool {
@@ -242,6 +260,12 @@ async fn stream_completions(
         let status = resp.status();
         let wait = retry_after(resp.headers());
         let text = resp.text().await.unwrap_or_default();
+        if body.get("thinking").is_some() && rejects_thinking(status.as_u16(), &text) {
+            // Degrade: the turn goes on with the model thinking, as before AC-212.
+            THINKING_REFUSED.lock().unwrap().push(format!("{} {}", ep.base_url, ep.model));
+            body.as_object_mut().unwrap().remove("thinking");
+            continue;
+        }
         if body.get("stream_options").is_some() && rejects_stream_options(status.as_u16(), &text) {
             // Degrade: the call goes on without usage, never breaks for it.
             NO_STREAM_OPTIONS.lock().unwrap().push(ep.base_url.clone());
@@ -289,6 +313,9 @@ pub fn completions_body(ep: &Endpoint, system: &str, messages: &[Msg], tools: &V
     }
     if claude_via_openrouter(ep) {
         mark_cache(&mut body);
+    }
+    if turns_thinking_off(ep) {
+        body["thinking"] = json!({ "type": "disabled" });
     }
     body
 }
@@ -967,7 +994,7 @@ mod tests {
     }
 
     fn endpoint(base_url: &str, model: &str) -> Endpoint {
-        Endpoint { base_url: base_url.into(), api_key: "k".into(), model: model.into(), context_tokens: 64_000, session: "eureka-s1".into(), subscription: None, usage: Default::default() }
+        Endpoint { base_url: base_url.into(), api_key: "k".into(), model: model.into(), context_tokens: 64_000, session: "eureka-s1".into(), subscription: None, usage: Default::default(), quick: false }
     }
 
     fn turn() -> Vec<Msg> {
@@ -992,6 +1019,28 @@ mod tests {
         // A forced call (no state): only the static part.
         let one = completions_body(&endpoint("https://openrouter.ai/api/v1", "anthropic/claude-haiku-5.5"), "s", &[Msg::user("x", None)], &tools, None, true);
         assert_eq!(one.to_string().matches("cache_control").count(), 1);
+    }
+
+    #[test]
+    fn a_live_turn_asks_deepseek_not_to_think_and_nothing_else_changes() {
+        let tools = json!([{ "type": "function", "function": { "name": "recall" } }]);
+        let mut ep = endpoint("https://opencode.ai/zen/go/v1", "deepseek-v4.1-flash");
+        ep.quick = true;
+        let body = completions_body(&ep, "s", &turn(), &tools, None, true);
+        assert_eq!(body["thinking"], json!({ "type": "disabled" }));
+        // Background work (practice, memory, grading) keeps thinking.
+        ep.quick = false;
+        assert!(completions_body(&ep, "s", &turn(), &tools, None, true).get("thinking").is_none());
+        // Other models never get the option, live or not.
+        for model in ["openai/gpt-6", "claude-sonnet-5.5", "glm-5.3"] {
+            let mut other = endpoint("https://openrouter.ai/api/v1", model);
+            other.quick = true;
+            assert!(completions_body(&other, "s", &turn(), &tools, None, true).get("thinking").is_none(), "{model}");
+        }
+        // Only a complaint about the option itself makes it go away.
+        assert!(rejects_thinking(400, r#"{"error":"unknown field: thinking"}"#));
+        assert!(!rejects_thinking(400, "model not found"));
+        assert!(!rejects_thinking(401, "thinking"));
     }
 
     #[test]
@@ -1029,6 +1078,7 @@ mod tests {
             session: "eureka-1".into(),
             subscription: Some(Subscription { account_id: "acc".into(), originator: "eureka".into() }),
             usage: Default::default(),
+            quick: false,
         }
     }
 

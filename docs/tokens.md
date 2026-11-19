@@ -346,3 +346,11 @@ idea con una pregunta abierta (+156). En el benchmark, cada llamada del método 
 `06-ensenar-chequeo` de 8 592 a 8 862), todos en el prefijo fijo que se cachea. A cambio, en las preguntas de fichas
 el profesor ya no tiene que corregir: recibe el resultado y solo explica el porqué cuando hace falta.
 
+## Respuestas sin razonamiento oculto (AC-212)
+
+El prompt suma una regla (registrar en el mismo mensaje que el texto o la pregunta): ~45 tokens más en el prefijo fijo,
+dentro de la tolerancia de la línea base. El ahorro grande no está en la entrada sino en la salida: en las respuestas en
+vivo los modelos DeepSeek ya no razonan antes de contestar. En los datos de uso reales, el 60 % de lo que generaba el
+profesor era razonamiento oculto (664 de 1 118 tokens de salida por llamada); en la prueba en vivo, una respuesta pasó
+de 760–1 543 tokens de razonamiento a 0, y de 999 a 261–400 tokens de salida en total.
+

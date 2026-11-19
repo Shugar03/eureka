@@ -8,6 +8,21 @@ import { answer, finishProbe, pending, startSession } from "./helpers.ts";
 
 const opts = { maxDiffPixelRatio: 0.01 };
 
+type Browser = { evaluate: <T, A>(fn: (arg: A) => T | Promise<T>, arg: A) => Promise<T> };
+
+// Home greets by the hour and shows a quote of the day: fixed text for those, so the
+// baseline compares the design and not the clock (otherwise it failed every other day).
+const freezeClock = (browser: Browser) =>
+  browser.evaluate(() => {
+    const set = (sel: string, text: string) => document.querySelectorAll<HTMLElement>(sel).forEach((el) => (el.textContent = text));
+    set(".eyebrow", "Buenas");
+    set(".aside-title", "Hoy puede ser un gran día");
+    const quote = document.querySelector<HTMLElement>("[data-testid=quote-text]");
+    if (quote) quote.textContent = "“La paciencia es amarga, pero su fruto es dulce.”";
+    set(".quote-author", "Jean-Jacques Rousseau");
+    set(".quote-work", "");
+  }, null);
+
 // The theme lives in Ajustes → Mi espacio; the choice is saved, so reopening home keeps it.
 async function theme(app: App, screen: Screen, t: "Tema oscuro" | "Tema claro") {
   await screen.getByRole("button", "Ajustes").click();
@@ -18,10 +33,11 @@ async function theme(app: App, screen: Screen, t: "Tema oscuro" | "Tema claro") 
 }
 
 for (const [t, tag] of [["Tema oscuro", "oscuro"], ["Tema claro", "claro"]] as const) {
-  test(`visual inicio (${tag})`, async ({ app, screen }) => {
+  test(`visual inicio (${tag})`, async ({ app, screen, browser }) => {
     await app.open("/");
     await theme(app, screen, t);
     await screen.getByRole("heading", "¿Qué querés entender?").click(); // no focus ring on the input
+    await freezeClock(browser);
     await expect(screen).toHaveScreenshot(`inicio-${tag}.png`, opts);
   });
 

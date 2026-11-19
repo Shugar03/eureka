@@ -4,6 +4,17 @@ Lo que cambia en cada versión de Eureka, de la más nueva a la más vieja. El f
 
 ## Sin publicar
 
+### Mejorado
+- **El profesor contesta mucho más rápido:** ya no se queda pensando en silencio antes de responder. La primera palabra aparece en unos 2 segundos en vez de 15 a 25, y la respuesta entera tarda menos de la mitad (AC-212).
+- **Podés releer mientras escribe:** si subís en la conversación, ya no te tira para abajo con cada palabra nueva, y aparece «Ir al final» para volver de un toque (AC-211).
+- **Mi progreso, renovado:** arriba un coach te dice cómo venís y qué te conviene hoy (con un botón para cada cosa); debajo, tu racha, tus temas por estado y tu semana; y cada sesión es un **camino de ideas** al estilo Duolingo, con lo que ya sabés, lo que te cuesta y el próximo paso marcado. Los textos ya no se cortan a la mitad y lo repetido no aparece dos veces (AC-210).
+- **Acompañamiento tiene micrófono**, y el clip y el micrófono de todas las cajas se ven más limpios (AC-209).
+- **Logo nuevo:** el elefante ahora es macizo, relleno de violeta, en el ícono de la app, el instalador y la barra lateral.
+
+### Corregido
+- **Hablar más de un minuto ya funciona:** con la voz en esta PC, una grabación larga se corta sola en los silencios y se transcribe entera, en vez de pedirte que la hagas de a partes (AC-213).
+- Ya no aparece el cartel «Controles de la ventana» al pasar el mouse por la barra de arriba (AC-207).
+
 ## [0.8.0] - 2026-11-11
 
 ### Nuevo

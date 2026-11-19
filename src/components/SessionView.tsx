@@ -10,6 +10,7 @@ import { Markdown } from "./Markdown";
 import { QuestionCard } from "./QuestionCard";
 import { ReadAloud } from "./a11y/ReadAloud";
 import { AttachButton, AttachChips, MicButton, useAttachments } from "./chat/ChatTools";
+import { Icon } from "./Icon";
 import { composeMessage } from "../lib/attachments";
 import { PlanTree } from "./PlanTree";
 import { PhaseBar } from "./PhaseBar";
@@ -47,6 +48,8 @@ interface Props {
 
 /** Messages added after the last extraction before a finished session is re-extracted. */
 const REEXTRACT_AFTER = 4;
+/** Closer than this to the bottom counts as being at the end (AC-211). */
+const AT_END_PX = 80;
 
 export function SessionView({ id, onBack, onOpenSettings, onChanged, onOpenGraph, onOpenCode, onOpenScreen, onOpenExam, onOpenDeck, onOpenPractice, onUiCommand, uiSnapshot }: Props) {
   const [session, setSession] = useState<Session | null>(null);
@@ -189,13 +192,34 @@ export function SessionView({ id, onBack, onOpenSettings, onChanged, onOpenGraph
 
   const canSaveEarly = !!session && session.phase !== "done" && session.plan.some((n) => n.status === "understood");
 
-  useEffect(() => {
+  // AC-211: the transcript follows the answer only while the person is at the end.
+  // Scrolling up to reread stops it (no more being pulled down mid-answer), and
+  // «Ir al final» (or sending something) brings it back.
+  const [atEnd, setAtEnd] = useState(true);
+  const stick = useRef(true);
+  const toEnd = useCallback(() => {
     // Scroll only the transcript: scrollIntoView would also scroll the
     // overflow-hidden app shell and push the header off screen.
     const el = transcript.current;
-    const still = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    if (el) el.scrollTo({ top: el.scrollHeight, behavior: still ? "auto" : "smooth" });
+    stick.current = true;
+    setAtEnd(true);
+    el?.scrollTo({ top: el.scrollHeight, behavior: "auto" });
+  }, []);
+  const onTranscriptScroll = () => {
+    const el = transcript.current;
+    if (!el) return;
+    const near = el.scrollHeight - el.scrollTop - el.clientHeight < AT_END_PX;
+    stick.current = near;
+    setAtEnd(near);
+  };
+  useEffect(() => {
+    const el = transcript.current;
+    if (el && stick.current) el.scrollTo({ top: el.scrollHeight, behavior: "auto" });
   }, [items.length, streaming]);
+  // The person sent or answered something: they want to see what comes.
+  useEffect(() => {
+    if (busy) toEnd();
+  }, [busy, toEnd]);
 
   // AC-170: after the scroll to the end, bring the message where the idea came up into view.
   useEffect(() => {
@@ -253,7 +277,8 @@ export function SessionView({ id, onBack, onOpenSettings, onChanged, onOpenGraph
           )}
         </header>
 
-        <div className="transcript" aria-live="polite" ref={transcript}>
+        <div className="transcript-wrap">
+        <div className="transcript" aria-live="polite" ref={transcript} onScroll={onTranscriptScroll}>
           {focusIdea && (
             <div className="focus-banner row-between" role="status" data-testid="focus-banner">
               <span className="small">
@@ -409,6 +434,13 @@ export function SessionView({ id, onBack, onOpenSettings, onChanged, onOpenGraph
               </div>
             </div>
           )}
+        </div>
+        {!atEnd && (
+          <button type="button" className="to-end" onClick={toEnd}>
+            <Icon name="arrow" size={15} />
+            {busy ? "Ir al final · escribiendo…" : "Ir al final"}
+          </button>
+        )}
         </div>
 
         <footer className="composer">

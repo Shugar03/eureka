@@ -157,7 +157,7 @@ pub async fn endpoint_for(state: &AppState, role: Role) -> Result<Endpoint> {
         }
     };
     let usage = crate::usage::Tag::new(state.usage.clone(), role.name());
-    Ok(Endpoint { base_url, api_key: access, model: chosen.model.clone(), context_tokens: context_tokens(chosen), session: crate::llm::app_session(), subscription, usage })
+    Ok(Endpoint { base_url, api_key: access, model: chosen.model.clone(), context_tokens: context_tokens(chosen), session: crate::llm::app_session(), subscription, usage, quick: false })
 }
 
 /// OpenAI rotates the refresh token on every use, so two refreshes racing with
@@ -192,6 +192,8 @@ pub fn context_tokens(m: &ModelRef) -> usize {
 async fn endpoint(state: &AppState, s: &Session) -> Result<Endpoint> {
     let mut ep = endpoint_for(state, if s.phase == Phase::Probe { Role::Prober } else { Role::Teacher }).await?;
     ep.session = format!("eureka-{}", s.id);
+    // AC-212: the learner is waiting for this answer.
+    ep.quick = true;
     ep.usage.purpose = "turn".into();
     ep.usage.phase = Some(format!("{:?}", s.phase).to_lowercase());
     ep.usage.session_id = Some(s.id.clone());

@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import logo from "../../assets/brand/eureka-mark.svg";
+import logo from "../../assets/brand/eureka-mark-filled.svg";
 import type { SessionSummary } from "../types";
 import { PHASES } from "../lib/transcript";
 import { Icon, type IconName } from "./Icon";

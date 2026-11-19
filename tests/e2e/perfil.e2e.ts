@@ -5,6 +5,8 @@ import { expect } from "e2e";
 test("AC-66 ver y olvidar lo que la app sabe de vos", async ({ app, screen }) => {
   await app.open("/?withProfile");
   await screen.getByRole("navigation", "Navegación").getByRole("button", "Mi progreso").click({ timeout: 30_000 });
+  // AC-210: the memory is folded at the end of Mi progreso.
+  await screen.getByText("Corregir lo que Eureka anotó").click();
   const me = screen.getByRole("region", "Lo que Eureka sabe de vos");
   await expect(me.getByRole("list", "Cómo aprendés mejor")).toContainText("entiende mejor con ejemplos numéricos");
   await expect(me.getByRole("list", "Confusiones")).toContainText("Recta secante");

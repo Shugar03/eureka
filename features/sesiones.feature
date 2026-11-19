@@ -27,3 +27,24 @@ Característica: Historial de sesiones
     Entonces el botón pide confirmación y la sesión sigue en la lista
     Cuando presiono "¿Seguro? Borrar"
     Entonces la sesión desaparece de la lista
+
+  @AC-211
+  Escenario: Releer mientras el profesor escribe
+    Dado que el profesor está escribiendo una respuesta
+    Cuando subo para releer algo de antes
+    Entonces la pantalla se queda donde la dejé y aparece «Ir al final»
+    Cuando toco «Ir al final»
+    Entonces vuelvo al final de la conversación
+
+  @AC-212
+  Escenario: El profesor contesta sin hacerme esperar
+    Dado que el profesor usa un modelo que razona antes de contestar
+    Cuando le escribo o respondo una pregunta
+    Entonces la respuesta empieza a aparecer en unos segundos, sin razonamiento oculto
+    Y lo que corre en segundo plano sigue razonando como antes
+
+  @AC-213
+  Escenario: Hablar más de un minuto con la voz local
+    Dado que la Voz corre en esta PC
+    Cuando grabo más de 60 segundos
+    Entonces la grabación se corta sola en los silencios y queda escrita entera

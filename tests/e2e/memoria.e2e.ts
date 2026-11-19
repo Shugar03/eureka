@@ -5,6 +5,8 @@ import { expect } from "e2e";
 test("AC-199 ver la memoria por tipo, corregirla y borrar una observación", async ({ app, screen }) => {
   await app.open("/?withProfile&withMemory");
   await screen.getByRole("navigation", "Navegación").getByRole("button", "Mi progreso").click({ timeout: 30_000 });
+  // AC-210: the memory is folded at the end of Mi progreso.
+  await screen.getByText("Corregir lo que Eureka anotó").click();
   const me = screen.getByRole("region", "Lo que Eureka sabe de vos");
   await expect(me.getByRole("list", "Confusiones")).toContainText("Recta secante");
   await expect(me.getByRole("list", "Ideas que entendiste")).toContainText("La derivada es la pendiente de la recta tangente");
@@ -28,6 +30,8 @@ test("AC-199 ver la memoria por tipo, corregirla y borrar una observación", asy
 test("AC-200 exportar la memoria para Obsidian", async ({ app, screen }) => {
   await app.open("/?withProfile&withMemory");
   await screen.getByRole("navigation", "Navegación").getByRole("button", "Mi progreso").click({ timeout: 30_000 });
+  // AC-210: the memory is folded at the end of Mi progreso.
+  await screen.getByText("Corregir lo que Eureka anotó").click();
   const me = screen.getByRole("region", "Lo que Eureka sabe de vos");
   await me.getByRole("button", "Exportar para Obsidian").click();
   await expect(me.getByRole("status")).toContainText("Eureka - lo que sabe de vos");

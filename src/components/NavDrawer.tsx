@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ReactNode } from "react";
-import logo from "../../assets/brand/eureka-mark.svg";
+import logo from "../../assets/brand/eureka-mark-filled.svg";
 import { Icon } from "./Icon";
 
 const FOCUSABLE = 'a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])';
