@@ -16,6 +16,7 @@ mod graph;
 mod practice;
 mod project;
 mod research;
+mod route;
 mod runner;
 mod language;
 mod learner;
@@ -64,6 +65,7 @@ pub struct AppState {
     pub graph: GraphStore,
     pub practice: PracticeStore,
     pub exams: ExamStore,
+    pub routes: route::RouteStore,
     pub decks: DeckStore,
     pub study: study::StudyLog,
     /// AC-141: days with study, for the kind streak.
@@ -111,6 +113,7 @@ impl AppState {
             graph: GraphStore::new(&data_dir),
             practice: PracticeStore::new(&data_dir),
             exams: ExamStore::new(&data_dir),
+            routes: route::RouteStore::new(&data_dir),
             decks: DeckStore::new(&data_dir),
             study: study::StudyLog::new(&data_dir),
             activity: activity::ActivityLog::new(&data_dir),
@@ -997,6 +1000,38 @@ async fn find_exam_guide(state: State<'_, AppState>, name: String) -> CmdResult<
     exam::find_guide(&state, &name).await.map_err(err)
 }
 
+// ── Rutas de aprendizaje (AC-214..AC-217) ──
+
+/// AC-214: creates the route the person confirmed (edited or not) from the card.
+#[tauri::command]
+fn route_create(state: State<'_, AppState>, proposal: route::RouteProposal) -> CmdResult<route::RouteView> {
+    let r = route::create(&state, proposal).map_err(err)?;
+    Ok(route::view(&state, &r))
+}
+
+#[tauri::command]
+fn route_list(state: State<'_, AppState>) -> Vec<route::RouteView> {
+    state.routes.all().iter().map(|r| route::view(&state, r)).collect()
+}
+
+#[tauri::command]
+fn route_get(state: State<'_, AppState>, id: String) -> CmdResult<route::RouteView> {
+    let r = state.routes.load(&id).map_err(err)?;
+    Ok(route::view(&state, &r))
+}
+
+/// AC-216: opens (or resumes) the session of one class.
+#[tauri::command]
+fn route_start_class(state: State<'_, AppState>, route_id: String, class_id: String) -> CmdResult<Session> {
+    route::start_class(&state, &route_id, &class_id).map_err(err)
+}
+
+/// Deletes the route; its sessions stay, like any other session.
+#[tauri::command]
+fn route_delete(state: State<'_, AppState>, id: String) -> CmdResult<()> {
+    state.routes.delete(&id).map_err(err)
+}
+
 /// AC-34: opens or resumes the study session of one topic.
 #[tauri::command]
 fn study_topic(state: State<'_, AppState>, exam_id: String, topic_id: String) -> CmdResult<Session> {
@@ -1776,6 +1811,11 @@ pub fn run() {
             delete_exam,
             find_exam_guide,
             study_topic,
+            route_create,
+            route_list,
+            route_get,
+            route_start_class,
+            route_delete,
             create_mock,
             submit_mock,
             answer_review,

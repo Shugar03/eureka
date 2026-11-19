@@ -2029,5 +2029,71 @@ async fn the_background_memory_pass_counts_for_its_session() {
     std::fs::remove_dir_all(dir).ok();
 }
 
+/// AC-215 live: the person's own words, through the real agent, the real search and
+/// the real planner. Runs only with LA_LIVE_DATA pointing at a COPY of a data dir
+/// (settings + keys): `LA_LIVE_DATA=… cargo test --lib live_roadmap -- --ignored --nocapture`.
+#[tokio::test]
+#[ignore]
+async fn live_roadmap_request_builds_a_researched_route() {
+    let Ok(dir) = std::env::var("LA_LIVE_DATA") else { return };
+    let st = AppState::new(std::path::PathBuf::from(dir));
+    let mut s = Session::new_chat("quiero aprender machine learning, armame un roadmap");
+    st.sessions.save(&mut s).unwrap();
+    let id = s.id.clone();
+    let mut proposal: Option<crate::route::RouteProposal> = None;
+    for turn in 0..3 {
+        let t = std::time::Instant::now();
+        let (r, _) = run(&st, &id).await;
+        let s = st.sessions.load(&id).unwrap();
+        println!("\n── turno {} ({:.1}s) {:?}", turn + 1, t.elapsed().as_secs_f32(), r.as_ref().err().map(|e| e.to_string()));
+        for m in s.messages.iter().rev().take_while(|m| m.role != "user") .collect::<Vec<_>>().into_iter().rev() {
+            match m.role.as_str() {
+                "assistant" => {
+                    if let Some(t) = &m.content { println!("PROFESOR: {t}"); }
+                    for c in m.tool_calls.iter().flatten() { println!("  → {} {}", c.function.name, c.function.arguments); }
+                }
+                "tool" => {
+                    println!("  ← {}", m.content.as_deref().unwrap_or("").chars().take(400).collect::<String>());
+                    if let Some(meta) = m.meta.as_ref().filter(|v| v["kind"] == "route_proposal") {
+                        proposal = serde_json::from_value(meta["proposal"].clone()).ok();
+                    }
+                }
+                _ => {}
+            }
+        }
+        if proposal.is_some() { break; }
+        // The person answers what the teacher asked, as they did in the app.
+        let mut s = st.sessions.load(&id).unwrap();
+        s.messages.push(crate::llm::Msg::user("para cambiar de laburo. unas 4 horas por semana. sé programar en python", None));
+        st.sessions.save(&mut s).unwrap();
+    }
+    let p = proposal.expect("no route was proposed");
+    println!("\n══ RUTA: {} — {}\n{}", p.title, p.goal, p.note);
+    for u in &p.units {
+        println!("  · {}", u.title);
+        for c in &u.classes { println!("      {} {} ({} min) [{}]", if c.known { "✓" } else { "-" }, c.title, c.minutes, c.topics.join(", ")); }
+    }
+    println!("  fuentes ({}): ", if p.researched { "investigada" } else { "SIN investigar" });
+    for src in &p.sources { println!("      {} <{}>", src.title, src.url); }
+    assert!(p.researched && !p.sources.is_empty(), "researched, with real sources");
+    assert!(p.sources.iter().all(|s| s.url.starts_with("http")));
+
+    // Class 1: its session carries the link and the teacher hears where it stands.
+    let r = crate::route::create(&st, p).unwrap();
+    let v = crate::route::view(&st, &r);
+    let first = v.current.clone().unwrap();
+    let class = crate::route::start_class(&st, &r.id, &first).unwrap();
+    assert_eq!(class.route.as_ref().map(|l| l.class_id.as_str()), Some(first.as_str()));
+    println!("\n── clase 1: {}\n{}", class.goal, crate::route::state_section(&st, &class));
+    let t = std::time::Instant::now();
+    let (r1, _) = run(&st, &class.id).await;
+    let class = st.sessions.load(&class.id).unwrap();
+    println!("── primer turno de la clase ({:.1}s) {:?}", t.elapsed().as_secs_f32(), r1.as_ref().err().map(|e| e.to_string()));
+    for m in class.messages.iter().filter(|m| m.role == "assistant") {
+        if let Some(t) = &m.content { println!("PROFESOR: {t}"); }
+        for c in m.tool_calls.iter().flatten() { println!("  → {} {}", c.function.name, c.function.arguments.chars().take(300).collect::<String>()); }
+    }
+}
+
 #[path = "token_bench.rs"]
 mod token_bench;

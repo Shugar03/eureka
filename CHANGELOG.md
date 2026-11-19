@@ -6,7 +6,16 @@ Lo que cambia en cada versión de Eureka, de la más nueva a la más vieja. El f
 
 ### Corregido
 - **El código se lee bien en el tema oscuro:** los textos entre comillas ya no salen en un rojo oscuro casi invisible; los colores del editor siguen al tema.
-- **El error del micrófono dice qué pasó:** distingue si no hay micrófono, si otra app lo está usando o si falta el permiso, y dónde activarlo en Windows.
+- **El error del micrófono dice qué pasó:** distingue si no hay micrófono, si está ocupado o no responde o si falta el permiso, y dónde activarlo en Windows.
+
+## [0.10.0] - 2026-11-18
+
+### Nuevo
+- **Rutas de aprendizaje:** pedile al profesor «quiero aprender Machine Learning, armame un roadmap» y te arma un curso de varias clases. Antes de proponerlo investiga cómo lo enseñan universidades y cursos conocidos, y te muestra en qué fuentes se basa. Lo editás (sacar clases, marcar lo que ya sabés, elegir el ritmo) y ves cuándo terminás. Cada clase es una sesión que sabe dónde está, empieza repasando la anterior y al terminar te lleva a la siguiente. Todo se sigue desde «Mis rutas», el inicio y Mi progreso (AC-214..AC-217).
+
+### Corregido
+- **Las novedades de cada versión se leen bien:** vienen por secciones (nuevo, mejorado, corregido) y cada cambio con su nombre arriba, en vez de un solo bloque de texto.
+- Las etiquetas de las flechas en los diagramas oscuros ahora se leen bien, y con el tema «Sistema» en modo claro el diagrama ya no sale oscuro.
 
 ## [0.9.0] - 2026-11-18
 
@@ -110,6 +119,7 @@ Primera versión pública.
 - Consola de código en diez lenguajes.
 - Actualizaciones automáticas firmadas.
 
+[0.10.0]: https://github.com/Shugar03/eureka/releases/tag/v0.10.0
 [0.9.0]: https://github.com/Shugar03/eureka/releases/tag/v0.9.0
 [0.8.0]: https://github.com/Shugar03/eureka/releases/tag/v0.8.0
 [0.7.0]: https://github.com/Shugar03/eureka/releases/tag/v0.7.0

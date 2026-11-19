@@ -30,6 +30,7 @@ function baseProps(sessions: SessionSummary[] = [s("1", "Derivadas"), s("2", "En
     onAcademic: vi.fn(),
     onClasses: vi.fn(),
     onProgress: vi.fn(),
+    onRoutes: vi.fn(),
     onCode: vi.fn(),
     onLibrary: vi.fn(),
     onLanguage: vi.fn(),

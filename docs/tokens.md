@@ -354,3 +354,11 @@ vivo los modelos DeepSeek ya no razonan antes de contestar. En los datos de uso 
 profesor era razonamiento oculto (664 de 1 118 tokens de salida por llamada); en la prueba en vivo, una respuesta pasó
 de 760–1 543 tokens de razonamiento a 0, y de 999 a 261–400 tokens de salida en total.
 
+## Rutas de aprendizaje (AC-214..AC-217)
+
+El chat suma la herramienta `propose_route` (236 tokens) y la regla de cuándo armar una ruta en vez de una sesión
+(1 859 → 2 089 tokens el prompt del chat). Las fases del método no cambian: la herramienta solo está en el chat. El
+planificador tiene su propio prompt (`route_plan`, 611 tokens) y corre una vez por ruta, con el rol Extracción, que sí
+razona, sobre hasta 8 páginas de 3 000 caracteres: unos 7 000 tokens de entrada por ruta propuesta. El profesor recibe
+de vuelta un resumen de una línea, no el plan entero.
+

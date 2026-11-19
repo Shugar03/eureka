@@ -356,7 +356,7 @@ pub async fn search(base_url: &str, key: &str, query: &str, raw: bool) -> Result
 }
 
 /// AC-206: research searches deep (`advanced`): better hits for names and titles.
-async fn search_with(base_url: &str, key: &str, query: &str, raw: bool, depth: &str) -> Result<Vec<Hit>> {
+pub async fn search_with(base_url: &str, key: &str, query: &str, raw: bool, depth: &str) -> Result<Vec<Hit>> {
     let resp = crate::llm::client()?
         .post(format!("{}/search", base_url.trim_end_matches('/')))
         .bearer_auth(key)

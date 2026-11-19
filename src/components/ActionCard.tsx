@@ -20,6 +20,7 @@ export const SCREEN_LABEL: Record<ActionScreen, string> = {
   academic: "Mi cursada",
   classes: "Clases",
   progress: "Mi progreso",
+  routes: "Mis rutas",
   settings: "Ajustes",
 };
 
