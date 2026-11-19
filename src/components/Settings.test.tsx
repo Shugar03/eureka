@@ -214,19 +214,19 @@ describe("Settings › Conexión", () => {
   afterEach(() => vi.restoreAllMocks());
 
   it("checks saved credentials, independently of the dropdown", async () => {
-    const pending: ((models: string[]) => void)[] = [];
-    vi.spyOn(api, "listModels").mockImplementation(() => new Promise((done) => { pending.push(done); }));
+    const pending: (() => void)[] = [];
+    vi.spyOn(api, "checkProvider").mockImplementation(() => new Promise((done) => { pending.push(done); }));
     render(<Settings onBack={() => {}} />);
     await screen.findByLabelText("Servicio");
     expect(screen.getByTestId("connection-state")).toHaveTextContent("Comprobando la conexión con OpenRouter");
     expect(screen.getByTestId("connection-state")).not.toHaveClass("warn-text");
     await userEvent.selectOptions(screen.getByLabelText("Servicio"), "anthropic");
-    await act(async () => pending.forEach((resolve) => resolve([])));
+    await act(async () => pending.forEach((resolve) => resolve()));
     expect(screen.getByTestId("connection-state")).toHaveTextContent("Conectado: OpenRouter");
   });
 
   it.each(["401 Unauthorized", "403", "invalid API key", "offline", "404", "429 quota"])("never claims a connection after %s", async (error) => {
-    vi.spyOn(api, "listModels").mockRejectedValue(error);
+    vi.spyOn(api, "checkProvider").mockRejectedValue(error);
     render(<Settings onBack={() => {}} />);
     await waitFor(() => expect(screen.getByTestId("connection-state")).toHaveClass("warn-text"));
     const state = screen.getByTestId("connection-state");
@@ -237,7 +237,7 @@ describe("Settings › Conexión", () => {
   it("says when the saved teacher key is missing without trying it", async () => {
     const saved = await api.getSettings();
     vi.spyOn(api, "getSettings").mockResolvedValue({ ...saved, providers: saved.providers.map((p) => ({ ...p, has_key: false })) });
-    const list = vi.spyOn(api, "listModels");
+    const list = vi.spyOn(api, "checkProvider");
     render(<Settings onBack={() => {}} />);
     await screen.findByLabelText("Servicio");
     expect(screen.getByTestId("connection-state")).toHaveTextContent("Falta la clave de OpenRouter");
@@ -247,15 +247,15 @@ describe("Settings › Conexión", () => {
   it("rechecks on save and ignores the previous teacher's pending result", async () => {
     const saved = await api.getSettings();
     vi.spyOn(api, "saveSettings").mockImplementation(async (input) => ({ ...saved, roles: input.roles, providers: saved.providers.map((p) => ({ ...p, has_key: true })) }));
-    const pending: ((models: string[]) => void)[] = [];
-    vi.spyOn(api, "listModels").mockImplementation((id) => id === "openrouter" ? new Promise((done) => { pending.push(done); }) : Promise.reject("401"));
+    const pending: (() => void)[] = [];
+    vi.spyOn(api, "checkProvider").mockImplementation((id) => id === "openrouter" ? new Promise((done) => { pending.push(done); }) : Promise.reject("401"));
     render(<Settings onBack={() => {}} />);
     await userEvent.selectOptions(await screen.findByLabelText("Servicio"), "anthropic");
     await userEvent.type(screen.getByLabelText("Clave de acceso"), "replacement-key");
     await userEvent.type(screen.getByLabelText("Modelo"), "test-model");
     await userEvent.click(screen.getByRole("button", { name: "Guardar" }));
     await waitFor(() => expect(screen.getByTestId("connection-state")).toHaveTextContent("La clave de Anthropic no es válida"));
-    await act(async () => pending.forEach((resolve) => resolve(["old-model"])));
+    await act(async () => pending.forEach((resolve) => resolve()));
     expect(screen.getByTestId("connection-state")).not.toHaveTextContent("Conectado");
     expect(screen.getByTestId("connection-state")).toHaveTextContent("Anthropic");
   });

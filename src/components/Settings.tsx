@@ -253,7 +253,7 @@ function ConnectionTab() {
     const check = async () => {
       try {
         if (chatgpt && saved.id === "openai") await api.chatgptModels();
-        else await api.listModels(saved.id);
+        else await api.checkProvider(saved.id);
         if (active) setConnection({ view, chatgpt, ok: true, text: `Conectado: ${saved.label} · ${teacher.model}` });
       } catch (e) {
         const text = /401|403|unauthor|invalid.*key|api key/i.test(errorText(e))

@@ -81,6 +81,7 @@ export const api = {
   getSettings: () => invoke<SettingsView>("get_settings"),
   saveSettings: (input: SettingsInput) => invoke<SettingsView>("save_settings", { input }),
   listModels: (providerId: string) => invoke<string[]>("list_models", { providerId }),
+  checkProvider: (providerId: string) => invoke<void>("check_provider", { providerId }),
   /** AC-158/159: one key → provider, model, context and a test call. */
   quickSetup: (key: string, provider: string | null) => invoke<SetupOutcome>("quick_setup", { key, provider }),
   /** Cuenta con suscripción: el sign-in abre el navegador y vuelve solo. */

@@ -447,6 +447,14 @@ async fn list_models(state: State<'_, AppState>, provider_id: String) -> CmdResu
     llm::list_models(&p.base_url, &key).await.map_err(err)
 }
 
+#[tauri::command]
+async fn check_provider(state: State<'_, AppState>, provider_id: String) -> CmdResult<()> {
+    let settings = state.settings.load();
+    let p = settings.providers.iter().find(|p| p.id == provider_id).ok_or("proveedor desconocido")?;
+    let key = state.settings.keys().get(&provider_id).cloned().ok_or("falta la API key")?;
+    llm::check_provider(&p.base_url, &key).await.map_err(err)
+}
+
 /// AC-158/159: a pasted key becomes a working setup (or a question: which service).
 #[tauri::command]
 async fn quick_setup(state: State<'_, AppState>, key: String, provider: Option<String>) -> CmdResult<setup::Outcome> {
@@ -1731,6 +1739,7 @@ pub fn run() {
             get_accessibility,
             save_accessibility,
             list_models,
+            check_provider,
             quick_setup,
             list_sessions,
             create_session,

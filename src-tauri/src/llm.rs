@@ -802,6 +802,20 @@ pub async fn list_models(base_url: &str, api_key: &str) -> Result<Vec<String>> {
     Ok(list_model_infos(base_url, api_key).await?.into_iter().map(|m| m.id).collect())
 }
 
+pub async fn check_provider(base_url: &str, api_key: &str) -> Result<()> {
+    check_provider_with_client(client()?, base_url, api_key).await
+}
+
+pub(crate) async fn check_provider_with_client(client: reqwest::Client, base_url: &str, api_key: &str) -> Result<()> {
+    if reqwest::Url::parse(base_url)?.host_str() == Some("openrouter.ai") {
+        let resp = client.get(url(base_url, "key")).bearer_auth(api_key).send().await.context("no se pudo conectar con el proveedor")?;
+        check_status(resp).await?;
+    } else {
+        list_models(base_url, api_key).await?;
+    }
+    Ok(())
+}
+
 /// The models a subscription account may use. Its `/models` answers
 /// `{models:[{slug, visibility, supported_in_api, …}]}` instead of the `data[]`
 /// an API-key provider returns, and it only lists a plan's models, so this is

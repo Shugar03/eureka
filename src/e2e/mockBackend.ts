@@ -876,6 +876,9 @@ export function install() {
         const label = store.settings.providers.find((p) => p.id === id)!.label;
         return { status: "done", provider_id: id, provider: label, model, context_k: id === "openrouter" ? 128 : null, alternatives: ["deepseek-v4-pro", "glm-5.3"], speech_ready: !!store.settings.roles.speech.model, tools_ok: true };
       }
+      case "check_provider":
+        if (!store.keys.has(args.providerId as string)) throw "falta la API key";
+        return null;
       case "list_models":
         if (!store.keys.has(args.providerId as string)) throw "falta la API key";
         return ["demo/profesor", "demo/rapido", "demo/vision"];
