@@ -25,6 +25,7 @@ import { QuoteSplash } from "./components/quotes/QuoteSplash";
 import { AcademicScreen } from "./components/academic/AcademicScreen";
 import { ClassesScreen } from "./components/classes/ClassesScreen";
 import { ProgressScreen } from "./components/ProgressScreen";
+import { RoutesScreen } from "./components/routes/RoutesScreen";
 import { CodeScreen, type CodeSeed } from "./components/code/CodeScreen";
 import { PomodoroWidget } from "./components/pomodoro/PomodoroWidget";
 import { Reminders } from "./components/Reminders";
@@ -47,6 +48,7 @@ type Route =
   | { name: "academic" }
   | { name: "classes" }
   | { name: "progress" }
+  | { name: "routes"; id: string | null }
   | { name: "code"; seed: CodeSeed | null }
   | { name: "settings"; back: Route; tab?: SettingsTab };
 
@@ -113,6 +115,7 @@ function AppShell() {
   const academic = () => go({ name: "academic" });
   const classes = () => go({ name: "classes" });
   const progress = () => go({ name: "progress" });
+  const routes = (id: string | null = null) => go({ name: "routes", id });
   // "Estudiar esta materia": a chat, so the assistant decides how to start.
   const study = async (message: string) => {
     try {
@@ -137,6 +140,7 @@ function AppShell() {
       academic,
       classes,
       progress,
+      routes: () => routes(),
       settings: () => settings(),
     };
     to[s]();
@@ -253,6 +257,12 @@ function AppShell() {
         run: classes,
       },
       {
+        id: "routes",
+        label: "Abrir Mis rutas de aprendizaje",
+        group: "Acciones",
+        run: () => routes(),
+      },
+      {
         id: "progress",
         label: "Abrir Mi progreso (lo que Eureka sabe de vos)",
         group: "Acciones",
@@ -328,6 +338,7 @@ function AppShell() {
             onAcademic={academic}
             onClasses={classes}
             onProgress={progress}
+            onRoutes={() => routes()}
             onCommand={openPalette}
             name={name}
             onWorkspace={() => settings("workspace")}
@@ -362,6 +373,8 @@ function AppShell() {
               onOpenExam={(id) => exams(id)}
               onOpenDeck={(id) => cards(id)}
               onOpenPractice={(id) => practice(id)}
+              onOpenRoute={(id) => routes(id)}
+              onOpenSession={open}
               onUiCommand={ui.run}
               uiSnapshot={ui.snapshot}
             />
@@ -384,6 +397,7 @@ function AppShell() {
           {route.name === "companion" && <CompanionScreen key={visit} />}
           {route.name === "academic" && <AcademicScreen key={visit} onOpenChat={home} onStudy={study} onOpenExam={(id) => exams(id)} onNewRoute={(p) => exams(null, p)} />}
           {route.name === "classes" && <ClassesScreen key={visit} onOpenSettings={() => settings("models")} onOpenDeck={(id) => cards(id)} onStudy={study} />}
+          {route.name === "routes" && <RoutesScreen key={`${visit}-${route.id}`} initial={route.id} onOpenSession={open} onStudy={study} />}
           {route.name === "progress" && <ProgressScreen key={visit} onOpenScreen={openScreen} onOpenSession={open} onStudy={study} />}
           {route.name === "settings" && <Settings key={route.tab ?? "connection"} initialTab={route.tab} onBack={() => setRoute(route.back)} />}
         </main>

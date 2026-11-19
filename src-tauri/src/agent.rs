@@ -40,6 +40,7 @@ pub fn activity_label(tool: &str) -> &'static str {
         "make_cards" => "Armando tarjetas de repaso…",
         "propose_timetable" => "Armando tu horario…",
         "propose_exam" => "Armando tu preparación…",
+        "propose_route" => "Investigando cómo se enseña y armando tu ruta…",
         "app_status" => "Mirando cómo venís…",
         "ui_command" => "Haciéndolo…",
         "set_phase" | "begin_learning" => "Preparando la sesión…",
@@ -537,6 +538,8 @@ pub async fn run_turn(state: &AppState, session_id: &str, ch: &Channel<AgentEven
         let system = state.prompts.phase_prompt(&s)?;
         let mut block = crate::prompts::state_block(&s, &known);
         block.push_str(&exam_failures(state, &s));
+        // AC-216: a class of a route knows where it stands and what came before.
+        block.push_str(&crate::route::state_section(state, &s));
         let books = state.library.index().titles();
         if !books.is_empty() {
             let shown: Vec<String> = books.iter().take(8).map(|t| format!("- «{t}»")).collect();
@@ -649,6 +652,17 @@ pub async fn run_turn(state: &AppState, session_id: &str, ch: &Channel<AgentEven
                 match state.research.enqueue(job) {
                     Ok(()) => s.messages.push(Msg::tool(&call.id, crate::research::pending_text(question.trim()), Some(crate::research::pending_meta(question.trim())))),
                     Err(why) => s.messages.push(Msg::tool(&call.id, format!("ignorada: {why}."), None)),
+                }
+                continue;
+            }
+            // AC-215: the route is researched and planned by the app, awaited here.
+            if call.function.name == crate::route::TOOL {
+                match crate::route::parse_args(&call.function.arguments) {
+                    Err(e) => s.messages.push(Msg::tool(&call.id, format!("error: {e}"), None)),
+                    Ok(a) => match crate::route::propose(state, &a).await {
+                        Ok(p) => s.messages.push(Msg::tool(&call.id, crate::route::for_teacher(&p), Some(serde_json::json!({ "kind": "route_proposal", "proposal": p })))),
+                        Err(e) => s.messages.push(Msg::tool(&call.id, format!("error: no pude armar la ruta ({e}). Decíselo en una frase y ofrecé intentarlo de nuevo."), None)),
+                    },
                 }
                 continue;
             }

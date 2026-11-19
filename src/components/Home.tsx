@@ -12,6 +12,7 @@ import { Icon, type IconName } from "./Icon";
 import { AttachButton, AttachChips, MicButton, useAttachments } from "./chat/ChatTools";
 import { composeMessage } from "../lib/attachments";
 import { QuickSetup } from "./QuickSetup";
+import { NextClassCard } from "./routes/NextClassCard";
 
 interface Props {
   sessions: SessionSummary[];
@@ -85,6 +86,7 @@ export function Home({ sessions, onChanged, onOpen, onOpenSettings, onOpenExam, 
         <span className="eyebrow">{greeting(name)}</span>
         <h1 className="hero">¿Qué querés entender?</h1>
         <p className="hero-sub">Contame qué querés aprender, preguntame lo que sea o pedime una mano para organizarte.</p>
+        {configured && <NextClassCard onOpenSession={onOpen} />}
 
         {/* AC-158: one key is enough to start; the manual way stays in Ajustes. */}
         {!configured && (

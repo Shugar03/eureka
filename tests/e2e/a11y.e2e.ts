@@ -56,6 +56,20 @@ for (const theme of ["Tema oscuro", "Tema claro"] as const) {
     await audit(browser, `paleta de comandos, ${theme}`);
   });
 
+  test(`a11y ruta de aprendizaje (${theme})`, async ({ app, screen, browser }) => {
+    await app.open("/");
+    await setTheme(screen, theme);
+    await screen.getByRole("textbox", "Mensaje").fill("quiero aprender machine learning, armame un roadmap");
+    await screen.getByRole("button", "Enviar").click();
+    const card = screen.getByRole("region", "Ruta propuesta: Machine Learning desde cero");
+    await expect(card).toBeVisible({ timeout: 20_000 });
+    await audit(browser, `ruta propuesta en el chat, ${theme}`);
+    await card.getByRole("button", "Crear la ruta").click();
+    await screen.getByRole("button", "Ver mi ruta").click();
+    await expect(screen.getByRole("region", "Dónde estás")).toBeVisible();
+    await audit(browser, `mis rutas, ${theme}`);
+  });
+
   test(`a11y mi progreso con caminos (${theme})`, async ({ app, screen, browser }) => {
     await app.open("/?progress");
     await setTheme(screen, theme);

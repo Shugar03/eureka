@@ -1,6 +1,13 @@
 // Thin-stroke icons (24×24, currentColor) for the sidebar and quick actions.
 const PATHS = {
   plus: <path d="M12 5v14M5 12h14" />,
+  route: (
+    <>
+      <circle cx="6" cy="18" r="2.2" />
+      <circle cx="18" cy="6" r="2.2" />
+      <path d="M8.2 18H15a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6.8" />
+    </>
+  ),
   clip: <path d="M20 11.6l-7.9 7.9a5 5 0 0 1-7.1-7.1l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7l-8.4 8.4a1.65 1.65 0 0 1-2.4-2.4l7.7-7.7" />,
   stop: <rect x="7.5" y="7.5" width="9" height="9" rx="2" fill="currentColor" />,
   mic: (

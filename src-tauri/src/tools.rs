@@ -11,7 +11,7 @@ pub fn definitions() -> Value {
     let f = |name: &str, desc: &str, params: Value| {
         json!({ "type": "function", "function": { "name": name, "description": desc, "parameters": params } })
     };
-    json!([
+    let mut all = json!([
         f("ask_question",
           "Le muestra UNA pregunta al aprendiz y termina el turno hasta que responda. Elegí el formato que mejor mida lo que querés ver y variá: dos preguntas seguidas no pueden tener el mismo formato.",
           json!({
@@ -242,7 +242,7 @@ pub fn definitions() -> Value {
             "properties": {
               "kind": { "type": "string", "enum": ["open_screen", "start_pomodoro", "set_reminders", "open_exam", "open_deck"] },
               "label": { "type": "string", "description": "Texto del botón, corto (ej.: «Abrir la biblioteca»)." },
-              "screen": { "type": "string", "enum": ["library", "practice", "exams", "cards", "agenda", "code", "language", "graph", "companion", "academic", "classes", "progress", "settings"], "description": "Solo para open_screen." },
+              "screen": { "type": "string", "enum": ["library", "practice", "exams", "cards", "agenda", "code", "language", "graph", "companion", "academic", "classes", "progress", "routes", "settings"], "description": "Solo para open_screen." },
               "minutes": { "type": "integer", "description": "Solo para start_pomodoro: minutos de foco (5 a 90, por defecto 25)." },
               "stand_minutes": { "type": "integer", "description": "Solo para set_reminders: cada cuántos minutos avisar que se pare (10 a 240)." },
               "water_minutes": { "type": "integer", "description": "Solo para set_reminders: cada cuántos minutos avisar que tome agua (10 a 240)." },
@@ -288,7 +288,10 @@ pub fn definitions() -> Value {
             },
             "required": ["command"]
           })),
-    ])
+    ]);
+    // AC-215: planned by the app (route.rs), not here; listed with the rest.
+    all.as_array_mut().unwrap().push(crate::route::tool_definition());
+    all
 }
 
 /// What the agent loop should do after a tool runs.
@@ -553,7 +556,7 @@ pub fn check_ui_command(raw: &str) -> Result<(Value, String), String> {
 }
 
 /// Screens `propose_action` can open (the app's routes).
-pub const SCREENS: &[&str] = &["library", "practice", "exams", "cards", "agenda", "code", "language", "graph", "companion", "academic", "classes", "progress", "settings"];
+pub const SCREENS: &[&str] = &["library", "practice", "exams", "cards", "agenda", "code", "language", "graph", "companion", "academic", "classes", "progress", "routes", "settings"];
 
 /// Checks a `propose_action` before it reaches the screen; the UI trusts what passes.
 fn check_action(a: &ActionArgs) -> Result<(), String> {
@@ -927,7 +930,7 @@ fn phase_hint(p: Phase) -> &'static str {
 /// specific proposals and `app_status` belong to the chat (chat.md asks for them).
 pub fn definitions_for(phase: Phase) -> Value {
     let keep: &[&str] = match phase {
-        Phase::Chat => &["begin_learning", "recall", "library_search", "library_read", "research", "show_diagram", "show_demo", "show_code", "make_cards", "propose_action", "propose_timetable", "propose_exam", "propose_deck", "propose_practice", "propose_own_problems", "propose_code", "app_status", "ui_command"],
+        Phase::Chat => &["begin_learning", "recall", "library_search", "library_read", "research", "show_diagram", "show_demo", "show_code", "make_cards", "propose_action", "propose_timetable", "propose_exam", "propose_deck", "propose_practice", "propose_own_problems", "propose_code", "propose_route", "app_status", "ui_command"],
         Phase::Probe | Phase::Plan | Phase::Teach | Phase::Done => &["ask_question", "record_finding", "recall", "set_phase", "library_search", "library_read", "research", "set_plan", "update_node", "show_diagram", "show_demo", "show_code", "make_cards", "propose_action", "ui_command"],
     };
     Value::Array(definitions().as_array().unwrap().iter().filter(|d| keep.contains(&d["function"]["name"].as_str().unwrap_or(""))).cloned().collect())
@@ -1611,7 +1614,7 @@ mod tests {
     #[test]
     fn definitions_cover_every_tool() {
         let names: Vec<String> = definitions().as_array().unwrap().iter().map(|d| d["function"]["name"].as_str().unwrap().to_string()).collect();
-        assert_eq!(names, ["ask_question", "record_finding", "set_plan", "update_node", "show_diagram", "show_demo", "show_code", "make_cards", "recall", "library_search", "library_read", "research", "set_phase", "begin_learning", "propose_timetable", "propose_exam", "propose_deck", "propose_practice", "propose_own_problems", "propose_code", "propose_action", "app_status", "ui_command"]);
+        assert_eq!(names, ["ask_question", "record_finding", "set_plan", "update_node", "show_diagram", "show_demo", "show_code", "make_cards", "recall", "library_search", "library_read", "research", "set_phase", "begin_learning", "propose_timetable", "propose_exam", "propose_deck", "propose_practice", "propose_own_problems", "propose_code", "propose_action", "app_status", "ui_command", "propose_route"]);
         // AC-201: the method shows one list in every phase (the provider's cache survives the change).
         for p in [Phase::Probe, Phase::Plan, Phase::Done] {
             assert_eq!(definitions_for(p), definitions_for(Phase::Teach), "{p:?} shows the method's list");
@@ -1621,7 +1624,7 @@ mod tests {
         assert_eq!(teach, ["ask_question", "record_finding", "set_plan", "update_node", "show_diagram", "show_demo", "show_code", "make_cards", "recall", "library_search", "library_read", "research", "set_phase", "propose_action", "ui_command"]);
         assert_eq!(definitions_for(Phase::Done), definitions_for(Phase::Teach));
         let chat: Vec<String> = definitions_for(Phase::Chat).as_array().unwrap().iter().map(|d| d["function"]["name"].as_str().unwrap().to_string()).collect();
-        assert_eq!(chat, ["show_diagram", "show_demo", "show_code", "make_cards", "recall", "library_search", "library_read", "research", "begin_learning", "propose_timetable", "propose_exam", "propose_deck", "propose_practice", "propose_own_problems", "propose_code", "propose_action", "app_status", "ui_command"]);
+        assert_eq!(chat, ["show_diagram", "show_demo", "show_code", "make_cards", "recall", "library_search", "library_read", "research", "begin_learning", "propose_timetable", "propose_exam", "propose_deck", "propose_practice", "propose_own_problems", "propose_code", "propose_action", "app_status", "ui_command", "propose_route"]);
         assert!(!chat.contains(&"ask_question".to_string()) && !chat.contains(&"set_phase".to_string()), "the method's tools wait for begin_learning");
     }
 

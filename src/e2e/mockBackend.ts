@@ -85,6 +85,7 @@ import { scriptedGrade, scriptedProblems } from "./practiceScript";
 import { MemoryMock } from "./memoryMock";
 import { isRight } from "../lib/exam";
 import { progressDays, progressModel, progressSessions } from "./progressDemo";
+import { createRoute, mockRouteProposal, routeView, type MockRoute } from "./routeMock";
 import { DEFAULT_ACCESSIBILITY } from "../lib/accessibility";
 import { scriptedExplain } from "./examScript";
 import { scriptedCards } from "./cardsScript";
@@ -143,7 +144,8 @@ const OCR_PAGES = [
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const params = new URLSearchParams(location.search);
-const UPDATE_NOTES = "### Nuevo\n- **Lector de fotocopias**: los PDFs escaneados se leen en tu PC.\n\n### Mejorado\n- Cambiar de fase ya no tira la caché del proveedor.";
+// What 0.9.0's notes look like once published (scripts/changelog.cjs, appNotes).
+const UPDATE_NOTES = "### Mejorado\n- **El profesor contesta mucho más rápido:** ya no se queda pensando en silencio antes de responder. La primera palabra aparece en unos 2 segundos en vez de 15 a 25, y la respuesta entera tarda menos de la mitad.\n- **Podés releer mientras escribe:** si subís en la conversación, ya no te tira para abajo con cada palabra nueva, y aparece «Ir al final» para volver de un toque.\n- **Mi progreso, renovado:** arriba un coach te dice cómo venís y qué te conviene hoy (con un botón para cada cosa); debajo, tu racha, tus temas por estado y tu semana; y cada sesión es un **camino de ideas** al estilo Duolingo, con lo que ya sabés, lo que te cuesta y el próximo paso marcado. Los textos ya no se cortan a la mitad y lo repetido no aparece dos veces.\n- **Acompañamiento tiene micrófono**, y el clip y el micrófono de todas las cajas se ven más limpios.\n- **Logo nuevo:** el elefante ahora es macizo, relleno de violeta, en el ícono de la app, el instalador y la barra lateral.\n\n### Corregido\n- **Hablar más de un minuto ya funciona:** con la voz en esta PC, una grabación larga se corta sola en los silencios y se transcribe entera, en vez de pedirte que la hagas de a partes.\n- Ya no aparece el cartel «Controles de la ventana» al pasar el mouse por la barra de arriba.";
 const failMode = params.has("fail");
 const failExtract = params.has("failExtract");
 let failGrade = params.has("failGradeOnce");
@@ -362,6 +364,7 @@ const store = {
   activity: seedActivity(),
   classes: new Map<string, ClassRecord>(),
   projects: new Map<string, Project>(),
+  routes: new Map<string, MockRoute>(),
   learner: {
     misconceptions: params.has("withProfile") ? [{ concept: "Recta secante", wrong_idea: "toca la curva en un solo punto", fixed: false, source: "Sesión: derivadas", at: "" }] : [],
     preferences: params.has("withProfile") ? [{ text: "entiende mejor con ejemplos numéricos", source: "Sesión: derivadas", at: "" }] : [],
@@ -448,6 +451,8 @@ function applyCall(s: Session, c: Call) {
       return "ok";
     case "research":
       return "research";
+    case "propose_route":
+      return "route";
     case "ask_question":
       return "await";
     case "record_finding":
@@ -534,6 +539,12 @@ async function runTurn(id: string, input: LearnerInput | null, ch: Channel<Agent
             }
           }, Math.max(DELAY * 15, 1500));
         }
+      }
+      else if (outcome === "route") {
+        // AC-215: the app researches how it is taught and plans the classes.
+        await sleep(DELAY * 10);
+        const proposal = mockRouteProposal(String(c.args.topic ?? "Machine Learning"));
+        s.messages.push({ role: "tool", tool_call_id: calls[j].id, content: "propuesta mostrada", meta: { kind: "route_proposal", proposal } });
       }
       else s.messages.push({ role: "tool", tool_call_id: calls[j].id, content: "ok" });
     }
@@ -1393,6 +1404,34 @@ ${text}`);
       }
       case "delete_exam":
         store.exams.delete(args.id as string);
+        return null;
+      // AC-214..AC-217: learning routes.
+      case "route_create": {
+        const r = createRoute(args.proposal as never);
+        store.routes.set(r.id, r);
+        return routeView(r, (id) => store.sessions.get(id));
+      }
+      case "route_list":
+        return [...store.routes.values()].sort((a, b) => b.updated_at.localeCompare(a.updated_at)).map((r) => routeView(r, (id) => store.sessions.get(id)));
+      case "route_get": {
+        const r = store.routes.get(args.id as string);
+        if (!r) throw "ruta no encontrada";
+        return routeView(r, (id) => store.sessions.get(id));
+      }
+      case "route_start_class": {
+        const r = store.routes.get(args.routeId as string);
+        const c = r?.units.flatMap((u) => u.classes).find((x) => x.id === args.classId);
+        if (!r || !c) throw "clase no encontrada";
+        const existing = c.session_id ? store.sessions.get(c.session_id) : undefined;
+        if (existing) return clone(existing);
+        const s = newSession(c.title);
+        s.route = { route_id: r.id, class_id: c.id };
+        c.session_id = s.id;
+        r.updated_at = new Date().toISOString();
+        return clone(s);
+      }
+      case "route_delete":
+        store.routes.delete(args.id as string);
         return null;
       case "study_topic": {
         const e = exam(args.examId as string);

@@ -90,6 +90,11 @@ export function nextStep(v: TeacherView): Step | null {
     if (/ejercicio de (python|programaci)/i.test(said)) return { text: "Te dejo el ejercicio para generarlo en la consola.", calls: [{ name: "propose_code", args: { language: "python", topic: "recorrer listas con for", level: "básico" } }] };
     if (/estudiar el mazo (.+)/i.test(said)) return { text: "Acá lo tenés.", calls: [{ name: "propose_action", args: { kind: "open_deck", deck: /estudiar el mazo (.+)/i.exec(said)![1].trim(), label: "Estudiar el mazo" } }] };
     if (/simulacro/i.test(said)) return { text: "Abrí la preparación y empezá el simulacro.", calls: [{ name: "propose_action", args: { kind: "open_exam", exam: "AWS Certified Cloud Practitioner", activity: "simulacro", label: "Hacer un simulacro" } }] };
+    // AC-215: a whole field, a roadmap or a course is a learning route, not one session.
+    if (/roadmap|ruta de aprendizaje|armame una ruta|un curso de/i.test(said)) {
+      const topic = /machine learning/i.test(said) ? "Machine Learning" : "Machine Learning";
+      return { text: "¡Dale! Investigo cómo se enseña y te armo la ruta.", calls: [{ name: "propose_route", args: { topic, purpose: "cambiar de trabajo", hours_per_week: 4 } }] };
+    }
     if (/certificaci[oó]n|examen|rendir/i.test(said) && !/entender|aprender/i.test(said))
       return {
         text: "Genial, armemos tu preparación. Te dejo la tarjeta con lo que me contaste; si tenés la guía o el programa, pegala ahí, y si no, la busco en la web.",

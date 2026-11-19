@@ -2,7 +2,7 @@
 import { test } from "@e2e-dev/web";
 import { expect } from "e2e";
 
-test("AC-214 una clave inválida no figura conectada y una válida la reemplaza", async ({ app, screen }) => {
+test("AC-218 una clave inválida no figura conectada y una válida la reemplaza", async ({ app, screen }) => {
   await app.open("/?unconfigured");
   await screen.getByRole("button", "Prefiero configurarlo a mano en Ajustes").click();
   await screen.getByLabel("Servicio").selectOption("OpenRouter");

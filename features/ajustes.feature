@@ -89,7 +89,7 @@ Característica: Configurar modelos, keys y prompts
     Entonces el profesor responde igual
     Y esa llamada queda contada como "sin datos del proveedor", no como 0 tokens
 
-  @AC-214
+  @AC-218
   Escenario: Una clave guardada inválida no aparece como conectada
     Dado que guardé una clave inválida de OpenRouter con un modelo de Profesor
     Cuando abro Ajustes → Conexión

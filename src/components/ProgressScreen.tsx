@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState } from "react";
-import { activityApi, api, errorText, identityApi, studentApi } from "../api";
-import type { ActionScreen, Session, StudentModel, TopicState, TopicStatus } from "../types";
+import { activityApi, api, errorText, identityApi, routeApi, studentApi } from "../api";
+import type { ActionScreen, RouteView, Session, StudentModel, TopicState, TopicStatus } from "../types";
 import { addDays } from "../lib/cards";
 import { localDate } from "../lib/exam";
 import { streak } from "../lib/streak";
@@ -30,10 +30,12 @@ interface Data {
   sessions: Session[];
   name: string;
   finished7: number;
+  /** AC-217: learning routes, shown as courses (their classes are not repeated as paths). */
+  routes: RouteView[];
 }
 
 async function load(today: string): Promise<Data> {
-  const [m, days, sessions, who] = await Promise.all([
+  const [m, days, sessions, who, routes] = await Promise.all([
     studentApi.model(),
     activityApi
       .days(addDays(today, -HISTORY_DAYS))
@@ -41,9 +43,10 @@ async function load(today: string): Promise<Data> {
       .catch(() => [] as string[]),
     api.listSessions().catch(() => []),
     identityApi.get().catch(() => null),
+    routeApi.list().catch(() => [] as RouteView[]),
   ]);
   const withPlan = sessions
-    .filter((s) => s.phase !== "chat" && s.plan_total > 0 && !s.archived)
+    .filter((s) => s.phase !== "chat" && s.plan_total > 0 && !s.archived && !s.route)
     .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
     .slice(0, UNITS);
   const full = await Promise.all(withPlan.map((s) => api.getSession(s.id).catch(() => null)));
@@ -51,7 +54,7 @@ async function load(today: string): Promise<Data> {
   const units = loaded.map((s) => unitOf(s, m));
   const weekAgo = addDays(today, -6);
   const finished7 = sessions.filter((s) => s.phase === "done" && s.updated_at.slice(0, 10) >= weekAgo).length;
-  return { m, days, units, sessions: loaded, name: who?.first_name.trim() ?? "", finished7 };
+  return { m, days, units, sessions: loaded, name: who?.first_name.trim() ?? "", finished7, routes };
 }
 
 /**
@@ -97,6 +100,7 @@ export function ProgressScreen(go: Go) {
             <CoachCard d={d} today={today} go={go} />
             <Numbers d={d} today={today} onOpenScreen={go.onOpenScreen} />
             {d.m.upcoming.length > 0 && <Upcoming m={d.m} onOpenScreen={go.onOpenScreen} />}
+            {d.routes.length > 0 && <Routes routes={d.routes} onOpen={() => go.onOpenScreen("routes")} />}
             {d.units.length > 0 && <Paths units={d.units} onOpenSession={go.onOpenSession} />}
             <OtherTopics d={d} go={go} markKnown={markKnown} />
             <details className="pg-memory">
@@ -279,6 +283,31 @@ function Upcoming({ m, onOpenScreen }: { m: StudentModel; onOpenScreen: (s: Acti
             </button>
           );
         })}
+      </div>
+    </section>
+  );
+}
+
+/** AC-217: each route as a course with its progress; the classes live in «Mis rutas». */
+function Routes({ routes, onOpen }: { routes: RouteView[]; onOpen: () => void }) {
+  return (
+    <section className="pg-section" aria-label="Tus rutas">
+      <div className="pg-section-head">
+        <h2 className="pg-heading">Tus rutas</h2>
+        <span className="muted small">Cursos de varias clases</span>
+      </div>
+      <div className="pg-routes">
+        {routes.map((r) => (
+          <button key={r.id} type="button" className="card pg-route" onClick={onOpen}>
+            <strong>{r.title}</strong>
+            <span className="pg-route-bar" aria-hidden>
+              <span style={{ width: `${r.total ? (100 * r.done) / r.total : 0}%` }} />
+            </span>
+            <small>
+              {r.done} de {r.total} clases{r.done === r.total ? " · completa" : ""}
+            </small>
+          </button>
+        ))}
       </div>
     </section>
   );
