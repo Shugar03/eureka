@@ -116,7 +116,7 @@ El harness está pensado para **gastar pocos tokens**:
 
 **En Windows:** bajá `Eureka_X_x64-setup.exe` del [último release](https://github.com/Shugar03/eureka/releases/latest) e instalalo (no pide administrador). Windows SmartScreen va a decir «editor desconocido»: *Más información → Ejecutar de todas formas*. Después, las versiones nuevas llegan solas ([detalle](docs/distribucion.md)).
 
-**Desde el código** (Windows, macOS o Linux): necesitás [Rust](https://rustup.rs) estable (MSVC en Windows), [Node](https://nodejs.org) 22.22+ o 24.8+ y una API key de algún proveedor. Más detalle en [CONTRIBUTING](CONTRIBUTING.md).
+**Desde el código (Windows):** necesitás [Rust](https://rustup.rs) estable con MSVC, [Node](https://nodejs.org) 22.22+ o 24.8+ y una API key de algún proveedor. Más detalle en [CONTRIBUTING](CONTRIBUTING.md).
 
 ```bash
 git clone https://github.com/Shugar03/eureka.git
@@ -138,11 +138,19 @@ Para generar el instalador:
 npx tauri build
 ```
 
+### Plataformas hoy
+
+La app de escritorio se prueba en CI y se publica **solo para Windows**. Los builds nativos de **Linux y macOS todavía no están soportados**: el backend Rust falla al enlazar porque `parakeet-rs` activa `directml` en todos los targets de escritorio y ONNX Runtime (`ort`) solo ofrece los binarios precompilados correspondientes para Windows. La corrección está pendiente.
+
+En Linux y macOS podés correr los chequeos del frontend (`npm run typecheck`, `npm run test:unit` —Vitest—, `npm run test:scripts` y `npm run check:repo`) y probar la **demo en el navegador**: `npm run dev:e2e` → http://localhost:1430. Usa un backend simulado y un profesor con guion, sin modelos ni secretos. `npm run dev` (puerto 1420) solo sirve el frontend de Tauri: no tiene backend en un navegador.
+
+**iOS no está soportado:** no hay un proyecto `src-tauri/gen/apple`.
+
 ### Android (en preparación)
 
-Eureka también compila para Android con Tauri 2 mobile (mismo código). Todavía no se publica: la interfaz para teléfono está en camino.
+Hay código específico para Android, condicionado con `cfg(target_os = "android")`, y un proyecto Tauri 2 mobile en `src-tauri/gen/android`. Es experimental: no se publica ni se compila en CI, y el build no está verificado por esa vía. La interfaz para teléfono está en camino.
 
-**Requisitos:** JDK 17 o más nuevo, el Android SDK con `platforms;android-36`, `build-tools;36.0.0`, `platform-tools`, el NDK (`ndk;30.0.16248370`) y, para probar, `emulator` y una imagen `system-images;android-36;google_apis;x86_64`. Variables: `JAVA_HOME`, `ANDROID_HOME`, `NDK_HOME`. Y los targets de Rust: `rustup target add aarch64-linux-android x86_64-linux-android`.
+**Requisitos:** JDK 17 o más nuevo, el Android SDK con `platforms;android-37`, `build-tools;36.0.0`, `platform-tools`, el NDK (`ndk;30.0.16248370`) y, para probar, `emulator` y una imagen `system-images;android-36;google_apis;x86_64`. Variables: `JAVA_HOME`, `ANDROID_HOME`, `NDK_HOME`. Y los targets de Rust: `rustup target add aarch64-linux-android x86_64-linux-android`.
 
 ```bash
 npm run android:dev     # la app en el emulador o el celular conectado, con recarga en vivo
