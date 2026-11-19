@@ -100,7 +100,7 @@ describe("storage (AC-81)", () => {
   beforeEach(() => localStorage.clear());
 
   it("round-trips, and repairs what it can't trust", () => {
-    const w: Workspace = { name: "Sebastián", wallpaper: { kind: "preset", id: "lavanda" }, accent: "#AABBCC", palette: [] };
+    const w: Workspace = { name: "Inés", wallpaper: { kind: "preset", id: "lavanda" }, accent: "#AABBCC", palette: [] };
     expect(saveWorkspace(w)).toBe(true);
     expect(loadWorkspace()).toEqual({ ...w, accent: "#aabbcc" });
 
