@@ -89,6 +89,15 @@ Característica: Configurar modelos, keys y prompts
     Entonces el profesor responde igual
     Y esa llamada queda contada como "sin datos del proveedor", no como 0 tokens
 
+  @AC-218
+  Escenario: Una clave guardada inválida no aparece como conectada
+    Dado que guardé una clave inválida de OpenRouter con un modelo de Profesor
+    Cuando abro Ajustes → Conexión
+    Entonces no veo "Conectado"
+    Y veo "La clave de OpenRouter no es válida. Pegala de nuevo."
+    Cuando pego una clave válida y guardo
+    Entonces veo "Conectado: OpenRouter · demo/profesor"
+
   @AC-201
   Escenario: Cambiar de fase no tira la caché del proveedor
     Dado una sesión que pasa de diagnóstico a plan y a enseñar

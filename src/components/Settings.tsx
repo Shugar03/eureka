@@ -242,6 +242,29 @@ function ConnectionTab() {
   const [status, setStatus] = useState<{ ok: boolean; text: string } | null>(null);
   // A connected subscription replaces the API key for its provider.
   const [chatgpt, setChatgpt] = useState(false);
+  const [connection, setConnection] = useState<{ view: SettingsView; chatgpt: boolean; ok: boolean; text: string } | null>(null);
+
+  useEffect(() => {
+    if (!view) return;
+    const teacher = view.roles.teacher;
+    const saved = view.providers.find((p) => p.id === teacher.provider_id);
+    if (!teacher.model || !saved || !(saved.has_key || (chatgpt && saved.id === "openai"))) return;
+    let active = true;
+    const check = async () => {
+      try {
+        if (chatgpt && saved.id === "openai") await api.chatgptModels();
+        else await api.checkProvider(saved.id);
+        if (active) setConnection({ view, chatgpt, ok: true, text: `Conectado: ${saved.label} · ${teacher.model}` });
+      } catch (e) {
+        const text = /401|403|unauthor|invalid.*key|api key/i.test(errorText(e))
+          ? `La clave de ${saved.label} no es válida. Pegala de nuevo.`
+          : `No pude verificar la conexión con ${saved.label}. ${friendlyError(e)}`;
+        if (active) setConnection({ view, chatgpt, ok: false, text });
+      }
+    };
+    void check();
+    return () => { active = false; };
+  }, [view, chatgpt]);
 
   useEffect(() => {
     api
@@ -305,15 +328,20 @@ function ConnectionTab() {
 
   const others = (["prober", "extractor", "practice", "researcher"] as const).filter((r) => view.roles[r]?.provider_id && view.roles[r]?.model).length;
   const t = view.roles.teacher;
-  const label = view.providers.find((p) => p.id === t.provider_id)?.label;
+  const teacherProvider = view.providers.find((p) => p.id === t.provider_id);
+  const canCheck = !!(teacherProvider?.has_key || (chatgpt && teacherProvider?.id === "openai"));
+  const checked = connection?.view === view && connection.chatgpt === chatgpt ? connection : null;
+  const connectionText = !t.model || !teacherProvider ? "Todavía no elegiste un modelo."
+    : !canCheck ? `Falta la clave de ${teacherProvider.label}. Pegala para conectarte.`
+    : checked?.text ?? `Comprobando la conexión con ${teacherProvider.label}…`;
 
   return (
     <div className="stack">
       <QuickSetup onDone={() => api.getSettings().then(setView).catch(() => {})} />
       <ChatGptCard onChange={setChatgpt} />
       <p className="muted small">O a mano: elegí el servicio que ya usás, pegá tu clave y elegí el modelo. Con eso alcanza para todo.</p>
-      <p className={t.model ? "" : "warn-text"} data-testid="connection-state">
-        {t.model && label ? `Conectado: ${label} · ${t.model}` : "Todavía no elegiste un modelo."}
+      <p className={!t.model || !teacherProvider || !canCheck || checked?.ok === false ? "warn-text" : ""} data-testid="connection-state">
+        {connectionText}
       </p>
 
       <section className="card" aria-label="Mi conexión">

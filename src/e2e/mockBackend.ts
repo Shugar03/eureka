@@ -370,6 +370,7 @@ const store = {
     preferences: params.has("withProfile") ? [{ text: "entiende mejor con ejemplos numéricos", source: "Sesión: derivadas", at: "" }] : [],
   } as LearnerProfile,
   keys: new Set<string>(params.has("unconfigured") ? [] : ["openrouter", ...(params.has("noSearch") ? [] : ["search"])]),
+  invalidKeys: new Set<string>(),
   searchUrl: "https://api.tavily.com",
   identity: loadMockIdentity(),
   academic: loadMockAcademic(),
@@ -861,6 +862,10 @@ export function install() {
         for (const p of input.providers) {
           if (p.clear_key) store.keys.delete(p.id);
           else if (p.api_key?.trim()) store.keys.add(p.id);
+          if (p.clear_key || p.api_key?.trim()) {
+            if (p.api_key?.trim() === "sk-demo-invalid" && !p.clear_key) store.invalidKeys.add(p.id);
+            else store.invalidKeys.delete(p.id);
+          }
         }
         store.settings.providers = input.providers.map(({ id, label, base_url }) => ({ id, label, base_url }));
         store.settings.roles = clone(input.roles);
@@ -882,11 +887,16 @@ export function install() {
         const id = guess[0];
         if (!store.settings.providers.some((p) => p.id === id)) store.settings.providers.push({ id, label: id === "deepseek" ? "DeepSeek" : id, base_url: `https://${id}.test/v1` });
         store.keys.add(id);
+        store.invalidKeys.delete(id);
         const model = id === "opencode-go" ? "deepseek-v4.1-flash" : "demo/profesor";
         store.settings.roles.teacher = { provider_id: id, model };
         const label = store.settings.providers.find((p) => p.id === id)!.label;
         return { status: "done", provider_id: id, provider: label, model, context_k: id === "openrouter" ? 128 : null, alternatives: ["deepseek-v4-pro", "glm-5.3"], speech_ready: !!store.settings.roles.speech.model, tools_ok: true };
       }
+      case "check_provider":
+        if (!store.keys.has(args.providerId as string)) throw "falta la API key";
+        if (store.invalidKeys.has(args.providerId as string)) throw "401 invalid API key";
+        return null;
       case "list_models":
         if (!store.keys.has(args.providerId as string)) throw "falta la API key";
         return ["demo/profesor", "demo/rapido", "demo/vision"];

@@ -64,9 +64,10 @@ async fn read_request(sock: &mut tokio::net::TcpStream) -> Option<Value> {
         buf.extend_from_slice(&tmp[..n]);
     }
     // Headers ride along under "_headers" (lowercased), for the tests that check them.
-    let mut v: Value = serde_json::from_slice(&buf[head_end..]).ok()?;
+    let mut v: Value = if len == 0 { json!({}) } else { serde_json::from_slice(&buf[head_end..]).ok()? };
     if let Some(o) = v.as_object_mut() {
         o.insert("_headers".into(), Value::Object(headers));
+        o.insert("_path".into(), json!(String::from_utf8_lossy(&buf[..head_end]).split_whitespace().nth(1)?));
     }
     Some(v)
 }
@@ -729,6 +730,32 @@ async fn list_models_strips_gemini_prefix_and_sorts() {
     let f = fake(vec![Reply::Json(json!({ "data": [{ "id": "models/b-model" }, { "id": "a-model" }, { "name": "sin id" }] }))]).await;
     let ids = crate::llm::list_models(&f.base_url, "sk").await.unwrap();
     assert_eq!(ids, vec!["a-model".to_string(), "b-model".to_string()]);
+}
+
+#[tokio::test]
+async fn check_provider_authenticates_openrouter_instead_of_listing_public_models() {
+    let f = fake(vec![Reply::Status(401, "invalid key"), Reply::Json(json!({ "data": {} }))]).await;
+    let local = reqwest::Url::parse(&f.base_url).unwrap();
+    let addr = format!("127.0.0.1:{}", local.port().unwrap()).parse().unwrap();
+    let client = reqwest::Client::builder().no_proxy().resolve("openrouter.ai", addr).build().unwrap();
+    let base = format!("http://openrouter.ai:{}/v1", local.port().unwrap());
+    let error = crate::llm::check_provider_with_client(client.clone(), &base, "sk-invalid").await.unwrap_err();
+    assert!(error.to_string().contains("401"));
+    crate::llm::check_provider_with_client(client, &base, "sk-valid").await.unwrap();
+    let requests = f.requests.lock().unwrap();
+    assert_eq!(requests.len(), 2);
+    assert_eq!(requests[0]["_path"], "/v1/key");
+    assert_eq!(requests[0]["_headers"]["authorization"], "Bearer sk-invalid".to_lowercase());
+    assert_eq!(requests[1]["_headers"]["authorization"], "Bearer sk-valid".to_lowercase());
+}
+
+#[tokio::test]
+async fn check_provider_uses_models_for_other_hosts_and_propagates_errors() {
+    let f = fake(vec![Reply::Json(json!({ "data": [] })), Reply::Status(403, "invalid key"), Reply::Status(429, "quota")]).await;
+    crate::llm::check_provider(&f.base_url, "sk").await.unwrap();
+    assert!(crate::llm::check_provider(&f.base_url, "sk").await.unwrap_err().to_string().contains("403"));
+    assert!(crate::llm::check_provider(&f.base_url, "sk").await.unwrap_err().to_string().contains("429"));
+    assert!(f.requests.lock().unwrap().iter().all(|r| r["_path"] == "/v1/models"));
 }
 
 // ── Una sola key (AC-158, AC-159) ─────────────────────────────────────────

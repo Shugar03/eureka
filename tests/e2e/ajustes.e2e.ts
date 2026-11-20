@@ -2,6 +2,24 @@
 import { test } from "@e2e-dev/web";
 import { expect } from "e2e";
 
+test("AC-218 una clave inválida no figura conectada y una válida la reemplaza", async ({ app, screen }) => {
+  await app.open("/?unconfigured");
+  await screen.getByRole("button", "Prefiero configurarlo a mano en Ajustes").click();
+  await screen.getByLabel("Servicio").selectOption("OpenRouter");
+  await screen.getByLabel("Clave de acceso").fill("sk-demo-invalid");
+  await screen.getByLabel("Modelo").fill("demo/profesor");
+  await screen.getByRole("button", "Guardar").click();
+  await expect(screen.getByText("Guardado.")).toBeVisible();
+  await screen.getByRole("button", "Volver").click();
+  await screen.getByRole("navigation", "Navegación").getByRole("button", "Ajustes").click();
+  const state = screen.getByTestId("connection-state");
+  await expect(state).toHaveText("La clave de OpenRouter no es válida. Pegala de nuevo.");
+  await expect(state).not.toContainText("Conectado");
+  await screen.getByLabel("Clave de acceso").fill("sk-demo-valid");
+  await screen.getByRole("button", "Guardar").click();
+  await expect(state).toHaveText("Conectado: OpenRouter · demo/profesor");
+});
+
 test("AC-10 sin configuración el inicio pide la clave y deja ir a Ajustes", async ({ app, screen }) => {
   await app.open("/?unconfigured");
 
