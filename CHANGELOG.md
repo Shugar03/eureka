@@ -4,6 +4,8 @@ Lo que cambia en cada versión de Eureka, de la más nueva a la más vieja. El f
 
 ## Sin publicar
 
+## [0.11.0] - 2026-11-20
+
 ### Nuevo
 - **Carpetas de trabajo:** compartí una carpeta de tu PC (con el botón de carpeta de la caja de mensajes o en Ajustes → Carpetas) y el profesor puede mirarla, ordenarla («ordená mis apuntes») y crear documentos adentro: notas, **Excel** con encabezado, filtro y fórmulas, y **Word** con títulos, listas y tablas. Los cambios llegan como un plan que aplicás vos; nunca se borra ni se pisa nada (lo que sobra va a una papelera de Eureka dentro de la misma carpeta) y cada plan se puede **deshacer** (AC-219..AC-222).
 
@@ -123,6 +125,7 @@ Primera versión pública.
 - Consola de código en diez lenguajes.
 - Actualizaciones automáticas firmadas.
 
+[0.11.0]: https://github.com/Shugar03/eureka/releases/tag/v0.11.0
 [0.10.0]: https://github.com/Shugar03/eureka/releases/tag/v0.10.0
 [0.9.0]: https://github.com/Shugar03/eureka/releases/tag/v0.9.0
 [0.8.0]: https://github.com/Shugar03/eureka/releases/tag/v0.8.0
