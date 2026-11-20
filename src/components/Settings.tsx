@@ -1,3 +1,4 @@
+import { FoldersSettings } from "./folders/FoldersSettings";
 import { useEffect, useState } from "react";
 import { api, backupApi, codeApi, errorText } from "../api";
 import { keepFile } from "../lib/saveFile";
@@ -70,7 +71,7 @@ const readAdvanced = () => {
   }
 };
 
-export type SettingsTab = "connection" | "models" | "workspace" | "accessibility" | "prompts";
+export type SettingsTab = "connection" | "models" | "workspace" | "accessibility" | "folders" | "prompts";
 
 export function Settings({ onBack, initialTab = "connection" }: { onBack: () => void; initialTab?: SettingsTab }) {
   const [tab, setTab] = useState<SettingsTab>(initialTab);
@@ -103,6 +104,9 @@ export function Settings({ onBack, initialTab = "connection" }: { onBack: () => 
           <button role="tab" aria-selected={tab === "accessibility"} className={tab === "accessibility" ? "is-active" : ""} onClick={() => setTab("accessibility")}>
             Accesibilidad
           </button>
+          <button role="tab" aria-selected={tab === "folders"} className={tab === "folders" ? "is-active" : ""} onClick={() => setTab("folders")}>
+            Carpetas
+          </button>
           <button role="tab" aria-selected={tab === "models"} className={tab === "models" ? "is-active" : ""} onClick={() => setTab("models")}>
             Avanzado
           </button>
@@ -113,7 +117,7 @@ export function Settings({ onBack, initialTab = "connection" }: { onBack: () => 
           )}
         </div>
       </header>
-      <div className="settings-body">{tab === "connection" ? <ConnectionTab /> : tab === "models" ? <ModelsTab /> : tab === "workspace" ? <WorkspaceTab /> : tab === "accessibility" ? <AccessibilityTab /> : <PromptsTab />}</div>
+      <div className="settings-body">{tab === "connection" ? <ConnectionTab /> : tab === "models" ? <ModelsTab /> : tab === "workspace" ? <WorkspaceTab /> : tab === "accessibility" ? <AccessibilityTab /> : tab === "folders" ? <FoldersSettings /> : <PromptsTab />}</div>
       <footer className="settings-foot">
         <label className="check small">
           <input type="checkbox" checked={advanced} onChange={(e) => toggleAdvanced(e.target.checked)} />
@@ -256,7 +260,10 @@ function ConnectionTab() {
         else await api.checkProvider(saved.id);
         if (active) setConnection({ view, chatgpt, ok: true, text: `Conectado: ${saved.label} · ${teacher.model}` });
       } catch (e) {
-        const text = /401|403|unauthor|invalid.*key|api key/i.test(errorText(e))
+        const raw = errorText(e);
+        const text = /falta la api key/i.test(raw)
+          ? `Falta la clave de ${saved.label}. Pegala para conectarte.`
+          : /401|403|unauthor|invalid.*key|api key/i.test(raw)
           ? `La clave de ${saved.label} no es válida. Pegala de nuevo.`
           : `No pude verificar la conexión con ${saved.label}. ${friendlyError(e)}`;
         if (active) setConnection({ view, chatgpt, ok: false, text });

@@ -1584,6 +1584,7 @@ dependencies = [
  "png",
  "reqwest",
  "rusqlite",
+ "rust_xlsxwriter",
  "rustls",
  "ruzstd",
  "serde",
@@ -4720,6 +4721,15 @@ dependencies = [
  "libsqlite3-sys",
  "smallvec",
  "sqlite-wasm-rs",
+]
+
+[[package]]
+name = "rust_xlsxwriter"
+version = "0.103.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2f4be8452f0aa8f1f8129282e5e1bbf848e9931a9988572bc92e95ef4ab7e163"
+dependencies = [
+ "zip 9.1.2",
 ]
 
 [[package]]

@@ -41,6 +41,10 @@ pub fn activity_label(tool: &str) -> &'static str {
         "propose_timetable" => "Armando tu horario…",
         "propose_exam" => "Armando tu preparación…",
         "propose_route" => "Investigando cómo se enseña y armando tu ruta…",
+        "folder_overview" => "Mirando la carpeta…",
+        "folder_read" => "Leyendo el archivo…",
+        "organize_folder" => "Pensando cómo ordenar la carpeta…",
+        "propose_changes" => "Armando los cambios…",
         "app_status" => "Mirando cómo venís…",
         "ui_command" => "Haciéndolo…",
         "set_phase" | "begin_learning" => "Preparando la sesión…",
@@ -495,6 +499,102 @@ pub fn deliver_research(state: &AppState, session_id: &str, in_turn: bool) -> Re
     Ok(any)
 }
 
+/// AC-219..AC-221: what a folder tool answers the teacher, and the meta the screen shows.
+async fn folder_tool(state: &AppState, call_id: &str, name: &str, raw: &str) -> (String, Option<serde_json::Value>) {
+    use crate::folders;
+    let args: serde_json::Value = serde_json::from_str(raw).unwrap_or_default();
+    let s = |k: &str| args[k].as_str().unwrap_or("").to_string();
+    let folder = match state.folders.find(&s("folder")) {
+        Ok(f) => f,
+        Err(e) => return (format!("error: {e}"), None),
+    };
+    let out = match name {
+        "folder_overview" => folders::overview(&folder, &s("path")).map(|(t, m)| (t, Some(m))),
+        "folder_read" => folders::read(&folder, &s("path"), args["offset"].as_u64().unwrap_or(0) as usize).map(|(t, m)| (t, Some(m))),
+        "organize_folder" => folders::organize(state, &folder, &s("goal"), &s("path")).await.map(|(summary, ops)| plan_result(call_id, &folder, summary, ops)),
+        "propose_changes" => serde_json::from_value::<Vec<folders::Op>>(args["ops"].clone())
+            .map_err(|e| anyhow!("ops inválidos: {e}"))
+            .and_then(|ops| folders::validate(&folder, ops))
+            .map(|ops| plan_result(call_id, &folder, s("summary"), ops)),
+        _ => Err(anyhow!("herramienta desconocida")),
+    };
+    match out {
+        Ok(x) => x,
+        Err(e) => (format!("error: {e}"), None),
+    }
+}
+
+/// A plan shown as a card: the person applies it (or not) with a button.
+fn plan_result(call_id: &str, folder: &crate::folders::Folder, summary: String, ops: Vec<crate::folders::Op>) -> (String, Option<serde_json::Value>) {
+    let counts = crate::folders::counts(&ops);
+    let text = format!("plan mostrado en «{}»: {counts}. La persona lo revisa y lo aplica con un botón (se puede deshacer); todavía NO está hecho: no digas que ya lo hiciste. Contale en una o dos frases qué vas a hacer y por qué.", folder.label);
+    let plan_id: String = format!("{}{}", call_id.chars().filter(|c| c.is_ascii_alphanumeric()).collect::<String>(), uuid::Uuid::new_v4().simple()).chars().take(48).collect();
+    (text, Some(serde_json::json!({ "kind": "folder_plan", "plan_id": plan_id, "folder_id": folder.id, "folder": folder.label, "summary": summary, "counts": counts, "ops": ops, "status": "proposed" })))
+}
+
+fn plan_message<'a>(s: &'a mut Session, call_id: &str) -> Result<&'a mut serde_json::Value> {
+    s.messages
+        .iter_mut()
+        .find(|m| m.role == "tool" && m.tool_call_id.as_deref() == Some(call_id))
+        .and_then(|m| m.meta.as_mut())
+        .filter(|v| v["kind"] == "folder_plan")
+        .ok_or_else(|| anyhow!("no encuentro ese plan"))
+}
+
+/// AC-220: runs the plan of a card once and records what happened in its meta.
+pub fn folder_plan_apply(state: &AppState, session_id: &str, call_id: &str) -> Result<Session> {
+    let mut s = state.sessions.load(session_id)?;
+    let meta = plan_message(&mut s, call_id)?;
+    if meta["status"] != "proposed" {
+        return Err(anyhow!("Este plan ya se aplicó."));
+    }
+    let folder = state.folders.get(meta["folder_id"].as_str().unwrap_or(""))?;
+    let ops: Vec<crate::folders::Op> = serde_json::from_value(meta["ops"].clone())?;
+    let j = crate::folders::apply(&state.data_dir, &folder, meta["plan_id"].as_str().unwrap_or(""), ops)?;
+    meta["status"] = serde_json::json!(if j.error.is_some() { "failed" } else { "applied" });
+    meta["done"] = serde_json::json!(j.steps.len());
+    meta["error"] = serde_json::json!(j.error);
+    meta["told"] = serde_json::json!(false);
+    state.sessions.save(&mut s)?;
+    Ok(s)
+}
+
+/// AC-220: undoes an applied (or half-applied) plan.
+pub fn folder_plan_undo(state: &AppState, session_id: &str, call_id: &str) -> Result<Session> {
+    let mut s = state.sessions.load(session_id)?;
+    let meta = plan_message(&mut s, call_id)?;
+    if !matches!(meta["status"].as_str(), Some("applied" | "failed")) {
+        return Err(anyhow!("Este plan no está aplicado."));
+    }
+    let folder = state.folders.get(meta["folder_id"].as_str().unwrap_or(""))?;
+    let report = crate::folders::undo(&state.data_dir, &folder, meta["plan_id"].as_str().unwrap_or(""))?;
+    meta["status"] = serde_json::json!("undone");
+    meta["kept"] = serde_json::json!(report.kept);
+    meta["told"] = serde_json::json!(false);
+    state.sessions.save(&mut s)?;
+    Ok(s)
+}
+
+/// AC-220: what the person did with a plan since the teacher last spoke (a note in the state, once).
+fn arrived_folder_changes(s: &mut Session) -> String {
+    let mut out = String::new();
+    for m in s.messages.iter_mut().filter(|m| m.role == "tool") {
+        let Some(meta) = m.meta.as_mut().filter(|v| v["kind"] == "folder_plan" && v["told"] == false) else { continue };
+        meta["told"] = serde_json::json!(true);
+        let line = match meta["status"].as_str() {
+            Some("applied") => format!("- Aplicó el plan en «{}»: {}.", meta["folder"].as_str().unwrap_or(""), meta["counts"].as_str().unwrap_or("")),
+            Some("failed") => format!("- El plan en «{}» se cortó tras {} pasos: {}. Puede deshacerlo desde la tarjeta.", meta["folder"].as_str().unwrap_or(""), meta["done"], meta["error"].as_str().unwrap_or("")),
+            Some("undone") => format!("- Deshizo el plan en «{}»: la carpeta quedó como estaba.", meta["folder"].as_str().unwrap_or("")),
+            _ => continue,
+        };
+        out.push_str(&format!("{line}\n"));
+    }
+    if out.is_empty() {
+        return out;
+    }
+    format!("\n## Cambios en carpetas\n{out}")
+}
+
 /// AC-169: research that arrived and the teacher has not seen yet (a note in the state, once).
 fn arrived_research(s: &mut Session) -> String {
     let mut out = String::new();
@@ -524,7 +624,12 @@ pub async fn run_turn(state: &AppState, session_id: &str, ch: &Channel<AgentEven
         // Rebuilt every step: a tool call may have changed the phase.
         let mut ep = endpoint(state, &s).await?;
         ep.usage.step = Some(step as u32);
-        let defs = tools::definitions_for(s.phase);
+        let mut defs = tools::definitions_for(s.phase);
+        // AC-219: the folder tools exist only once a folder is shared (nothing to pay otherwise).
+        let shared = state.folders.all();
+        if s.phase == Phase::Chat && !shared.is_empty() {
+            defs.as_array_mut().unwrap().extend(crate::folders::definitions());
+        }
         // AC-20: while measuring and planning, show what the graph already holds.
         let view = if matches!(s.phase, Phase::Probe | Phase::Plan) { state.graph.view() } else { Default::default() };
         // Audit M7: the query is the goal plus what the plan names (more words to match).
@@ -540,6 +645,10 @@ pub async fn run_turn(state: &AppState, session_id: &str, ch: &Channel<AgentEven
         block.push_str(&exam_failures(state, &s));
         // AC-216: a class of a route knows where it stands and what came before.
         block.push_str(&crate::route::state_section(state, &s));
+        if s.phase == Phase::Chat {
+            block.push_str(&crate::folders::state_section(&shared));
+        }
+        block.push_str(&arrived_folder_changes(&mut s));
         let books = state.library.index().titles();
         if !books.is_empty() {
             let shown: Vec<String> = books.iter().take(8).map(|t| format!("- «{t}»")).collect();
@@ -622,7 +731,15 @@ pub async fn run_turn(state: &AppState, session_id: &str, ch: &Channel<AgentEven
         }
 
         let mut asked = false;
+        // Models sometimes send the very same call twice in one message: the second is skipped
+        // (two identical plans or searches would only cost time and show twice).
+        let mut seen_calls = std::collections::HashSet::new();
         for call in &completion.tool_calls {
+            let args: serde_json::Value = serde_json::from_str(&call.function.arguments).unwrap_or(serde_json::Value::Null);
+            if !seen_calls.insert((call.function.name.clone(), args.to_string())) {
+                s.messages.push(Msg::tool(&call.id, "ignorada: es la misma llamada que la anterior de este mensaje.", None));
+                continue;
+            }
             // Once a question is waiting, the rest of the batch would act before the answer.
             if asked {
                 s.messages.push(Msg::tool(&call.id, "ignorada: ya hiciste una pregunta en este paso; esperá la respuesta del aprendiz antes de seguir.", None));
@@ -653,6 +770,12 @@ pub async fn run_turn(state: &AppState, session_id: &str, ch: &Channel<AgentEven
                     Ok(()) => s.messages.push(Msg::tool(&call.id, crate::research::pending_text(question.trim()), Some(crate::research::pending_meta(question.trim())))),
                     Err(why) => s.messages.push(Msg::tool(&call.id, format!("ignorada: {why}."), None)),
                 }
+                continue;
+            }
+            // AC-219/AC-220: working folders (IO, so here and not in tools::apply).
+            if crate::folders::TOOLS.contains(&call.function.name.as_str()) {
+                let (r, meta) = folder_tool(state, &call.id, &call.function.name, &call.function.arguments).await;
+                s.messages.push(Msg::tool(&call.id, r, meta));
                 continue;
             }
             // AC-215: the route is researched and planned by the app, awaited here.

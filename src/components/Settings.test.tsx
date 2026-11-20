@@ -234,6 +234,12 @@ describe("Settings › Conexión", () => {
     expect(state).toHaveTextContent(/401|403|invalid/.test(error) ? "La clave de OpenRouter no es válida. Pegala de nuevo." : "No pude verificar la conexión con OpenRouter.");
   });
 
+  it("a key the backend no longer finds is called missing, not invalid", async () => {
+    vi.spyOn(api, "checkProvider").mockRejectedValue("falta la API key");
+    render(<Settings onBack={() => {}} />);
+    await waitFor(() => expect(screen.getByTestId("connection-state")).toHaveTextContent("Falta la clave de OpenRouter. Pegala para conectarte."));
+  });
+
   it("says when the saved teacher key is missing without trying it", async () => {
     const saved = await api.getSettings();
     vi.spyOn(api, "getSettings").mockResolvedValue({ ...saved, providers: saved.providers.map((p) => ({ ...p, has_key: false })) });

@@ -1,5 +1,5 @@
 import { useId, useRef, useState } from "react";
-import { errorText, libraryApi, ocrApi, visionApi } from "../../api";
+import { errorText, folderApi, libraryApi, ocrApi, visionApi } from "../../api";
 import { textToMarkdown } from "../../lib/bookText";
 import { imageRgba, imageToDataUrl } from "../../lib/images";
 import { photoText } from "../../lib/ocr";
@@ -76,6 +76,43 @@ export function useAttachments() {
 
   return { items, working, error, ask, add, remove: (id: string) => setItems((xs) => xs.filter((x) => x.id !== id)), clear: () => setItems([]) };
 }
+
+/**
+ * AC-219: shares a folder of this PC with the teacher (the system dialog opens in
+ * the app, never a typed path); the message box then tells the teacher.
+ */
+export function FolderButton({ onShared }: { onShared: (label: string) => void }) {
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <span className="mic-wrap">
+      <button
+        type="button"
+        className="compose-btn"
+        aria-label="Compartir una carpeta"
+        title="Compartir una carpeta de esta PC: el profesor puede mirarla, ordenarla y crear documentos adentro (con tu OK)"
+        onClick={async () => {
+          setError(null);
+          try {
+            const f = await folderApi.share(true);
+            if (f) onShared(f.label);
+          } catch (e) {
+            setError(errorText(e));
+          }
+        }}
+      >
+        <Icon name="folder" size={19} />
+      </button>
+      {error && (
+        <span className="mic-pop small is-error" role="alert">
+          {error}
+        </span>
+      )}
+    </span>
+  );
+}
+
+/** What the message box says after sharing a folder. */
+export const sharedFolderText = (draft: string, label: string) => `${draft.trim() ? `${draft.trim()}\n\n` : ""}Te compartí la carpeta «${label}».`;
 
 export function AttachButton({ onFiles, disabled }: { onFiles: (f: FileList | null) => void; disabled?: boolean }) {
   const input = useRef<HTMLInputElement>(null);

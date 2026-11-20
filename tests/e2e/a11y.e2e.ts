@@ -56,6 +56,21 @@ for (const theme of ["Tema oscuro", "Tema claro"] as const) {
     await audit(browser, `paleta de comandos, ${theme}`);
   });
 
+  test(`a11y carpetas de trabajo (${theme})`, async ({ app, screen, browser }) => {
+    await app.open("/?withFolder");
+    await setTheme(screen, theme);
+    await screen.getByLabel("Mensaje").fill("Ordená mis apuntes de la carpeta");
+    await screen.getByRole("button", "Enviar").click();
+    const card = screen.getByRole("region", "Cambios en «Apuntes»");
+    await expect(card).toBeVisible({ timeout: 20_000 });
+    await card.getByRole("button", "Ver los 9 cambios").click();
+    await audit(browser, `plan de cambios en una carpeta, ${theme}`);
+    await screen.getByRole("navigation", "Navegación").getByRole("button", "Ajustes").click();
+    await screen.getByRole("tab", "Carpetas").click();
+    await expect(screen.getByRole("list", "Carpetas compartidas")).toBeVisible();
+    await audit(browser, `ajustes, carpetas, ${theme}`);
+  });
+
   test(`a11y ruta de aprendizaje (${theme})`, async ({ app, screen, browser }) => {
     await app.open("/");
     await setTheme(screen, theme);

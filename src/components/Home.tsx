@@ -9,7 +9,7 @@ import type { ActionScreen, SessionSummary } from "../types";
 import { greeting } from "../lib/workspace";
 import { QuoteCard } from "./quotes/QuoteCard";
 import { Icon, type IconName } from "./Icon";
-import { AttachButton, AttachChips, MicButton, useAttachments } from "./chat/ChatTools";
+import { AttachButton, AttachChips, FolderButton, MicButton, sharedFolderText, useAttachments } from "./chat/ChatTools";
 import { composeMessage } from "../lib/attachments";
 import { QuickSetup } from "./QuickSetup";
 import { NextClassCard } from "./routes/NextClassCard";
@@ -121,6 +121,7 @@ export function Home({ sessions, onChanged, onOpen, onOpenSettings, onOpenExam, 
             autoFocus
           />
           <AttachButton onFiles={attach.add} disabled={!!attach.working} />
+              <FolderButton onShared={(label) => setDraft((d) => sharedFolderText(d, label))} />
           <MicButton onText={(t) => setDraft((d) => (d.trim() ? `${d.trim()} ${t}` : t))} />
           <button className="btn primary" type="submit" disabled={!canSend}>
             Enviar

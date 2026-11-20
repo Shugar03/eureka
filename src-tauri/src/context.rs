@@ -75,6 +75,14 @@ pub fn compact(messages: &[Msg]) -> Vec<Msg> {
                     }
                 }
             }
+            // AC-219: what was read from a folder before the learner's last input keeps only what it was.
+            if m.role == "tool" && m.meta.as_ref().is_some_and(|v| v["kind"] == "folder") {
+                let meta = m.meta.clone().unwrap_or_default();
+                let len = m.content.as_deref().map(str::len).unwrap_or(0);
+                if len > 600 {
+                    m.content = Some(format!("[omitido: {} de «{}»{}, {}]", if meta["action"] == "read" { "lectura" } else { "vista de la carpeta" }, meta["folder"].as_str().unwrap_or(""), meta["path"].as_str().map(|p| format!(" / {p}")).unwrap_or_default(), kb(m.content.as_deref().unwrap_or(""))));
+                }
+            }
             // AC-169: research still running keeps its «en curso» line.
             if m.role == "tool" && m.meta.as_ref().is_some_and(|v| v["kind"] == "research" && v["pending"] != true) {
                 let meta = m.meta.clone().unwrap_or_default();

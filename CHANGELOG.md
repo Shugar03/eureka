@@ -4,6 +4,9 @@ Lo que cambia en cada versión de Eureka, de la más nueva a la más vieja. El f
 
 ## Sin publicar
 
+### Nuevo
+- **Carpetas de trabajo:** compartí una carpeta de tu PC (con el botón de carpeta de la caja de mensajes o en Ajustes → Carpetas) y el profesor puede mirarla, ordenarla («ordená mis apuntes») y crear documentos adentro: notas, **Excel** con encabezado, filtro y fórmulas, y **Word** con títulos, listas y tablas. Los cambios llegan como un plan que aplicás vos; nunca se borra ni se pisa nada (lo que sobra va a una papelera de Eureka dentro de la misma carpeta) y cada plan se puede **deshacer** (AC-219..AC-222).
+
 ### Corregido
 - **«Conectado» solo si la clave funciona:** Ajustes ahora comprueba la clave guardada con el servicio antes de decir «Conectado». Si la clave no es válida (por ejemplo, un 401 de DeepSeek), lo dice y te pide pegarla de nuevo (AC-218).
 - **El código se lee bien en el tema oscuro:** los textos entre comillas ya no salen en un rojo oscuro casi invisible; los colores del editor siguen al tema.

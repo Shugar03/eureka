@@ -18,6 +18,7 @@
 //   ?noSpeech      no speech model configured (speaking explains how)
 //   ?withProfile   the learner profile has a confusion and a preference
 //   ?withMemory    the student's memory also has an idea, a pending item and a contradiction
+//   ?withFolder    the folder «Apuntes» is already shared (AC-219)
 //   ?progress      a student a few weeks in: «Mi progreso» with paths, dates, cards and a streak (AC-210)
 //   ?noRust        Rust is not installed (the console explains how to install it)
 //   ?noOcr         no local OCR (like the phone): scanned PDFs are refused as before
@@ -26,6 +27,7 @@
 import { mockIPC } from "@tauri-apps/api/mocks";
 import type { Channel } from "@tauri-apps/api/core";
 import type {
+  SharedFolder,
   Accessibility,
   CareerProposal,
   CareerSubject,
@@ -86,6 +88,7 @@ import { MemoryMock } from "./memoryMock";
 import { isRight } from "../lib/exam";
 import { progressDays, progressModel, progressSessions } from "./progressDemo";
 import { createRoute, mockRouteProposal, routeView, type MockRoute } from "./routeMock";
+import { DEMO_FOLDER, excelPlan, organizePlan, overviewMeta } from "./folderMock";
 import { DEFAULT_ACCESSIBILITY } from "../lib/accessibility";
 import { scriptedExplain } from "./examScript";
 import { scriptedCards } from "./cardsScript";
@@ -365,6 +368,7 @@ const store = {
   classes: new Map<string, ClassRecord>(),
   projects: new Map<string, Project>(),
   routes: new Map<string, MockRoute>(),
+  folders: (params.has("withFolder") ? [{ ...DEMO_FOLDER }] : []) as SharedFolder[],
   learner: {
     misconceptions: params.has("withProfile") ? [{ concept: "Recta secante", wrong_idea: "toca la curva en un solo punto", fixed: false, source: "Sesión: derivadas", at: "" }] : [],
     preferences: params.has("withProfile") ? [{ text: "entiende mejor con ejemplos numéricos", source: "Sesión: derivadas", at: "" }] : [],
@@ -453,6 +457,10 @@ function applyCall(s: Session, c: Call) {
       return "research";
     case "propose_route":
       return "route";
+    case "folder_overview":
+    case "organize_folder":
+    case "propose_changes":
+      return "folder";
     case "ask_question":
       return "await";
     case "record_finding":
@@ -538,6 +546,17 @@ async function runTurn(id: string, input: LearnerInput | null, ch: Channel<Agent
               s.updated_at = new Date().toISOString();
             }
           }, Math.max(DELAY * 15, 1500));
+        }
+      }
+      else if (outcome === "folder") {
+        // AC-219/AC-220: the demo has no disk: a sample folder and its plans.
+        const folder = store.folders.find((f) => f.label === c.args.folder) ?? store.folders[0];
+        if (!folder) s.messages.push({ role: "tool", tool_call_id: calls[j].id, content: "error: no hay carpetas compartidas" });
+        else if (c.name === "folder_overview") s.messages.push({ role: "tool", tool_call_id: calls[j].id, content: "carpeta", meta: overviewMeta(folder.label) });
+        else {
+          await sleep(DELAY * 8);
+          const meta = c.name === "organize_folder" ? organizePlan(calls[j].id, folder) : excelPlan(calls[j].id, folder);
+          s.messages.push({ role: "tool", tool_call_id: calls[j].id, content: "plan mostrado", meta });
         }
       }
       else if (outcome === "route") {
@@ -1405,6 +1424,36 @@ ${text}`);
       case "delete_exam":
         store.exams.delete(args.id as string);
         return null;
+      // AC-219..AC-222: working folders.
+      case "folders_list":
+        return clone(store.folders);
+      case "folder_share": {
+        // The demo has no folder dialog: it shares the sample «Apuntes».
+        if (!store.folders.some((f) => f.id === DEMO_FOLDER.id)) store.folders.push({ ...DEMO_FOLDER, writable: !!args.writable });
+        return clone(store.folders.find((f) => f.id === DEMO_FOLDER.id));
+      }
+      case "folder_remove":
+        store.folders = store.folders.filter((f) => f.id !== args.id);
+        return clone(store.folders);
+      case "folder_set_writable": {
+        const f = store.folders.find((x) => x.id === args.id);
+        if (f) f.writable = !!args.writable;
+        return clone(store.folders);
+      }
+      case "folder_plan_apply":
+      case "folder_plan_undo": {
+        const s = store.sessions.get(args.sessionId as string);
+        const m = s?.messages.find((x) => x.role === "tool" && x.tool_call_id === args.callId);
+        if (!s || !m || m.meta?.kind !== "folder_plan") throw "no encuentro ese plan";
+        if (cmd === "folder_plan_apply") {
+          if (m.meta.status !== "proposed") throw "Este plan ya se aplicó.";
+          m.meta = { ...m.meta, status: "applied", done: m.meta.ops.length };
+        } else {
+          if (m.meta.status !== "applied") throw "Este plan no está aplicado.";
+          m.meta = { ...m.meta, status: "undone", kept: [] };
+        }
+        return clone(s);
+      }
       // AC-214..AC-217: learning routes.
       case "route_create": {
         const r = createRoute(args.proposal as never);

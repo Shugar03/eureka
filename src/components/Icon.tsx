@@ -8,6 +8,7 @@ const PATHS = {
       <path d="M8.2 18H15a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6.8" />
     </>
   ),
+  folder: <path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2.2h7a2 2 0 0 1 2 2v7.8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z" />,
   clip: <path d="M20 11.6l-7.9 7.9a5 5 0 0 1-7.1-7.1l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7l-8.4 8.4a1.65 1.65 0 0 1-2.4-2.4l7.7-7.7" />,
   stop: <rect x="7.5" y="7.5" width="9" height="9" rx="2" fill="currentColor" />,
   mic: (

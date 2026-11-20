@@ -362,3 +362,12 @@ planificador tiene su propio prompt (`route_plan`, 611 tokens) y corre una vez p
 razona, sobre hasta 8 páginas de 3 000 caracteres: unos 7 000 tokens de entrada por ruta propuesta. El profesor recibe
 de vuelta un resumen de una línea, no el plan entero.
 
+## Carpetas de trabajo (AC-219..AC-222)
+
+Las cuatro herramientas de carpetas (`folder_overview`, `folder_read`, `organize_folder`, `propose_changes`) y la
+sección «Carpetas compartidas» del estado **solo se mandan en el chat cuando hay alguna carpeta compartida**: sin
+carpetas, ninguna llamada cambia (el benchmark no tiene carpetas y la línea base del chat quedó igual). Con carpetas,
+el chat suma unos 900 tokens fijos, que se cachean. El planificador de `organize_folder` tiene su propio prompt
+(`folder_plan`, ~560 tokens) y lee la vista de la carpeta (árbol y hasta 40 fragmentos de 300 caracteres). Lo leído
+de los archivos se resume en los turnos siguientes (como las demos y el código), así no se reenvía.
+

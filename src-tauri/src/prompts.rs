@@ -20,6 +20,7 @@ const DEFAULTS: &[(&str, &str)] = &[
     ("research", include_str!("../prompts/research.md")),
     ("exam_syllabus", include_str!("../prompts/exam_syllabus.md")),
     ("route_plan", include_str!("../prompts/route_plan.md")),
+    ("folder_plan", include_str!("../prompts/folder_plan.md")),
     ("exam_questions", include_str!("../prompts/exam_questions.md")),
     ("exam_guide", include_str!("../prompts/exam_guide.md")),
     ("exam_cheat_sheet", include_str!("../prompts/exam_cheat_sheet.md")),

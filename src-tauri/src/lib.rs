@@ -17,6 +17,8 @@ mod practice;
 mod project;
 mod research;
 mod route;
+mod folders;
+mod documents;
 mod runner;
 mod language;
 mod learner;
@@ -66,6 +68,7 @@ pub struct AppState {
     pub practice: PracticeStore,
     pub exams: ExamStore,
     pub routes: route::RouteStore,
+    pub folders: folders::FolderStore,
     pub decks: DeckStore,
     pub study: study::StudyLog,
     /// AC-141: days with study, for the kind streak.
@@ -114,6 +117,7 @@ impl AppState {
             practice: PracticeStore::new(&data_dir),
             exams: ExamStore::new(&data_dir),
             routes: route::RouteStore::new(&data_dir),
+            folders: folders::FolderStore::new(&data_dir),
             decks: DeckStore::new(&data_dir),
             study: study::StudyLog::new(&data_dir),
             activity: activity::ActivityLog::new(&data_dir),
@@ -1008,6 +1012,47 @@ async fn find_exam_guide(state: State<'_, AppState>, name: String) -> CmdResult<
     exam::find_guide(&state, &name).await.map_err(err)
 }
 
+// ── Carpetas de trabajo (AC-219..AC-222) ──
+
+#[tauri::command]
+fn folders_list(state: State<'_, AppState>) -> Vec<folders::Folder> {
+    state.folders.all()
+}
+
+/// AC-219: the folder comes from a dialog opened here, never from a path the page sends.
+#[tauri::command]
+async fn folder_share(app: tauri::AppHandle, state: State<'_, AppState>, writable: bool) -> CmdResult<Option<folders::Folder>> {
+    use tauri_plugin_dialog::DialogExt;
+    let picked = tokio::task::spawn_blocking(move || app.dialog().file().set_title("Elegí la carpeta que querés compartir con Eureka").blocking_pick_folder())
+        .await
+        .map_err(err)?;
+    let Some(picked) = picked else { return Ok(None) };
+    let path = picked.into_path().map_err(err)?;
+    state.folders.add(&path, writable).map(Some).map_err(err)
+}
+
+#[tauri::command]
+fn folder_remove(state: State<'_, AppState>, id: String) -> CmdResult<Vec<folders::Folder>> {
+    state.folders.remove(&id).map_err(err)
+}
+
+#[tauri::command]
+fn folder_set_writable(state: State<'_, AppState>, id: String, writable: bool) -> CmdResult<Vec<folders::Folder>> {
+    state.folders.set_writable(&id, writable).map_err(err)
+}
+
+/// AC-220: applies the plan the teacher proposed in a session, once.
+#[tauri::command]
+fn folder_plan_apply(state: State<'_, AppState>, session_id: String, call_id: String) -> CmdResult<Session> {
+    agent::folder_plan_apply(&state, &session_id, &call_id).map_err(err)
+}
+
+/// AC-220: puts the folder back as it was before the plan.
+#[tauri::command]
+fn folder_plan_undo(state: State<'_, AppState>, session_id: String, call_id: String) -> CmdResult<Session> {
+    agent::folder_plan_undo(&state, &session_id, &call_id).map_err(err)
+}
+
 // ── Rutas de aprendizaje (AC-214..AC-217) ──
 
 /// AC-214: creates the route the person confirmed (edited or not) from the card.
@@ -1820,6 +1865,12 @@ pub fn run() {
             delete_exam,
             find_exam_guide,
             study_topic,
+            folders_list,
+            folder_share,
+            folder_remove,
+            folder_set_writable,
+            folder_plan_apply,
+            folder_plan_undo,
             route_create,
             route_list,
             route_get,

@@ -2,6 +2,7 @@
 // through here, so tests can swap the backend with @tauri-apps/api/mocks.
 import { Channel, invoke } from "@tauri-apps/api/core";
 import type {
+  SharedFolder,
   RouteProposal,
   RouteView,
   UsageSummary,
@@ -398,4 +399,15 @@ export const routeApi = {
   get: (id: string) => invoke<RouteView>("route_get", { id }),
   startClass: (routeId: string, classId: string) => invoke<Session>("route_start_class", { routeId, classId }),
   remove: (id: string) => invoke<void>("route_delete", { id }),
+};
+
+/** AC-219..AC-222: folders of this PC shared with the teacher. */
+export const folderApi = {
+  list: () => invoke<SharedFolder[]>("folders_list"),
+  /** Opens the system's folder dialog; null when the person cancels. */
+  share: (writable: boolean) => invoke<SharedFolder | null>("folder_share", { writable }),
+  remove: (id: string) => invoke<SharedFolder[]>("folder_remove", { id }),
+  setWritable: (id: string, writable: boolean) => invoke<SharedFolder[]>("folder_set_writable", { id, writable }),
+  apply: (sessionId: string, callId: string) => invoke<Session>("folder_plan_apply", { sessionId, callId }),
+  undo: (sessionId: string, callId: string) => invoke<Session>("folder_plan_undo", { sessionId, callId }),
 };

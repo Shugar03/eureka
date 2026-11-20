@@ -9,7 +9,7 @@ import { bestMatch } from "../lib/graphView";
 import { Markdown } from "./Markdown";
 import { QuestionCard } from "./QuestionCard";
 import { ReadAloud } from "./a11y/ReadAloud";
-import { AttachButton, AttachChips, MicButton, useAttachments } from "./chat/ChatTools";
+import { AttachButton, AttachChips, FolderButton, MicButton, sharedFolderText, useAttachments } from "./chat/ChatTools";
 import { Icon } from "./Icon";
 import { composeMessage } from "../lib/attachments";
 import { PlanTree } from "./PlanTree";
@@ -23,6 +23,7 @@ import { CodeProposalCard, DeckProposalCard, PracticeProposalCard } from "./chat
 import { ProposalPreview } from "./academic/ProposalPreview";
 import { OwnProblems } from "./OwnProblems";
 import { RouteProposalCard } from "./routes/RouteProposalCard";
+import { FolderPlanCard } from "./folders/FolderPlanCard";
 import { ClassDoneCard, RouteStrip, useRouteOf } from "./routes/RouteInSession";
 
 interface Props {
@@ -338,6 +339,8 @@ export function SessionView({ id, onBack, onOpenSettings, onChanged, onOpenGraph
                 );
               case "exam":
                 return <ExamProposalCard key={it.key} proposal={it.proposal} onOpenExam={onOpenExam} />;
+              case "folderPlan":
+                return <FolderPlanCard key={it.key} meta={it.meta} sessionId={session.id} callId={it.callId} onSession={setSession} />;
               case "route":
                 return <RouteProposalCard key={it.key} proposal={it.proposal} onOpenRoute={onOpenRoute} onOpenSession={onOpenSession} />;
               case "action":
@@ -483,6 +486,7 @@ export function SessionView({ id, onBack, onOpenSettings, onChanged, onOpenGraph
                 aria-label="Mensaje"
               />
               <AttachButton onFiles={attach.add} disabled={!!attach.working} />
+              <FolderButton onShared={(label) => setDraft((d) => sharedFolderText(d, label))} />
               <MicButton onText={(t) => setDraft((d) => (d.trim() ? `${d.trim()} ${t}` : t))} />
               <button className="btn primary" onClick={sendDraft} disabled={!canSend}>
                 Enviar

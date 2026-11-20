@@ -3,7 +3,7 @@ import { parseProposal } from "./academic";
 import { parseExamProposal } from "./examChat";
 import { uiCommandLabel } from "./uiControl";
 import { parseCodeProposal, parseDeckProposal, parseOwnProposal, parsePracticeProposal } from "./proposals";
-import type { AnswerMeta, CodeProposal, DeckProposal, OwnProposal, PracticeProposal, ExamProposal, RouteProposal, Level, NodeStatus, Phase, Proposal, ProposedAction, QuestionArgs, ResearchMeta, Session, Lang } from "../types";
+import type { AnswerMeta, CodeProposal, DeckProposal, OwnProposal, PracticeProposal, ExamProposal, RouteProposal, FolderMeta, FolderPlanMeta, Level, NodeStatus, Phase, Proposal, ProposedAction, QuestionArgs, ResearchMeta, Session, Lang } from "../types";
 
 import { LANG_IDS } from "./code";
 
@@ -19,6 +19,7 @@ export type Item =
   | { kind: "action"; key: string; action: ProposedAction }
   | { kind: "exam"; key: string; proposal: ExamProposal }
   | { kind: "route"; key: string; proposal: RouteProposal }
+  | { kind: "folderPlan"; key: string; callId: string; meta: FolderPlanMeta }
   | { kind: "timetable"; key: string; proposal: Proposal }
   | { kind: "deck"; key: string; proposal: DeckProposal }
   | { kind: "practice"; key: string; proposal: PracticeProposal }
@@ -131,6 +132,9 @@ export function buildTranscript(s: Session): Item[] {
   const research = new Map<string, ResearchMeta>();
   // AC-214: the route the app researched and planned, from the tool result.
   const routeProposals = new Map<string, RouteProposal>();
+  // AC-219/AC-220: what the teacher looked at in a folder, and the plans it proposed.
+  const folderSeen = new Map<string, FolderMeta>();
+  const folderPlans = new Map<string, FolderPlanMeta>();
   const freeAnswers = new Set<string>();
   const failed = new Set<string>();
   const libraryHits = new Map<string, { query: string; count: number; tokens?: number }>();
@@ -142,6 +146,8 @@ export function buildTranscript(s: Session): Item[] {
     else if (m.meta?.kind === "answer") answers.set(m.tool_call_id, m.meta);
     else if (m.meta?.kind === "research") research.set(m.tool_call_id, m.meta);
     else if (m.meta?.kind === "route_proposal") routeProposals.set(m.tool_call_id, m.meta.proposal);
+    else if (m.meta?.kind === "folder") folderSeen.set(m.tool_call_id, m.meta);
+    else if (m.meta?.kind === "folder_plan") folderPlans.set(m.tool_call_id, m.meta);
     else if (m.meta?.kind === "library") {
       for (const r of m.meta.refs ?? []) refs.set(r.n, r);
       libraryHits.set(m.tool_call_id, { query: m.meta.query, count: m.meta.refs?.length ?? 0, tokens: m.meta.tokens });
@@ -187,6 +193,12 @@ export function buildTranscript(s: Session): Item[] {
         } else if (c.function.name === "ui_command") {
           const label = failed.has(c.id) ? null : uiCommandLabel(safeJson<Record<string, unknown>>(c.function.arguments) ?? {});
           if (label) items.push({ kind: "event", key: c.id, label });
+        } else if (c.function.name === "folder_overview" || c.function.name === "folder_read") {
+          const f = folderSeen.get(c.id);
+          if (f) items.push({ kind: "event", key: c.id, label: f.action === "read" ? `Leyó «${f.path}» de «${f.folder}»` : `Miró la carpeta «${f.folder}» (${f.files ?? 0} ${f.files === 1 ? "archivo" : "archivos"})` });
+        } else if (c.function.name === "organize_folder" || c.function.name === "propose_changes") {
+          const meta = folderPlans.get(c.id);
+          if (meta) items.push({ kind: "folderPlan", key: c.id, callId: c.id, meta });
         } else if (c.function.name === "propose_route") {
           const proposal = routeProposals.get(c.id);
           if (proposal) items.push({ kind: "route", key: c.id, proposal });

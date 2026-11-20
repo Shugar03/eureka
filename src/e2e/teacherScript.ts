@@ -90,6 +90,10 @@ export function nextStep(v: TeacherView): Step | null {
     if (/ejercicio de (python|programaci)/i.test(said)) return { text: "Te dejo el ejercicio para generarlo en la consola.", calls: [{ name: "propose_code", args: { language: "python", topic: "recorrer listas con for", level: "básico" } }] };
     if (/estudiar el mazo (.+)/i.test(said)) return { text: "Acá lo tenés.", calls: [{ name: "propose_action", args: { kind: "open_deck", deck: /estudiar el mazo (.+)/i.exec(said)![1].trim(), label: "Estudiar el mazo" } }] };
     if (/simulacro/i.test(said)) return { text: "Abrí la preparación y empezá el simulacro.", calls: [{ name: "propose_action", args: { kind: "open_exam", exam: "AWS Certified Cloud Practitioner", activity: "simulacro", label: "Hacer un simulacro" } }] };
+    // AC-219..AC-221: a shared folder: look at it and propose a plan (the app plans it).
+    if (/orden[aá]|organiz/i.test(said) && /carpeta|apuntes/i.test(said))
+      return { text: "Miro la carpeta y te armo un plan para ordenarla.", calls: [{ name: "folder_overview", args: { folder: "Apuntes" } }, { name: "organize_folder", args: { folder: "Apuntes", goal: "por materia, con nombres parejos" } }] };
+    if (/excel|planilla/i.test(said)) return { text: "Te armo la planilla en tu carpeta.", calls: [{ name: "propose_changes", args: { folder: "Apuntes", summary: "Notas por materia", ops: [] } }] };
     // AC-215: a whole field, a roadmap or a course is a learning route, not one session.
     if (/roadmap|ruta de aprendizaje|armame una ruta|un curso de/i.test(said)) {
       const topic = /machine learning/i.test(said) ? "Machine Learning" : "Machine Learning";

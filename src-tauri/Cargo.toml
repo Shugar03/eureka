@@ -43,6 +43,7 @@ tauri-plugin-fs = "2"
 # AC-191: Word, PowerPoint, EPUB and ODT to Markdown, pure Rust (Firecrawl, MIT). Its PDF
 # reader (pdf-inspector) comes along without default features: no PDFium, no OCR.
 anydoc = "0.2.4"
+rust_xlsxwriter = { version = "0.103.0", default-features = false }
 
 # AC-207: the title bar is Eureka's own (like Claude's), with the native Snap Layout menu on Windows 11.
 [target.'cfg(windows)'.dependencies]

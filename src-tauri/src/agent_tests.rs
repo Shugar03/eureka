@@ -861,7 +861,8 @@ async fn calls_after_a_question_in_the_same_batch_are_ignored() {
 
 #[tokio::test]
 async fn research_is_capped_per_turn() {
-    let r = |i: u32, id: &str| tool(i, id, crate::research::TOOL, json!({ "question": "algo" }));
+    // Three different searches (an identical repeat would be skipped before the cap counts it).
+    let r = |i: u32, id: &str| tool(i, id, crate::research::TOOL, json!({ "question": format!("algo {i}") }));
     let f = fake(vec![Reply::Sse(vec![r(0, "r1"), r(1, "r2"), r(2, "r3")]), Reply::Sse(vec![text("Listo.")])]).await;
     let (st, dir) = state(&f, true, "");
     let id = new_session(&st);
@@ -2054,6 +2055,141 @@ async fn the_background_memory_pass_counts_for_its_session() {
     assert_eq!(events.iter().map(|e| e.purpose.as_str()).collect::<Vec<_>>(), vec!["remember_session", "extract"]);
     assert!(events.iter().all(|e| e.session_id.as_deref() == Some(id.as_str()) && e.role == "extractor"));
     std::fs::remove_dir_all(dir).ok();
+}
+
+#[tokio::test]
+async fn the_same_call_twice_in_one_message_runs_once() {
+    let call = |id: &str| json!({ "id": id, "type": "function", "function": { "name": "recall", "arguments": "{\"query\":\"derivada\"}" } });
+    let f = fake(vec![Reply::Sse(vec![json!({ "choices": [{ "delta": { "tool_calls": [{ "index": 0, "id": "a", "type": "function", "function": { "name": "recall", "arguments": "{\"query\":\"derivada\"}" } }, { "index": 1, "id": "b", "type": "function", "function": { "name": "recall", "arguments": "{ \"query\": \"derivada\" }" } }] } }] })]), Reply::Sse(vec![text("listo")])]).await;
+    let _ = call;
+    let (st, dir) = state(&f, true, "");
+    let id = new_session(&st);
+    let (r, _) = run(&st, &id).await;
+    r.unwrap();
+    let s = st.sessions.load(&id).unwrap();
+    let results: Vec<&str> = s.messages.iter().filter(|m| m.role == "tool").map(|m| m.content.as_deref().unwrap_or("")).collect();
+    assert_eq!(results.len(), 2);
+    assert!(results[1].starts_with("ignorada: es la misma llamada"), "{results:?}");
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+/// AC-219..AC-221: a shared folder, a plan proposed as a card, applied once, told to the teacher, undone.
+#[tokio::test]
+async fn a_folder_plan_goes_from_the_card_to_the_folder_and_back() {
+    let dir = std::env::temp_dir().join(format!("la-agent-folders-{}", uuid::Uuid::new_v4().simple()));
+    let notes = dir.join("Apuntes");
+    std::fs::create_dir_all(&notes).unwrap();
+    std::fs::write(notes.join("tp1.txt"), "cinemática").unwrap();
+    let st = AppState::new(dir.join("data"));
+    let shared = st.folders.add(&notes, true).unwrap();
+    // Only once a folder is shared does the chat carry the folder tools.
+    assert!(st.folders.all().len() == 1 && crate::folders::state_section(&st.folders.all()).contains("«Apuntes» (leer y organizar)"));
+    let args = json!({ "folder": "Apuntes", "summary": "Por materia", "ops": [{ "op": "mkdir", "path": "Física" }, { "op": "move", "from": "tp1.txt", "to": "Física/TP 1.txt" }, { "op": "docx", "path": "Física/Resumen.docx", "title": "Física", "blocks": [{ "type": "paragraph", "text": "Cinemática" }] }] });
+    let (text, meta) = folder_tool(&st, "c1", "propose_changes", &args.to_string()).await;
+    assert!(text.contains("NO está hecho") && text.contains("1 carpetas nuevas"), "{text}");
+    let meta = meta.unwrap();
+    assert_eq!(meta["status"], "proposed");
+    assert!(notes.join("tp1.txt").exists(), "nothing moves until the person applies it");
+    let mut s = Session::new_chat("ordená mis apuntes");
+    s.messages.push(crate::llm::Msg { role: "assistant".into(), content: None, tool_calls: Some(vec![crate::llm::ToolCall { id: "c1".into(), kind: "function".into(), function: crate::llm::FunctionCall { name: "propose_changes".into(), arguments: args.to_string() } }]), tool_call_id: None, meta: None });
+    s.messages.push(crate::llm::Msg::tool("c1", text, Some(meta)));
+    st.sessions.save(&mut s).unwrap();
+
+    let s = folder_plan_apply(&st, &s.id, "c1").unwrap();
+    assert!(notes.join("Física").join("TP 1.txt").exists() && notes.join("Física").join("Resumen.docx").exists());
+    assert!(folder_plan_apply(&st, &s.id, "c1").is_err(), "once");
+    let mut s = s;
+    assert!(arrived_folder_changes(&mut s).contains("Aplicó el plan en «Apuntes»"));
+    assert!(arrived_folder_changes(&mut s).is_empty(), "told once");
+    st.sessions.save(&mut s).unwrap();
+    folder_plan_undo(&st, &s.id, "c1").unwrap();
+    assert!(notes.join("tp1.txt").exists() && !notes.join("Física").exists(), "back as it was");
+    // Read-only folders get no plans; unknown folders are named.
+    st.folders.set_writable(&shared.id, false).unwrap();
+    let (text, meta) = folder_tool(&st, "c2", "propose_changes", &args.to_string()).await;
+    assert!(text.contains("solo leer") && meta.is_none(), "{text}");
+    let (text, _) = folder_tool(&st, "c3", "folder_overview", &json!({ "folder": "Otra" }).to_string()).await;
+    assert!(text.contains("«Apuntes»"), "{text}");
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// AC-219..AC-221 live: a messy synthetic folder (never the person's own), the real
+/// agent and planner. `LA_LIVE_DATA=<copy of a data dir> LA_LIVE_FOLDER=<folder>
+/// cargo test --lib live_folder -- --ignored --nocapture`
+#[tokio::test]
+#[ignore]
+async fn live_folder_is_organized_applied_undone_and_gets_an_excel() {
+    let (Ok(dir), Ok(folder)) = (std::env::var("LA_LIVE_DATA"), std::env::var("LA_LIVE_FOLDER")) else { return };
+    let st = AppState::new(std::path::PathBuf::from(dir));
+    let shared = st.folders.add(std::path::Path::new(&folder), true).unwrap();
+    let tree = |root: &str| {
+        let mut out = std::collections::BTreeMap::new();
+        let mut stack = vec![std::path::PathBuf::from(root)];
+        while let Some(d) = stack.pop() {
+            for e in std::fs::read_dir(&d).unwrap().flatten() {
+                let rel = e.path().strip_prefix(root).unwrap().to_string_lossy().replace('\\', "/");
+                if rel.starts_with(crate::folders::TRASH) { continue; }
+                if e.path().is_dir() { stack.push(e.path()); out.insert(format!("{rel}/"), 0); } else { out.insert(rel, std::fs::metadata(e.path()).unwrap().len()); }
+            }
+        }
+        out
+    };
+    let before = tree(&folder);
+
+    async fn turn(st: &AppState, id: &str) -> Option<(String, serde_json::Value)> {
+        let t = std::time::Instant::now();
+        let (r, _) = run(st, id).await;
+        let s = st.sessions.load(id).unwrap();
+        println!("── turno ({:.1}s) {:?}", t.elapsed().as_secs_f32(), r.as_ref().err().map(|e| e.to_string()));
+        let mut plan = None;
+        for m in s.messages.iter().rev().take_while(|m| m.role != "user").collect::<Vec<_>>().into_iter().rev() {
+            match m.role.as_str() {
+                "assistant" => {
+                    if let Some(t) = &m.content { println!("PROFESOR: {t}"); }
+                    for c in m.tool_calls.iter().flatten() { println!("  → {} {}", c.function.name, c.function.arguments.chars().take(500).collect::<String>()); }
+                }
+                "tool" => {
+                    println!("  ← {}", m.content.as_deref().unwrap_or("").chars().take(300).collect::<String>().replace('\n', " / "));
+                    if let Some(meta) = m.meta.as_ref().filter(|v| v["kind"] == "folder_plan") { plan = Some((m.tool_call_id.clone().unwrap(), meta.clone())); }
+                }
+                _ => {}
+            }
+        }
+        plan
+    }
+
+    let mut s = Session::new_chat(&format!("Te compartí la carpeta «{}». Ordená mis apuntes por materia y poneles nombres prolijos.", shared.label));
+    st.sessions.save(&mut s).unwrap();
+    let mut plan = None;
+    for _ in 0..3 {
+        plan = turn(&st, &s.id).await;
+        if plan.is_some() { break; }
+        let mut x = st.sessions.load(&s.id).unwrap();
+        x.messages.push(crate::llm::Msg::user("sí, dale, por materia", None));
+        st.sessions.save(&mut x).unwrap();
+    }
+    let (call, meta) = plan.expect("no plan was proposed");
+    println!("\n══ PLAN: {} — {}", meta["summary"], meta["counts"]);
+    for op in meta["ops"].as_array().unwrap() { println!("   {op}"); }
+    folder_plan_apply(&st, &s.id, &call).unwrap();
+    println!("\n══ DESPUÉS DE APLICAR:");
+    for (k, _) in tree(&folder) { println!("   {k}"); }
+    assert_ne!(tree(&folder), before);
+    folder_plan_undo(&st, &s.id, &call).unwrap();
+    assert_eq!(tree(&folder), before, "Deshacer leaves it exactly as it was");
+    println!("══ DESHECHO: la carpeta quedó igual que antes ✓");
+
+    let mut x = st.sessions.load(&s.id).unwrap();
+    x.messages.push(crate::llm::Msg::user("Ahora armame un Excel en la carpeta con mis notas: Análisis parcial 1 un 7 y parcial 2 un 8, Física 6 y 9. Con el promedio de cada materia.", None));
+    st.sessions.save(&mut x).unwrap();
+    let (call, meta) = turn(&st, &s.id).await.expect("no Excel plan");
+    println!("\n══ EXCEL: {} — {}", meta["summary"], meta["counts"]);
+    folder_plan_apply(&st, &s.id, &call).unwrap();
+    let path = meta["ops"].as_array().unwrap().iter().find(|o| o["op"] == "xlsx").and_then(|o| o["path"].as_str()).expect("an xlsx op").to_string();
+    let bytes = std::fs::read(std::path::Path::new(&folder).join(&path)).unwrap();
+    println!("{}", anydoc::to_markdown_bytes(&bytes, anydoc::Format::Excel).unwrap());
+    folder_plan_undo(&st, &s.id, &call).unwrap();
+    assert_eq!(tree(&folder), before);
 }
 
 /// AC-215 live: the person's own words, through the real agent, the real search and

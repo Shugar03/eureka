@@ -811,7 +811,18 @@ pub(crate) async fn check_provider_with_client(client: reqwest::Client, base_url
         let resp = client.get(url(base_url, "key")).bearer_auth(api_key).send().await.context("no se pudo conectar con el proveedor")?;
         check_status(resp).await?;
     } else {
-        list_models(base_url, api_key).await?;
+        // The model list, with the client passed in and the headers list_model_infos sends
+        // (OpenCode Go's /models answers without a key, but rejects a wrong one).
+        let resp = client
+            .get(url(base_url, "models"))
+            .bearer_auth(api_key)
+            .header("x-api-key", api_key)
+            .header("anthropic-version", "2023-06-01")
+            .header("x-opencode-session", app_session())
+            .send()
+            .await
+            .context("no se pudo conectar con el proveedor")?;
+        check_status(resp).await?;
     }
     Ok(())
 }
