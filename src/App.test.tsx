@@ -16,7 +16,7 @@ async function answer(opts: { text?: string; option?: string; confidence: number
   if (opts.option) await userEvent.click(q.getByRole("radio", { name: opts.option }));
   if (opts.text) await userEvent.type(q.getByLabelText("Tu respuesta"), opts.text);
   await userEvent.click(q.getByRole("radio", { name: new RegExp(`^Confianza ${opts.confidence}:`) }));
-  await userEvent.click(q.getByRole("button", { name: "Responder" }));
+  await userEvent.click(q.getByRole("button", { name: opts.option ? "Comprobar" : "Responder" }));
 }
 
 describe("App (jsdom + fake backend)", () => {

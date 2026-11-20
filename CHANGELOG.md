@@ -6,6 +6,8 @@ Lo que cambia en cada versión de Eureka, de la más nueva a la más vieja. El f
 
 ### Corregido
 - **«Conectado» solo si la clave funciona:** Ajustes ahora comprueba la clave guardada con el servicio antes de decir «Conectado». Si la clave no es válida (por ejemplo, un 401 de DeepSeek), lo dice y te pide pegarla de nuevo (AC-218).
+- **El código se lee bien en el tema oscuro:** los textos entre comillas ya no salen en un rojo oscuro casi invisible; los colores del editor siguen al tema.
+- **El error del micrófono dice qué pasó:** distingue si no hay micrófono, si está ocupado o no responde o si falta el permiso, y dónde activarlo en Windows.
 
 ## [0.10.0] - 2026-11-18
 

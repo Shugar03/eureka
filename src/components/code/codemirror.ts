@@ -10,7 +10,8 @@ import { cpp } from "@codemirror/lang-cpp";
 import { java } from "@codemirror/lang-java";
 import { go } from "@codemirror/lang-go";
 import { sql, SQLite } from "@codemirror/lang-sql";
-import { StreamLanguage } from "@codemirror/language";
+import { HighlightStyle, StreamLanguage, syntaxHighlighting } from "@codemirror/language";
+import { tags as t } from "@lezer/highlight";
 import { csharp } from "@codemirror/legacy-modes/mode/clike";
 import type { Lang } from "../../types";
 
@@ -62,6 +63,20 @@ const theme = EditorView.theme({
   ".cm-error-line": { backgroundColor: "color-mix(in srgb, var(--bad) 16%, transparent)" },
 });
 
+// CodeMirror's default palette is made for white (its #a11 strings read 2:1 on the dark theme).
+// Mixing toward --text keeps every token above 4.5:1 on the active line in both themes.
+const highlight = HighlightStyle.define([
+  { tag: [t.keyword, t.controlKeyword, t.definitionKeyword, t.moduleKeyword, t.operatorKeyword], color: "var(--purple)" },
+  { tag: [t.string, t.special(t.string), t.regexp, t.character], color: "color-mix(in srgb, var(--ok) 80%, var(--text))" },
+  { tag: [t.number, t.bool, t.null, t.atom], color: "var(--warn)" },
+  { tag: [t.comment, t.lineComment, t.blockComment], color: "color-mix(in srgb, var(--dim) 75%, var(--text))", fontStyle: "italic" },
+  { tag: [t.typeName, t.className, t.namespace], color: "color-mix(in srgb, var(--accent-ink) 80%, var(--text))" },
+  { tag: [t.function(t.variableName), t.function(t.propertyName), t.definition(t.variableName)], color: "var(--text)", fontWeight: "600" },
+  { tag: [t.propertyName, t.attributeName, t.labelName], color: "var(--text-2)" },
+  { tag: [t.meta, t.processingInstruction], color: "var(--muted)" },
+  { tag: t.invalid, color: "var(--bad)" },
+]);
+
 export function create(parent: HTMLElement, doc: string, lang: Lang, onChange: (v: string) => void, onRun: () => void): EditorView {
   return new EditorView({
     parent,
@@ -72,6 +87,7 @@ export function create(parent: HTMLElement, doc: string, lang: Lang, onChange: (
         basicSetup,
         language(lang),
         theme,
+        syntaxHighlighting(highlight),
         errorField,
         EditorState.tabSize.of(4),
         EditorView.contentAttributes.of({ "aria-label": "Código", spellcheck: "false" }),
