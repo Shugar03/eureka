@@ -2,6 +2,7 @@ import { useId, useRef, useState } from "react";
 import { errorText, languageApi } from "../../api";
 import { useAccessibility } from "./AccessibilityContext";
 import { recordingForTranscription } from "../../lib/audio";
+import { micError } from "../../lib/platform";
 
 /**
  * AC-76: "Dictar" records the learner and hands the transcription to
@@ -38,8 +39,8 @@ export function Dictate({ onText }: { onText: (text: string) => void }) {
       rec.current = r;
       r.start();
       setState("recording");
-    } catch {
-      setError("No pude usar el micrófono. Dale permiso en los ajustes del sistema y probá de nuevo.");
+    } catch (e) {
+      setError(micError(e));
     }
   };
 
