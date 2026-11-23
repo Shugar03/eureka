@@ -4,7 +4,7 @@
 // AC-202: the installer runs without a window; the download shows here, and the
 // new version opens with what it brings.
 import { ReleaseNotes } from "./ReleaseNotes";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Channel, invoke } from "@tauri-apps/api/core";
 import { errorText } from "../api";
 
@@ -141,7 +141,7 @@ export function UpdateNotice() {
 }
 
 /** Right after updating itself: what this version brings, once. */
-function WhatsNewCard() {
+export function WhatsNewCard() {
   const [news, setNews] = useState<WhatsNew | null>(null);
   const done = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -157,12 +157,12 @@ function WhatsNewCard() {
   const close = () => setNews(null);
   return (
     <div className="whats-new-backdrop" onMouseDown={(e) => e.target === e.currentTarget && close()}>
-      <section className="whats-new card" role="dialog" aria-modal="true" aria-labelledby="whats-new-title" onKeyDown={(e) => e.key === "Escape" && close()}>
+      <section className="whats-new card" role="dialog" aria-modal="true" aria-labelledby="whats-new-title" onKeyDown={(e) => (e.key === "Escape" ? close() : e.key === "Tab" && keepFocusInside(e))}>
         <span className="update-kicker">Actualizada</span>
         <h2 id="whats-new-title">Novedades de Eureka {news.version}</h2>
         <p className="muted small">Antes tenías la {news.from}. Tus sesiones, tarjetas y biblioteca siguen como estaban.</p>
         {news.notes ? (
-          <div className="whats-new-notes">
+          <div className="whats-new-notes" tabIndex={0} role="region" aria-label="Lista de novedades">
             <ReleaseNotes text={news.notes} />
           </div>
         ) : null}
@@ -174,6 +174,16 @@ function WhatsNewCard() {
       </section>
     </div>
   );
+}
+
+/** Tab and Shift+Tab go round the dialog's own controls (the notes and «Listo»). */
+function keepFocusInside(e: KeyboardEvent<HTMLElement>) {
+  const items = Array.from(e.currentTarget.querySelectorAll<HTMLElement>('button, a[href], [tabindex="0"]'));
+  if (!items.length) return;
+  const at = items.indexOf(document.activeElement as HTMLElement);
+  const next = items[(at + (e.shiftKey ? -1 : 1) + items.length) % items.length];
+  e.preventDefault();
+  next.focus();
 }
 
 /** Ajustes → Conexión: the version and a manual check. */

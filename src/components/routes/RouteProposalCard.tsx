@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { errorText, routeApi } from "../../api";
 import type { RouteProposal, RouteView } from "../../types";
 import { duration, endDate, proposalSize, sameRoute, shortDate, weeksFor } from "../../lib/routes";
@@ -17,6 +17,16 @@ export function RouteProposalCard({ proposal, onOpenRoute, onOpenSession }: { pr
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
+  const root = useRef<HTMLElement>(null);
+  // After taking something out, focus goes to the same control of the next item (or the previous one, or the title).
+  const [refocus, setRefocus] = useState<{ selector: string; index: number } | null>(null);
+
+  useEffect(() => {
+    if (!refocus || !root.current) return;
+    const all = root.current.querySelectorAll<HTMLElement>(refocus.selector);
+    (all[Math.min(refocus.index, all.length - 1)] ?? root.current.querySelector<HTMLElement>("h3"))?.focus();
+    setRefocus(null);
+  }, [refocus]);
 
   // A reloaded conversation must not offer to create the same route twice.
   useEffect(() => {
@@ -30,9 +40,15 @@ export function RouteProposalCard({ proposal, onOpenRoute, onOpenSession }: { pr
   const ends = endDate(size.minutes, p.hours_per_week, new Date());
   const units = p.units.filter((u) => u.classes.length > 0);
 
-  const removeClass = (unitId: string, classId: string) =>
+  const removeClass = (unitId: string, classId: string, unitIndex: number, classIndex: number) => {
+    const left = p.units.find((u) => u.id === unitId)!.classes.length - 1;
     setP({ ...p, units: p.units.map((u) => (u.id === unitId ? { ...u, classes: u.classes.filter((c) => c.id !== classId) } : u)).filter((u) => u.classes.length > 0) });
-  const removeUnit = (unitId: string) => setP({ ...p, units: p.units.filter((u) => u.id !== unitId) });
+    setRefocus(left > 0 ? { selector: `.rt-unit:nth-child(${unitIndex + 1}) .rt-classes .rt-x`, index: classIndex } : { selector: ".rt-unit-row > .rt-x", index: unitIndex });
+  };
+  const removeUnit = (unitId: string, unitIndex: number) => {
+    setP({ ...p, units: p.units.filter((u) => u.id !== unitId) });
+    setRefocus({ selector: ".rt-unit-row > .rt-x", index: unitIndex });
+  };
   const toggleKnown = (unitId: string, classId: string) =>
     setP({ ...p, units: p.units.map((u) => (u.id === unitId ? { ...u, classes: u.classes.map((c) => (c.id === classId ? { ...c, known: !c.known } : c)) } : u)) });
 
@@ -88,10 +104,10 @@ export function RouteProposalCard({ proposal, onOpenRoute, onOpenSession }: { pr
   }
 
   return (
-    <section className="rt-offer" aria-label={`Ruta propuesta: ${p.title}`}>
+    <section ref={root} className="rt-offer" aria-label={`Ruta propuesta: ${p.title}`}>
       <header className="rt-head">
         <span className="rt-kicker">Ruta propuesta</span>
-        <h3>{p.title}</h3>
+        <h3 tabIndex={-1}>{p.title}</h3>
         <p>{p.goal}</p>
         <div className="rt-facts">
           <span>
@@ -119,7 +135,7 @@ export function RouteProposalCard({ proposal, onOpenRoute, onOpenSession }: { pr
             ))}
           </>
         ) : (
-          <span>Armada con lo que sabe el profesor: no hubo búsqueda web{p.researched ? " útil" : " (configurala en Ajustes → Búsqueda web)"}.</span>
+          <span>Armada con lo que sabe el profesor: no hubo búsqueda web{p.researched ? " útil" : " (configurala en Ajustes → Avanzado → Búsqueda web)"}.</span>
         )}
         {p.note && <p className="rt-note">{p.note}</p>}
       </div>
@@ -142,13 +158,13 @@ export function RouteProposalCard({ proposal, onOpenRoute, onOpenSession }: { pr
                 <span className="rt-hrs">
                   {u.classes.length - known} {u.classes.length - known === 1 ? "clase" : "clases"} · {duration(mins)}
                 </span>
-                <button type="button" className="rt-x" aria-label={`Sacar la unidad ${u.title}`} onClick={() => removeUnit(u.id)}>
+                <button type="button" className="rt-x" aria-label={`Sacar la unidad ${u.title}`} onClick={() => removeUnit(u.id, i)}>
                   ×
                 </button>
               </div>
               {isOpen && (
                 <ul className="rt-classes">
-                  {u.classes.map((c) => (
+                  {u.classes.map((c, j) => (
                     <li key={c.id} className={c.known ? "is-known" : ""}>
                       <span className="rt-class-main">
                         <strong>{c.title}</strong>
@@ -158,7 +174,7 @@ export function RouteProposalCard({ proposal, onOpenRoute, onOpenSession }: { pr
                       <button type="button" className="btn ghost small" onClick={() => toggleKnown(u.id, c.id)} aria-pressed={c.known}>
                         {c.known ? "La quiero ver" : "Ya la sé"}
                       </button>
-                      <button type="button" className="rt-x" aria-label={`Sacar la clase ${c.title}`} onClick={() => removeClass(u.id, c.id)}>
+                      <button type="button" className="rt-x" aria-label={`Sacar la clase ${c.title}`} onClick={() => removeClass(u.id, c.id, i, j)}>
                         ×
                       </button>
                     </li>
