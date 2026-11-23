@@ -1,6 +1,6 @@
 // AC-202: «Novedades» after an update can be read to the end with the keyboard.
 import { afterEach, describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import { WhatsNewCard } from "./UpdateNotice";
@@ -15,7 +15,7 @@ describe("WhatsNewCard (AC-202)", () => {
     });
     render(<WhatsNewCard />);
     const done = await screen.findByRole("button", { name: "Listo" });
-    expect(done).toHaveFocus();
+    await waitFor(() => expect(done).toHaveFocus());
     const notes = screen.getByRole("region", { name: "Lista de novedades" });
     expect(notes).not.toHaveTextContent("AC-219");
     await userEvent.tab();
