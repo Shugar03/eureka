@@ -58,4 +58,31 @@ describe("RouteProposalCard (AC-214)", () => {
     expect(onOpenRoute).toHaveBeenCalledWith("r1");
     expect(screen.queryByRole("button", { name: "Crear la ruta" })).toBeNull();
   });
+  it("taking a unit or a class out leaves the focus on the next one, not lost on the page", async () => {
+    mockIPC((cmd) => {
+      if (cmd === "route_list") return [];
+      throw `unexpected ${cmd}`;
+    });
+    render(<RouteProposalCard proposal={mockRouteProposal("Machine Learning")} onOpenRoute={() => {}} onOpenSession={() => {}} />);
+    const card = screen.getByRole("region", { name: "Ruta propuesta: Machine Learning desde cero" });
+    await userEvent.click(within(card).getByRole("button", { name: "Sacar la unidad Bases matemáticas" }));
+    expect(within(card).getByRole("button", { name: "Sacar la unidad Aprender de datos" })).toHaveFocus();
+
+    await userEvent.click(within(card).getByRole("button", { name: /^Aprender de datos/ }));
+    await userEvent.click(within(card).getByRole("button", { name: "Sacar la clase Regresión lineal" }));
+    expect(within(card).getByRole("button", { name: "Sacar la clase Error cuadrático" })).toHaveFocus();
+
+    await userEvent.click(within(card).getByRole("button", { name: "Sacar la unidad Aprender de datos" }));
+    await userEvent.click(within(card).getByRole("button", { name: "Sacar la unidad Clasificar" }));
+    expect(within(card).getByRole("heading", { name: "Machine Learning desde cero" })).toHaveFocus();
+  });
+
+  it("without web search it says where to turn it on", async () => {
+    mockIPC((cmd) => {
+      if (cmd === "route_list") return [];
+      throw `unexpected ${cmd}`;
+    });
+    render(<RouteProposalCard proposal={{ ...mockRouteProposal("Machine Learning"), researched: false, sources: [] }} onOpenRoute={() => {}} onOpenSession={() => {}} />);
+    expect(screen.getByRole("region", { name: /^Ruta propuesta/ })).toHaveTextContent("no hubo búsqueda web (configurala en Ajustes → Avanzado → Búsqueda web)");
+  });
 });

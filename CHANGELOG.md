@@ -4,6 +4,10 @@ Lo que cambia en cada versión de Eureka, de la más nueva a la más vieja. El f
 
 ## Sin publicar
 
+### Corregido
+- **Ruta propuesta más fácil con teclado y texto grande:** al sacar una clase o unidad el foco pasa a la siguiente, con texto Grande ya no se cortan «Ritmo» ni «Crear la ruta», y el aviso sin búsqueda web dice dónde está (Ajustes → Avanzado) (AC-214).
+- **Novedades se leen enteras con el teclado** y ya no muestran códigos internos (AC-202).
+
 ## [0.11.0] - 2026-11-20
 
 ### Nuevo

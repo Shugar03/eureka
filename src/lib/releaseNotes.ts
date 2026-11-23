@@ -16,7 +16,7 @@ export interface NoteSection {
 
 /** «**Title:** text», «Title: text» (a short title) or just text. */
 export function noteItem(raw: string): NoteItem {
-  const t = raw.trim();
+  const t = withoutCriteria(raw).trim();
   // A bold start is a title only when a colon closes it («**Title:** text» or «**Title**: text»);
   // «**Acompañamiento tiene micrófono**, y …» is a sentence with a bold part.
   const bold = t.match(/^\*\*(.+?)\*\*\s*(:?)\s*(.*)$/s);
@@ -25,6 +25,11 @@ export function noteItem(raw: string): NoteItem {
   const colon = t.indexOf(": ");
   if (colon > 0 && colon <= 70 && !/[.!?]/.test(t.slice(0, colon))) return { head: t.slice(0, colon).trim(), body: t.slice(colon + 2).trim() };
   return { head: null, body: t };
+}
+
+/** The «(AC-219..AC-222)» references are for whoever develops Eureka, not for whoever uses it. */
+export function withoutCriteria(text: string): string {
+  return text.replace(/\s*\(AC-\d+(?:\s*(?:\.\.|…|–|-|,|y)\s*AC-\d+)*\)/g, "");
 }
 
 export function parseNotes(text: string): NoteSection[] {
