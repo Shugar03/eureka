@@ -482,7 +482,7 @@ pub fn library_read(state: &AppState, s: &Session, args: &str) -> String {
 /// worker (`in_turn` false) only while no turn runs; a running turn calls it
 /// itself at each step. The `running` lock is held so the two never interleave.
 pub fn deliver_research(state: &AppState, session_id: &str, in_turn: bool) -> Result<bool> {
-    let running = state.running.lock().unwrap();
+    let running = state.running.lock().unwrap_or_else(|p| p.into_inner());
     if !in_turn && running.contains_key(session_id) {
         return Ok(false);
     }

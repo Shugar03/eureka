@@ -4,6 +4,11 @@ Lo que cambia en cada versión de Eureka, de la más nueva a la más vieja. El f
 
 ## Sin publicar
 
+### Mejorado
+- **Seguridad reforzada en escritorio:** la ventana principal ahora aplica una política CSP explícita, los permisos de `plugin-fs` y `plugin-dialog` quedaron restringidos a móvil (en escritorio no se usan) y el nombre del examen se escapa al imprimir la hoja de repaso.
+- **Claves de API en el almacén del sistema:** al igual que las cuentas conectadas, las API keys se guardan en el almacén de credenciales del sistema operativo (Windows Credential Manager / Keychain / Secret Service) y se migran solas desde `auth.json` al abrir la app, sin dejar secretos en texto plano en disco.
+- **Pruebas y base de código más mantenibles:** la suite de Vitest reutiliza jsdom por worker (`vmThreads`) sin timeouts aleatorios, y los módulos más grandes (`lib.rs`, `types.ts`, `Settings.tsx` y `mockBackend.ts`) quedaron divididos por dominio.
+
 ## [0.11.0] - 2026-11-20
 
 ### Nuevo

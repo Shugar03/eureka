@@ -272,7 +272,7 @@ impl CompanionStore {
     }
 
     pub fn is_locked(&self) -> bool {
-        self.config().pin.is_some() && !*self.unlocked.lock().unwrap()
+        self.config().pin.is_some() && !*self.unlocked.lock().unwrap_or_else(|p| p.into_inner())
     }
 
     /// Every command that touches the journal or the conversation starts here.
@@ -298,7 +298,7 @@ impl CompanionStore {
     }
 
     pub fn ack_privacy(&self) -> Result<()> {
-        let _g = self.lock.lock().unwrap();
+        let _g = self.lock.lock().unwrap_or_else(|p| p.into_inner());
         let mut c = self.config();
         c.privacy_ack = true;
         write_json(&self.dir.join("settings.json"), &c)
@@ -311,7 +311,7 @@ impl CompanionStore {
             .filter(|r| !r.name.is_empty())
             .take(8)
             .collect();
-        let _g = self.lock.lock().unwrap();
+        let _g = self.lock.lock().unwrap_or_else(|p| p.into_inner());
         let mut c = self.config();
         c.resources = Some(list);
         write_json(&self.dir.join("settings.json"), &c)
@@ -321,7 +321,7 @@ impl CompanionStore {
     /// removing needs the current one. It keeps the screen private from
     /// whoever sits at the PC; it does not encrypt the files.
     pub fn set_pin(&self, new: Option<&str>, current: Option<&str>) -> Result<()> {
-        let _g = self.lock.lock().unwrap();
+        let _g = self.lock.lock().unwrap_or_else(|p| p.into_inner());
         let mut c = self.config();
         if let Some(p) = &c.pin {
             if hash_pin(&p.salt, current.unwrap_or("")) != p.hash {
@@ -340,7 +340,7 @@ impl CompanionStore {
             }
         };
         write_json(&self.dir.join("settings.json"), &c)?;
-        *self.unlocked.lock().unwrap() = true;
+        *self.unlocked.lock().unwrap_or_else(|p| p.into_inner()) = true;
         Ok(())
     }
 
@@ -349,14 +349,14 @@ impl CompanionStore {
         match c.pin {
             Some(p) if hash_pin(&p.salt, pin.trim()) != p.hash => bail!("PIN incorrecto."),
             _ => {
-                *self.unlocked.lock().unwrap() = true;
+                *self.unlocked.lock().unwrap_or_else(|p| p.into_inner()) = true;
                 Ok(())
             }
         }
     }
 
     pub fn lock_now(&self) {
-        *self.unlocked.lock().unwrap() = false;
+        *self.unlocked.lock().unwrap_or_else(|p| p.into_inner()) = false;
     }
 
     pub fn save_conversation(&self, c: &Conversation) -> Result<()> {
@@ -383,7 +383,7 @@ impl CompanionStore {
         if input.mood.is_some_and(|m| !(1..=5).contains(&m)) {
             bail!("El ánimo va de 1 a 5.");
         }
-        let _g = self.lock.lock().unwrap();
+        let _g = self.lock.lock().unwrap_or_else(|p| p.into_inner());
         let mut all = self.entries();
         let (emotions, helped) = (clean_list(&input.emotions, MAX_EMOTIONS, 30), clean_list(&input.helped, 3, 80));
         let entry = match input.id.as_deref().and_then(|id| all.iter_mut().find(|e| e.id == id)) {
@@ -411,7 +411,7 @@ impl CompanionStore {
         if !(1..=5).contains(&mood) {
             bail!("El ánimo va de 1 a 5.");
         }
-        let _g = self.lock.lock().unwrap();
+        let _g = self.lock.lock().unwrap_or_else(|p| p.into_inner());
         let mut all = self.entries();
         let e = Entry {
             id: uuid::Uuid::new_v4().simple().to_string(),
@@ -432,7 +432,7 @@ impl CompanionStore {
 
     pub fn delete_entry(&self, id: &str) -> Result<()> {
         self.guard()?;
-        let _g = self.lock.lock().unwrap();
+        let _g = self.lock.lock().unwrap_or_else(|p| p.into_inner());
         let mut all = self.entries();
         all.retain(|e| e.id != id);
         write_json(&self.dir.join("journal.json"), &all)
@@ -447,7 +447,7 @@ impl CompanionStore {
         if verdict.is_some_and(|v| v != "confirmed" && v != "rejected") {
             bail!("La respuesta debe ser «me suena» o «no es así».");
         }
-        let _g = self.lock.lock().unwrap();
+        let _g = self.lock.lock().unwrap_or_else(|p| p.into_inner());
         let mut c = self.config();
         match verdict {
             Some(v) => {
@@ -472,13 +472,13 @@ impl CompanionStore {
     /// Deletes everything (entries, conversation, PIN, settings). Allowed while
     /// locked: a forgotten PIN must never trap the person's own data.
     pub fn erase(&self) -> Result<()> {
-        let _g = self.lock.lock().unwrap();
+        let _g = self.lock.lock().unwrap_or_else(|p| p.into_inner());
         match std::fs::remove_dir_all(&self.dir) {
             Ok(()) => {}
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
             Err(e) => return Err(e.into()),
         }
-        *self.unlocked.lock().unwrap() = false;
+        *self.unlocked.lock().unwrap_or_else(|p| p.into_inner()) = false;
         Ok(())
     }
 }
