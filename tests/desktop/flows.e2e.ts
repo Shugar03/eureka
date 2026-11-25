@@ -5,7 +5,7 @@ import { test } from "@e2e-dev/web";
 import { expect } from "e2e";
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { answer, finishProbe, pending, phase, planNode, startSession } from "../e2e/helpers.ts";
+import { answer, finishDerivative, finishProbe, pending, phase, planNode, startSession } from "../e2e/helpers.ts";
 import { dataDir, fakeProvider } from "./launch.ts";
 
 const sessionFiles = () => {
@@ -24,9 +24,8 @@ test("D-02 arco completo Medir → Planificar → Enseñar → Listo por el loop
   await expect(pending(screen)).toHaveAttribute("data-purpose", "check", { timeout: 15_000 });
   await answer(screen, { option: "En una curva", confidence: 2 });
   await expect(planNode(screen, "tangente")).toHaveAttribute("data-status", "repair", { timeout: 15_000 });
-  await answer(screen, { option: "Tangente", confidence: 4 });
-  await expect(pending(screen)).toContainText("Última:", { timeout: 15_000 });
-  await answer(screen, { option: "6", confidence: 5 });
+  await answer(screen, { text: "Tangente", confidence: 4 });
+  await finishDerivative(screen);
 
   await expect(phase(screen, "Listo")).toHaveAttribute("aria-current", "step", { timeout: 15_000 });
   for (const id of ["limite", "tangente", "derivada"]) {
@@ -37,7 +36,7 @@ test("D-02 arco completo Medir → Planificar → Enseñar → Listo por el loop
   // The teacher's last request (reaching "done" also triggers the extractor's).
   const reqs = (await fakeProvider.requests()) as unknown as { tool_choice?: unknown; messages: { role: string; content?: string }[] }[];
   const last = reqs.filter((r) => !r.tool_choice).at(-1)!.messages;
-  expect(last.filter((m) => m.role === "tool" && m.content?.startsWith("Respuesta del aprendiz")).length).toBe(6);
+  expect(last.filter((m) => m.role === "tool" && m.content?.startsWith("Respuesta del aprendiz")).length).toBe(7);
   expect(last.some((m) => m.content?.includes("Confianza: 5/5"))).toBe(true);
 
   // Free question after finishing.

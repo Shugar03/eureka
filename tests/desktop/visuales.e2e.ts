@@ -2,7 +2,7 @@
 // WebView2, and research through Rust (search API + researcher model).
 import { test } from "@e2e-dev/web";
 import { expect } from "e2e";
-import { answer, finishProbe, pending, phase, startSession } from "../e2e/helpers.ts";
+import { answer, finishDerivative, finishProbe, finishTangent, pending, phase, startSession } from "../e2e/helpers.ts";
 import { fakeProvider } from "./launch.ts";
 
 test("D-16 diagrama, demo aislada e investigación en la app real", async ({ app, screen, browser }) => {
@@ -18,8 +18,8 @@ test("D-16 diagrama, demo aislada e investigación en la app real", async ({ app
   await expect(demo.locator("#m")).toHaveText("2.05");
   await expect(demo.locator("body")).toHaveAttribute("data-net", "bloqueada", { timeout: 10_000 });
 
-  await answer(screen, { option: "En la tangente", confidence: 4 });
-  await answer(screen, { option: "6", confidence: 5 });
+  await finishTangent(screen);
+  await finishDerivative(screen);
   await expect(phase(screen, "Listo")).toHaveAttribute("aria-current", "step", { timeout: 15_000 });
   await fakeProvider.reset();
   await screen.getByRole("textbox", "Mensaje").fill("¿y para qué sirve?");
