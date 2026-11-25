@@ -23,13 +23,14 @@
                 │          onEvent: Channel})          │ text · session · error · done
 ┌───────────────▼──────────────────────────────────────┴───────────────────┐
 │  Rust (src-tauri/src)                                                     │
-│  lib.rs      comandos Tauri + AppState (stores, banderas de cancelación)  │
+│  lib.rs      AppState, inicio y registro de comandos en `commands/`        │
+│  commands/   comandos Tauri agrupados por dominio (settings, session…)    │
 │  agent.rs    loop del agente (1 turno del aprendiz)                       │
 │  tools.rs    esquemas de herramientas + efecto PURO sobre la Session      │
 │  prompts.rs  shared + fragmento de fase + bloque de estado; overrides     │
 │  llm.rs      cliente /chat/completions con streaming SSE + tool calls     │
 │  session.rs  tipos + SessionStore (un JSON por sesión)                    │
-│  settings.rs settings.json (preferencias) + auth.json (keys)              │
+│  settings.rs settings.json (preferencias) + keyring del sistema (keys)    │
 │  graph.rs    registro append-only, fold, aristas derivadas (Fase 2)       │
 │  extract.rs  rol extractor: sesión/notas → proposiciones + cadenas         │
 │  practice.rs generador + corrector con tools forzadas (Fase 3)            │
@@ -69,6 +70,7 @@
 | D21 | **Tarjetas con SM-2** y fechas locales que manda la UI | Simple, conocido (Anki) y puro: se testea sin reloj. "Hoy" es el día del aprendiz, no el de UTC. | FSRS: más preciso pero más complejo para empezar. |
 | D22 | **Un solo registro de estudio** (`study_log.jsonl`) | El pomodoro escribe; el inicio, el plan y las horas por semana leen. El pomodoro vive en un contexto arriba de las pantallas y guarda su hora de fin, así sobrevive a cambiar de pantalla y a recargar. | Un contador por pantalla. |
 | D23 | **El código corre con los intérpretes locales y solo con "Ejecutar"** | Rust no tiene opción offline en el navegador y el usuario ya tiene los toolchains. Ninguna herramienta del agente ejecuta: la investigación web mete texto no confiable en el contexto del profesor. Carpeta temporal por ejecución, límite de tiempo, salida cortada, sin ventana de consola. Los tipos de TypeScript se revisan en el navegador porque Node solo los quita. | Pyodide/wasm (sin Rust); dejar que el profesor ejecute. |
+| D24 | **Foco de alcance y endurecimiento antes de nuevas verticales** | El diferencial de Eureka es el arco medir → planificar → enseñar con memoria y bibliografía local. Antes de sumar pantallas o verticales nuevas, se priorizan seguridad (CSP en la ventana principal, permisos `fs`/`dialog` acotados a móvil en `capabilities/mobile.json`, API keys en el almacén de credenciales del sistema con migración desde `auth.json`), estabilidad de pruebas (Vitest en `vmThreads` sin timeouts espurios) y modularidad (`commands/`, `src/types/`, `components/settings/`, `src/e2e/mock/`). | Seguir apilando funciones nuevas sobre archivos monolíticos y deuda de seguridad. |
 | D14 | **`prefers-reduced-motion`** sin animaciones ni scroll suave | Accesibilidad, y además hace deterministas las capturas y los audits. | — |
 
 ## 3. El loop del agente (`agent::run_turn`)
@@ -108,7 +110,7 @@ Carpeta: `%APPDATA%\lat.eureka.app\` en Windows. La variable `LA_DATA_DIR` la re
 
 ```
 settings.json         { providers:[{id,label,base_url}], roles:{teacher,prober} }
-auth.json             { "<provider_id>": "<api key>" }        ← nunca vuelve a la UI
+auth-keys.json        ["<provider_id>", ...]                  ← índice sin secretos (las keys viven en el keyring del SO; fallback a auth.json si no hay keyring)
 sessions/<id>.json    Session (mensajes en formato OpenAI + meta para la UI)
 prompts/<nombre>.md   overrides opcionales (shared, probe, plan, teach, done)
 ```

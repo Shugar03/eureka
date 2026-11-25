@@ -14,7 +14,6 @@ use std::sync::Mutex;
 
 pub const MAX_MISCONCEPTIONS: usize = 30;
 pub const MAX_PREFERENCES: usize = 10;
-const MAX_LINES: usize = 8;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Misconception {

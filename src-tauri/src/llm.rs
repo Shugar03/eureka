@@ -178,12 +178,12 @@ static ROUTES: std::sync::Mutex<Vec<(String, String)>> = std::sync::Mutex::new(V
 
 /// The id this conversation travels with now (its own, unless it was rerouted).
 pub fn route(session: &str) -> String {
-    ROUTES.lock().unwrap().iter().find(|(s, _)| s == session).map(|(_, r)| r.clone()).unwrap_or_else(|| session.to_string())
+    ROUTES.lock().unwrap_or_else(|p| p.into_inner()).iter().find(|(s, _)| s == session).map(|(_, r)| r.clone()).unwrap_or_else(|| session.to_string())
 }
 
 fn reroute(session: &str) {
     let fresh = format!("{session}-{}", &uuid::Uuid::new_v4().simple().to_string()[..8]);
-    let mut routes = ROUTES.lock().unwrap();
+    let mut routes = ROUTES.lock().unwrap_or_else(|p| p.into_inner());
     routes.retain(|(s, _)| s != session);
     routes.push((session.to_string(), fresh));
 }
@@ -211,7 +211,7 @@ static THINKING_REFUSED: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(V
 /// generated and 13 to 24 s before the first visible word). For a live turn that is
 /// switched off; anything else is left as the provider decides.
 pub fn turns_thinking_off(ep: &Endpoint) -> bool {
-    ep.quick && ep.subscription.is_none() && ep.model.to_lowercase().contains("deepseek") && !THINKING_REFUSED.lock().unwrap().contains(&format!("{} {}", ep.base_url, ep.model))
+    ep.quick && ep.subscription.is_none() && ep.model.to_lowercase().contains("deepseek") && !THINKING_REFUSED.lock().unwrap_or_else(|p| p.into_inner()).contains(&format!("{} {}", ep.base_url, ep.model))
 }
 
 /// A 400/422 that complains about the `thinking` option itself.
@@ -236,7 +236,7 @@ async fn stream_completions(
     cancelled: impl Fn() -> bool,
 ) -> Result<Completion> {
     // AC-186: the last chunk carries the usage (OpenAI and compatibles only send it when asked).
-    let ask_usage = !NO_STREAM_OPTIONS.lock().unwrap().contains(&ep.base_url);
+    let ask_usage = !NO_STREAM_OPTIONS.lock().unwrap_or_else(|p| p.into_inner()).contains(&ep.base_url);
     let mut body = completions_body(ep, system, messages, tools, tool_choice, ask_usage);
 
     let send = |body: &Value| {
@@ -262,14 +262,18 @@ async fn stream_completions(
         let text = resp.text().await.unwrap_or_default();
         if body.get("thinking").is_some() && rejects_thinking(status.as_u16(), &text) {
             // Degrade: the turn goes on with the model thinking, as before AC-212.
-            THINKING_REFUSED.lock().unwrap().push(format!("{} {}", ep.base_url, ep.model));
-            body.as_object_mut().unwrap().remove("thinking");
+            THINKING_REFUSED.lock().unwrap_or_else(|p| p.into_inner()).push(format!("{} {}", ep.base_url, ep.model));
+            if let Some(obj) = body.as_object_mut() {
+                obj.remove("thinking");
+            }
             continue;
         }
         if body.get("stream_options").is_some() && rejects_stream_options(status.as_u16(), &text) {
             // Degrade: the call goes on without usage, never breaks for it.
-            NO_STREAM_OPTIONS.lock().unwrap().push(ep.base_url.clone());
-            body.as_object_mut().unwrap().remove("stream_options");
+            NO_STREAM_OPTIONS.lock().unwrap_or_else(|p| p.into_inner()).push(ep.base_url.clone());
+            if let Some(obj) = body.as_object_mut() {
+                obj.remove("stream_options");
+            }
             continue;
         }
         if overloaded(status.as_u16(), &text) {

@@ -201,8 +201,8 @@ pub fn pending_meta(question: &str) -> Value {
 impl Background {
     /// Queues a job, or says why not: the same question already running, or too many at once.
     pub fn enqueue(&self, job: Job) -> std::result::Result<(), String> {
-        let mut q = self.queue.lock().unwrap();
-        let live = self.live.lock().unwrap();
+        let mut q = self.queue.lock().unwrap_or_else(|p| p.into_inner());
+        let live = self.live.lock().unwrap_or_else(|p| p.into_inner());
         let same: Vec<&Job> = q.iter().chain(live.iter()).filter(|j| j.session_id == job.session_id).collect();
         if same.iter().any(|j| j.question.trim().eq_ignore_ascii_case(job.question.trim())) {
             return Err("ya estás investigando esa misma pregunta: el resultado llega solo".into());
@@ -218,22 +218,22 @@ impl Background {
 
     /// The worker takes everything queued and marks it live.
     pub fn take(&self) -> Vec<Job> {
-        let jobs = std::mem::take(&mut *self.queue.lock().unwrap());
-        self.live.lock().unwrap().extend(jobs.iter().cloned());
+        let jobs = std::mem::take(&mut *self.queue.lock().unwrap_or_else(|p| p.into_inner()));
+        self.live.lock().unwrap_or_else(|p| p.into_inner()).extend(jobs.iter().cloned());
         jobs
     }
 
     fn finish(&self, job: &Job, result: ResearchResult) {
-        self.live.lock().unwrap().retain(|j| j.call_id != job.call_id);
-        self.done.lock().unwrap().entry(job.session_id.clone()).or_default().push((job.call_id.clone(), result));
+        self.live.lock().unwrap_or_else(|p| p.into_inner()).retain(|j| j.call_id != job.call_id);
+        self.done.lock().unwrap_or_else(|p| p.into_inner()).entry(job.session_id.clone()).or_default().push((job.call_id.clone(), result));
     }
 
     pub fn take_done(&self, session_id: &str) -> Vec<(String, ResearchResult)> {
-        self.done.lock().unwrap().remove(session_id).unwrap_or_default()
+        self.done.lock().unwrap_or_else(|p| p.into_inner()).remove(session_id).unwrap_or_default()
     }
 
     pub fn is_live(&self, call_id: &str) -> bool {
-        self.queue.lock().unwrap().iter().chain(self.live.lock().unwrap().iter()).any(|j| j.call_id == call_id)
+        self.queue.lock().unwrap_or_else(|p| p.into_inner()).iter().chain(self.live.lock().unwrap_or_else(|p| p.into_inner()).iter()).any(|j| j.call_id == call_id)
     }
 }
 

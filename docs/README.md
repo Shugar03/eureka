@@ -35,12 +35,12 @@ Elegí según lo que vengas a hacer. Si algo de acá no coincide con lo que hace
 | [metricas-biblioteca.md](metricas-biblioteca.md) | Cómo se mide la biblioteca (velocidad y acierto de la búsqueda) |
 | [citas.md](citas.md) | El banco de citas de la bienvenida |
 
-## Planes (todavía no implementados)
+## Planes y experimentos
 
 | Doc | Estado |
 |---|---|
-| [plan-embeddings-estaticos.md](plan-embeddings-estaticos.md) | Experimento planificado: búsqueda por significado sin red |
-| [plan-memoria-estudiante.md](plan-memoria-estudiante.md) | Decidido: memoria con temas estables y exportación OKF |
+| [plan-embeddings-estaticos.md](plan-embeddings-estaticos.md) | Fase 0 medida (descartado frente a BM25 + reformulación) |
+| [plan-memoria-estudiante.md](plan-memoria-estudiante.md) | Fases 1 a 3 implementadas (`memdb.rs`, AC-195..AC-200) |
 
 ## Cómo se mantiene al día
 
