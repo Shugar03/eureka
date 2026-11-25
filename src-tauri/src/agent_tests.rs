@@ -2076,7 +2076,8 @@ async fn the_same_call_twice_in_one_message_runs_once() {
 /// AC-219..AC-221: a shared folder, a plan proposed as a card, applied once, told to the teacher, undone.
 #[tokio::test]
 async fn a_folder_plan_goes_from_the_card_to_the_folder_and_back() {
-    let dir = std::env::temp_dir().join(format!("la-agent-folders-{}", uuid::Uuid::new_v4().simple()));
+    // Stay outside %LOCALAPPDATA%\Temp so check_shareable (which blocks \appdata) accepts it on Windows.
+    let dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target").join("tmp-folders").join(format!("la-agent-folders-{}", uuid::Uuid::new_v4().simple()));
     let notes = dir.join("Apuntes");
     std::fs::create_dir_all(&notes).unwrap();
     std::fs::write(notes.join("tp1.txt"), "cinemática").unwrap();
