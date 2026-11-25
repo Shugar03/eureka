@@ -118,7 +118,7 @@ test("D-07 un modelo que no para queda cortado en 12 pasos", async ({ app, scree
   await fakeProvider.reset();
 });
 
-test("D-08 Ajustes reales: listar modelos, guardar key en disco sin mostrarla", async ({ app, screen }) => {
+test("D-08 Ajustes reales: listar modelos, guardar key sin exponerla en texto plano", async ({ app, screen }) => {
   await fakeProvider.reset();
   await app.open("/");
   await screen.getByRole("button", "Ajustes").click();
@@ -130,8 +130,8 @@ test("D-08 Ajustes reales: listar modelos, guardar key en disco sin mostrarla", 
   await screen.getByRole("button", "Guardar").click();
   await expect(screen.getByText("Guardado.")).toBeVisible();
 
-  const auth = JSON.parse(readFileSync(join(dataDir(), "auth.json"), "utf8"));
-  expect(auth.fake).toBe("sk-nueva-clave-123");
+  // Key moved to the OS keystore: no plaintext auth.json, never in settings.json or UI.
+  expect(existsSync(join(dataDir(), "auth.json"))).toBe(false);
   const settings = readFileSync(join(dataDir(), "settings.json"), "utf8");
   expect(settings.includes("sk-nueva")).toBe(false);
   await expect(screen.getByText("sk-nueva-clave-123")).toBeHidden();
