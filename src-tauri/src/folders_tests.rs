@@ -3,7 +3,9 @@ use super::*;
 use std::collections::BTreeMap;
 
 fn tmp(tag: &str) -> PathBuf {
-    let d = std::env::temp_dir().join(format!("la-folders-{tag}-{}", uuid::Uuid::new_v4().simple()));
+    // Stay outside %LOCALAPPDATA%\Temp so check_shareable (which blocks \appdata) accepts it on Windows.
+    let base = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target").join("tmp-folders");
+    let d = base.join(format!("la-folders-{tag}-{}", uuid::Uuid::new_v4().simple()));
     std::fs::create_dir_all(&d).unwrap();
     d
 }

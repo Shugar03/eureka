@@ -170,23 +170,28 @@ export function nextStep(v: TeacherView): Step | null {
             args: { title: "De la secante a la tangente", mermaid: "graph LR\n  A[Secante: 2 puntos] -->|acercar los puntos| B[Límite]\n  B --> C[Tangente: 1 punto]" },
           },
           { name: "show_demo", args: { title: "Acercá los puntos", html: DEMO } },
-          ask("Una recta secante corta la curva en 2 puntos. Si acercás esos puntos, ¿en qué se convierte?", "check", ["En la tangente", "En una curva", "Desaparece"]),
+          ask("Una recta secante corta la curva en 2 puntos. Si acercás esos puntos, ¿en qué se convierte?", "check", ["En la tangente", "En una curva", "Desaparece"], undefined, 1),
         ],
       };
     if (status("tangente") === "current") {
-      if (!/tangente/i.test(lastAnswer ?? ""))
+      if (lastAnswer === "En una curva" || lastAnswer === "Desaparece")
         return {
           text: "Casi. Pensalo así: con los dos puntos *pegados*, la recta solo **toca** la curva en uno.",
           calls: [
             { name: "update_node", args: { id: "tangente", status: "repair" } },
-            ask("Entonces, ¿cómo se llama la recta que toca la curva en un solo punto?", "check", ["Tangente", "Secante"]),
+            ask("Entonces, con tus palabras: ¿cómo se llama la recta que toca la curva en un solo punto?", "check"),
           ],
+        };
+      if (lastAnswer === "En la tangente")
+        return {
+          text: "Bien. Antes de pasar a la derivada, decilo con tus palabras.",
+          calls: [ask("¿Qué diferencia a la recta tangente de la secante?", "check")],
         };
       return {
         calls: [
           { name: "update_node", args: { id: "tangente", status: "understood" } },
           { name: "update_node", args: { id: "derivada", status: "current" } },
-          ask("Última: si $f(x) = x^2$, ¿cuál es la pendiente de la tangente en $x = 3$?", "check", ["3", "6", "9"]),
+          ask("Última: si $f(x) = x^2$, ¿cuál es la pendiente de la tangente en $x = 3$?", "check", ["3", "6", "9"], undefined, 2),
         ],
       };
     }
@@ -196,10 +201,15 @@ export function nextStep(v: TeacherView): Step | null {
         calls: [
           { name: "update_node", args: { id: "tangente", status: "understood", note: "reparado: confundía secante y tangente" } },
           { name: "update_node", args: { id: "derivada", status: "current" } },
-          ask("Última: si $f(x) = x^2$, ¿cuál es la pendiente de la tangente en $x = 3$?", "check", ["3", "6", "9"]),
+          ask("Última: si $f(x) = x^2$, ¿cuál es la pendiente de la tangente en $x = 3$?", "check", ["3", "6", "9"], undefined, 2),
         ],
       };
-    if (status("derivada") === "current")
+    if (status("derivada") === "current") {
+      if (lastAnswer === "3" || lastAnswer === "6" || lastAnswer === "9")
+        return {
+          text: "Para cerrar la idea, explicalo con tus palabras.",
+          calls: [ask("¿Qué significa que la derivada de $x^2$ en $x = 3$ sea 6?", "check")],
+        };
       return {
         text:
           "¡Correcto! Juntando todo:\n\n1. La **pendiente** mide cuánto sube una recta.\n2. Acercando dos puntos (un **límite**), la secante se vuelve **tangente**.\n3. La **derivada** es la pendiente de esa tangente: para $x^2$ vale $2x$, o sea $6$ en $x=3$.",
@@ -208,6 +218,7 @@ export function nextStep(v: TeacherView): Step | null {
           { name: "set_phase", args: { phase: "done" } },
         ],
       };
+    }
   }
 
   // "done" only answers new learner messages; the closing summary ends the arc.

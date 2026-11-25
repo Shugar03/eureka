@@ -2,7 +2,7 @@
 import { test } from "@e2e-dev/web";
 import { expect } from "e2e";
 import type { App, Screen } from "e2e";
-import { answer, finishProbe, pending, phase, startSession } from "./helpers.ts";
+import { answer, finishDerivative, finishProbe, finishTangent, pending, phase, startSession } from "./helpers.ts";
 
 async function toTangent(app: App, screen: Screen, query = "") {
   await startSession(app, screen, "qué es una derivada", query);
@@ -67,8 +67,8 @@ test("AC-183 la demo se abre en un panel, en el lugar del plan, y se ajusta a la
 
 test("AC-29 investigar con fuentes", async ({ app, screen }) => {
   await toTangent(app, screen);
-  await answer(screen, { option: "En la tangente", confidence: 4 });
-  await answer(screen, { option: "6", confidence: 5 });
+  await finishTangent(screen);
+  await finishDerivative(screen);
   await expect(phase(screen, "Listo")).toHaveAttribute("aria-current", "step", { timeout: 10_000 });
 
   await screen.getByRole("textbox", "Mensaje").fill("¿y para qué sirve?");
@@ -86,8 +86,8 @@ test("AC-29 investigar con fuentes", async ({ app, screen }) => {
 
 test("AC-206 un PDF abierto que encontró la investigación se suma a la biblioteca", async ({ app, screen }) => {
   await toTangent(app, screen);
-  await answer(screen, { option: "En la tangente", confidence: 4 });
-  await answer(screen, { option: "6", confidence: 5 });
+  await finishTangent(screen);
+  await finishDerivative(screen);
   await expect(phase(screen, "Listo")).toHaveAttribute("aria-current", "step", { timeout: 10_000 });
   await screen.getByRole("textbox", "Mensaje").fill("¿y para qué sirve?");
   await screen.getByRole("textbox", "Mensaje").press("Enter");
@@ -101,8 +101,8 @@ test("AC-206 un PDF abierto que encontró la investigación se suma a la bibliot
 
 test("AC-30 sin búsqueda configurada la sesión sigue", async ({ app, screen }) => {
   await toTangent(app, screen, "?noSearch");
-  await answer(screen, { option: "En la tangente", confidence: 4 });
-  await answer(screen, { option: "6", confidence: 5 });
+  await finishTangent(screen);
+  await finishDerivative(screen);
   await expect(phase(screen, "Listo")).toHaveAttribute("aria-current", "step", { timeout: 10_000 });
   await screen.getByRole("textbox", "Mensaje").fill("¿y para qué sirve?");
   await screen.getByRole("textbox", "Mensaje").press("Enter");

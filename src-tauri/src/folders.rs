@@ -181,6 +181,7 @@ pub fn private(name: &str) -> bool {
     n.starts_with('.')
         || n.starts_with("~$")
         || n == "auth.json"
+        || n == "auth-keys.json"
         || n.starts_with("id_rsa")
         || n.starts_with("id_ed25519")
         || n.starts_with("credentials")

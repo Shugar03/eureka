@@ -40,6 +40,21 @@ export async function finishProbe(screen: Screen) {
   await expect(pending(screen)).toContainText("zoom infinito", { timeout: 10_000 });
 }
 
+/** AC-208: finishes the tangent node (choice + own-words explanation). */
+export async function finishTangent(screen: Screen) {
+  await answer(screen, { option: "En la tangente", confidence: 4 });
+  await expect(pending(screen)).toContainText("secante", { timeout: 15_000 });
+  await answer(screen, { text: "la tangente toca la curva en un solo punto", confidence: 4 });
+}
+
+/** AC-208: finishes the derivative node (choice + own-words explanation). */
+export async function finishDerivative(screen: Screen) {
+  await expect(pending(screen)).toContainText("Última:", { timeout: 15_000 });
+  await answer(screen, { option: "6", confidence: 5 });
+  await expect(pending(screen)).toContainText("¿Qué significa", { timeout: 15_000 });
+  await answer(screen, { text: "es la pendiente de la recta tangente", confidence: 5 });
+}
+
 export const phase = (screen: Screen, label: string) =>
   screen.getByRole("list", "Fases").getByRole("listitem").filter({ hasText: label });
 

@@ -6,7 +6,7 @@ import { expect } from "e2e";
 import type { Screen } from "e2e";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { goTo, answer, pending, pick, startSession } from "./helpers.ts";
+import { goTo, answer, finishDerivative, finishTangent, pending, pick, startSession } from "./helpers.ts";
 
 const AXE = readFileSync(createRequire(import.meta.url).resolve("axe-core/axe.min.js"), "utf8");
 
@@ -174,8 +174,8 @@ test("a11y grafo, práctica y visuales (Fases 2-4)", async ({ app, screen, brows
   await expect(screen.getByRole("figure", "Diagrama: De la secante a la tangente")).toContainText("Tangente", { timeout: 10_000 });
   await audit(browser, "diagrama y demo en la conversación");
 
-  await answer(screen, { option: "En la tangente", confidence: 4 });
-  await answer(screen, { option: "6", confidence: 5 });
+  await finishTangent(screen);
+  await finishDerivative(screen);
   await expect(screen.getByTestId("graph-banner")).toContainText("Guardado", { timeout: 10_000 });
   await screen.getByRole("textbox", "Mensaje").fill("¿y para qué sirve?");
   await screen.getByRole("textbox", "Mensaje").press("Enter");

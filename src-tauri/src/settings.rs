@@ -1,9 +1,17 @@
-//! User settings (settings.json) and API keys (auth.json, kept separate so
-//! secrets never mix with preferences).
+//! User settings (settings.json) and API keys.
+//!
+//! On desktop API keys live in the OS keystore (Windows Credential Manager,
+//! macOS Keychain, Secret Service) — like subscription tokens in `accounts.rs`
+//! — while a small `auth-keys.json` index tracks only which provider ids have
+//! stored keys (never the secrets themselves). Existing `auth.json` files are
+//! migrated on first load and removed once every key is safely stored. On
+//! platforms without a usable keystore (Android, headless CI) or when
+//! `EUREKA_PLAINTEXT_AUTH=1` is set, keys fall back to `auth.json`.
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use sha2::{Digest, Sha256};
+use std::collections::{BTreeSet, HashMap};
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -300,6 +308,101 @@ pub struct SearchInput {
     pub clear_key: bool,
 }
 
+#[allow(dead_code)]
+const API_KEYS_SERVICE: &str = "eureka-api-keys";
+
+fn keystore_available() -> bool {
+    if std::env::var_os("EUREKA_PLAINTEXT_AUTH").is_some_and(|v| v == "1") {
+        return false;
+    }
+    #[cfg(test)]
+    { true }
+    #[cfg(not(test))]
+    {
+        #[cfg(target_os = "android")]
+        { false }
+        #[cfg(not(target_os = "android"))]
+        {
+            static AVAILABLE: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+            *AVAILABLE.get_or_init(|| {
+                use keyring::Entry;
+                Entry::new(API_KEYS_SERVICE, "__probe__").and_then(|e| e.set_password("probe")).is_ok()
+                    && Entry::new(API_KEYS_SERVICE, "__probe__").and_then(|e| e.get_password()).is_ok()
+                    && Entry::new(API_KEYS_SERVICE, "__probe__").and_then(|e| e.delete_credential()).is_ok()
+            })
+        }
+    }
+}
+
+#[cfg(test)]
+thread_local! {
+    static TEST_KEYSTORE: std::cell::RefCell<HashMap<String, String>> = Default::default();
+}
+
+#[cfg(test)]
+fn ks_set(account: &str, value: &str) -> bool {
+    TEST_KEYSTORE.with(|s| s.borrow_mut().insert(account.to_string(), value.to_string()));
+    true
+}
+
+#[cfg(test)]
+fn ks_get(account: &str) -> Option<String> {
+    TEST_KEYSTORE.with(|s| s.borrow().get(account).cloned())
+}
+
+#[cfg(test)]
+fn ks_delete(account: &str) {
+    TEST_KEYSTORE.with(|s| s.borrow_mut().remove(account));
+}
+
+#[cfg(not(test))]
+#[cfg(not(target_os = "android"))]
+fn ks_set(account: &str, value: &str) -> bool {
+    use keyring::Entry;
+    Entry::new(API_KEYS_SERVICE, account).and_then(|e| e.set_password(value)).is_ok()
+}
+
+#[cfg(not(test))]
+#[cfg(not(target_os = "android"))]
+fn ks_get(account: &str) -> Option<String> {
+    use keyring::Entry;
+    Entry::new(API_KEYS_SERVICE, account).ok()?.get_password().ok()
+}
+
+#[cfg(not(test))]
+#[cfg(not(target_os = "android"))]
+fn ks_delete(account: &str) {
+    use keyring::Entry;
+    if let Ok(entry) = Entry::new(API_KEYS_SERVICE, account) {
+        let _ = entry.delete_credential();
+    }
+}
+
+#[cfg(not(test))]
+#[cfg(target_os = "android")]
+fn ks_set(_account: &str, _value: &str) -> bool { false }
+
+#[cfg(not(test))]
+#[cfg(target_os = "android")]
+fn ks_get(_account: &str) -> Option<String> { None }
+
+#[cfg(not(test))]
+#[cfg(target_os = "android")]
+fn ks_delete(_account: &str) {}
+
+fn write_atomic(path: &Path, content: &str) -> Result<()> {
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    let tmp = path.with_extension(format!("tmp-{}", uuid::Uuid::new_v4().simple()));
+    std::fs::write(&tmp, content)?;
+    if let Err(e) = std::fs::rename(&tmp, path) {
+        let _ = std::fs::remove_file(&tmp);
+        return Err(e.into());
+    }
+    Ok(())
+}
+
 pub struct SettingsStore {
     dir: PathBuf,
 }
@@ -315,6 +418,66 @@ impl SettingsStore {
     fn auth_path(&self) -> PathBuf {
         self.dir.join("auth.json")
     }
+    fn auth_index_path(&self) -> PathBuf {
+        self.dir.join("auth-keys.json")
+    }
+
+    /// Scopes keyring entries to this data directory so separate profiles or
+    /// e2e runs (`LA_DATA_DIR`) never overwrite the user's real keys.
+    fn ks_account(&self, id: &str) -> String {
+        let mut h = Sha256::new();
+        h.update(self.dir.to_string_lossy().as_bytes());
+        let d = h.finalize();
+        format!("{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}:{id}", d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7])
+    }
+
+    fn read_plaintext_auth(&self) -> Option<HashMap<String, String>> {
+        std::fs::read_to_string(self.auth_path())
+            .ok()
+            .and_then(|s| serde_json::from_str(&s).ok())
+    }
+
+    fn read_index(&self) -> Vec<String> {
+        std::fs::read_to_string(self.auth_index_path())
+            .ok()
+            .and_then(|s| serde_json::from_str(&s).ok())
+            .unwrap_or_default()
+    }
+
+    fn write_index(&self, keys: &HashMap<String, String>) -> Result<()> {
+        let mut ids: Vec<&String> = keys.keys().collect();
+        ids.sort();
+        if ids.is_empty() {
+            let _ = std::fs::remove_file(self.auth_index_path());
+            return Ok(());
+        }
+        write_atomic(&self.auth_index_path(), &serde_json::to_string_pretty(&ids)?)
+    }
+
+    fn persist_keys(&self, keys: &HashMap<String, String>, prev_ids: BTreeSet<String>) -> Result<()> {
+        if !keystore_available() {
+            return write_atomic(&self.auth_path(), &serde_json::to_string_pretty(keys)?);
+        }
+        let mut ok = true;
+        for (id, val) in keys {
+            if !ks_set(&self.ks_account(id), val) {
+                ok = false;
+                break;
+            }
+        }
+        if !ok {
+            // Keystore failed mid-flight: fall back to auth.json so we never lose a key.
+            return write_atomic(&self.auth_path(), &serde_json::to_string_pretty(keys)?);
+        }
+        for old_id in prev_ids {
+            if !keys.contains_key(&old_id) {
+                ks_delete(&self.ks_account(&old_id));
+            }
+        }
+        self.write_index(keys)?;
+        let _ = std::fs::remove_file(self.auth_path());
+        Ok(())
+    }
 
     pub fn load(&self) -> Settings {
         let mut s: Settings = std::fs::read_to_string(self.settings_path()).ok().and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
@@ -323,10 +486,39 @@ impl SettingsStore {
     }
 
     pub fn keys(&self) -> HashMap<String, String> {
-        std::fs::read_to_string(self.auth_path())
-            .ok()
-            .and_then(|s| serde_json::from_str(&s).ok())
-            .unwrap_or_default()
+        if !keystore_available() {
+            return self.read_plaintext_auth().unwrap_or_default();
+        }
+        // Migrate legacy plaintext auth.json into the OS keystore on first read.
+        if let Some(legacy) = self.read_plaintext_auth() {
+            let mut merged = self.load_keystore_keys();
+            for (k, v) in legacy {
+                if !v.is_empty() {
+                    merged.insert(k, v);
+                }
+            }
+            let prev: BTreeSet<String> = self.read_index().into_iter().collect();
+            let _ = self.persist_keys(&merged, prev);
+            return merged;
+        }
+        self.load_keystore_keys()
+    }
+
+    fn load_keystore_keys(&self) -> HashMap<String, String> {
+        let mut ids: BTreeSet<String> = self.read_index().into_iter().collect();
+        for p in &self.load().providers {
+            ids.insert(p.id.clone());
+        }
+        ids.insert(SEARCH_KEY.to_string());
+        let mut out = HashMap::new();
+        for id in ids {
+            if let Some(val) = ks_get(&self.ks_account(&id)) {
+                if !val.is_empty() {
+                    out.insert(id, val);
+                }
+            }
+        }
+        out
     }
 
     pub fn view(&self) -> SettingsView {
@@ -346,6 +538,8 @@ impl SettingsStore {
 
     pub fn save(&self, input: SettingsInput) -> Result<()> {
         let mut keys = self.keys();
+        let mut prev_ids: BTreeSet<String> = keys.keys().cloned().collect();
+        prev_ids.extend(self.read_index());
         let mut providers = Vec::new();
         for p in input.providers {
             if p.clear_key {
@@ -369,9 +563,8 @@ impl SettingsStore {
         keys.retain(|id, _| id == SEARCH_KEY || providers.iter().any(|p| &p.id == id));
         // Accessibility has its own command: a models save keeps it.
         let settings = Settings { providers, roles: input.roles, search, accessibility: current.accessibility, identity: current.identity, seen_builtins: BUILTIN.iter().map(|(id, ..)| id.to_string()).collect() };
-        std::fs::create_dir_all(&self.dir)?;
-        std::fs::write(self.settings_path(), serde_json::to_string_pretty(&settings)?)?;
-        std::fs::write(self.auth_path(), serde_json::to_string_pretty(&keys)?)?;
+        write_atomic(&self.settings_path(), &serde_json::to_string_pretty(&settings)?)?;
+        self.persist_keys(&keys, prev_ids)?;
         Ok(())
     }
 
@@ -389,26 +582,24 @@ impl SettingsStore {
         }
         s.roles.teacher = teacher;
         let mut keys = self.keys();
+        let prev_ids: BTreeSet<String> = keys.keys().cloned().collect();
         keys.insert(provider.id.clone(), key.to_string());
-        std::fs::create_dir_all(&self.dir)?;
-        std::fs::write(self.settings_path(), serde_json::to_string_pretty(&s)?)?;
-        std::fs::write(self.auth_path(), serde_json::to_string_pretty(&keys)?)?;
+        write_atomic(&self.settings_path(), &serde_json::to_string_pretty(&s)?)?;
+        self.persist_keys(&keys, prev_ids)?;
         Ok(())
     }
 
     pub fn save_identity(&self, i: Identity) -> Result<Identity> {
         let mut s = self.load();
         s.identity = i.clamped();
-        std::fs::create_dir_all(&self.dir)?;
-        std::fs::write(self.settings_path(), serde_json::to_string_pretty(&s)?)?;
+        write_atomic(&self.settings_path(), &serde_json::to_string_pretty(&s)?)?;
         Ok(s.identity)
     }
 
     pub fn save_accessibility(&self, a: Accessibility) -> Result<Accessibility> {
         let mut s = self.load();
         s.accessibility = a.clamped();
-        std::fs::create_dir_all(&self.dir)?;
-        std::fs::write(self.settings_path(), serde_json::to_string_pretty(&s)?)?;
+        write_atomic(&self.settings_path(), &serde_json::to_string_pretty(&s)?)?;
         Ok(s.accessibility)
     }
 }
@@ -557,6 +748,26 @@ mod tests {
         assert!(ella.contains("femenino (ella)") && ella.contains("Tiene 19 años"));
         let elle = Identity { treatment: "elle".into(), ..Default::default() }.teacher_section();
         assert!(elle.contains("neutro (elle)") && !elle.contains("Se llama"));
+        std::fs::remove_dir_all(dir).ok();
+    }
+
+    #[test]
+    fn keys_live_in_keystore_and_migrate_from_legacy_auth_json() {
+        let (st, dir) = store();
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("auth.json"), r#"{"openrouter":"sk-legacy-1","search":"tvly-legacy"}"#).unwrap();
+
+        let loaded = st.keys();
+        assert_eq!(loaded.get("openrouter").map(String::as_str), Some("sk-legacy-1"));
+        assert_eq!(loaded.get(SEARCH_KEY).map(String::as_str), Some("tvly-legacy"));
+        assert!(!dir.join("auth.json").exists(), "legacy plaintext auth.json must be removed after migration");
+        let index = std::fs::read_to_string(dir.join("auth-keys.json")).unwrap();
+        assert!(!index.contains("sk-legacy-1") && !index.contains("tvly-legacy"), "index stores only provider ids, never secrets");
+
+        // save_quick also writes only to the keystore, never plaintext auth.json.
+        st.save_quick(&Provider { id: "openai".into(), label: "OpenAI".into(), base_url: "u".into() }, "sk-quick-2", ModelRef { provider_id: "openai".into(), model: "gpt".into(), context_k: None }).unwrap();
+        assert!(!dir.join("auth.json").exists());
+        assert_eq!(st.keys().get("openai").map(String::as_str), Some("sk-quick-2"));
         std::fs::remove_dir_all(dir).ok();
     }
 }

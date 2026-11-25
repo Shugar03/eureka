@@ -16,16 +16,6 @@
     "core:window:allow-minimize",
     "core:window:allow-close",
     "opener:default",
-    "notification:default",
-    "dialog:allow-save",
-    "fs:allow-write-file",
-    {
-      "identifier": "fs:allow-read-file",
-      "allow": [
-        {
-          "path": "$DOWNLOAD/**"
-        }
-      ]
-    }
+    "notification:default"
   ]
 }

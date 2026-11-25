@@ -39,17 +39,21 @@ describe("teacherScript", () => {
     for (const n of PLAN) for (const d of n.depends_on) expect(ids.has(d)).toBe(true);
   });
 
-  it("repairs a wrong tangent answer before moving on", () => {
+  it("repairs a wrong tangent answer and asks for own words before moving on", () => {
     const wrong = nextStep(view({ phase: "teach", statuses: { tangente: "current" }, lastAnswer: "En una curva" }));
     expect(wrong?.calls?.[0].args).toMatchObject({ id: "tangente", status: "repair" });
-    const right = nextStep(view({ phase: "teach", statuses: { tangente: "current" }, lastAnswer: "En la tangente" }));
-    expect(right?.calls?.[0].args).toMatchObject({ id: "tangente", status: "understood" });
+    const rightChoice = nextStep(view({ phase: "teach", statuses: { tangente: "current" }, lastAnswer: "En la tangente" }));
+    expect(names(rightChoice)).toEqual(["ask_question"]);
+    const explained = nextStep(view({ phase: "teach", statuses: { tangente: "current" }, lastAnswer: "toca en un punto" }));
+    expect(explained?.calls?.[0].args).toMatchObject({ id: "tangente", status: "understood" });
     const repaired = nextStep(view({ phase: "teach", statuses: { tangente: "repair" }, lastAnswer: "Tangente" }));
     expect(repaired?.calls?.[0].args).toMatchObject({ id: "tangente", status: "understood" });
   });
 
-  it("finishes with a summary and the done phase", () => {
-    const step = nextStep(view({ phase: "teach", statuses: { tangente: "understood", derivada: "current" } }));
+  it("finishes with a summary and the done phase after own-words explanation", () => {
+    const choice = nextStep(view({ phase: "teach", statuses: { tangente: "understood", derivada: "current" }, lastAnswer: "6" }));
+    expect(names(choice)).toEqual(["ask_question"]);
+    const step = nextStep(view({ phase: "teach", statuses: { tangente: "understood", derivada: "current" }, lastAnswer: "es la pendiente" }));
     expect(names(step)).toEqual(["update_node", "set_phase"]);
     expect(step?.text).toContain("Juntando todo");
   });

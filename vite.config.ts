@@ -41,6 +41,10 @@ export default defineConfig(({ mode }) => ({
 
   test: {
     environment: "jsdom",
+    // Reuse one jsdom instance per worker (while keeping per-file VM isolation)
+    // instead of spinning up 70+ fresh jsdom realms, which caused random 5s timeouts.
+    pool: "vmThreads",
+    testTimeout: 15_000,
     include: ["src/**/*.test.{ts,tsx}", "tests/fake-provider/**/*.test.ts"],
     setupFiles: ["src/test/setup.ts"],
     env: { VITE_E2E_DELAY: "0" },

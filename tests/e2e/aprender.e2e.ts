@@ -1,7 +1,7 @@
 // features/aprender.feature — AC-01 … AC-07, AC-13
 import { test } from "@e2e-dev/web";
 import { expect } from "e2e";
-import { answer, finishProbe, pending, phase, planNode, startSession } from "./helpers";
+import { answer, finishDerivative, finishProbe, finishTangent, pending, phase, planNode, startSession } from "./helpers";
 
 test("AC-01 empezar una sesión arranca en Medir con una pregunta de diagnóstico", async ({ app, screen }) => {
   await startSession(app, screen);
@@ -74,9 +74,8 @@ test("AC-05 AC-06 AC-07 enseñanza completa con una reparación", async ({ app, 
   await expect(planNode(screen, "tangente")).toHaveAttribute("data-status", "repair", { timeout: 10_000 });
   await expect(pending(screen)).toContainText("un solo punto");
 
-  await answer(screen, { option: "Tangente", confidence: 4 });
-  await expect(pending(screen)).toContainText("Última:", { timeout: 10_000 });
-  await answer(screen, { option: "6", confidence: 5 });
+  await answer(screen, { text: "Tangente", confidence: 4 });
+  await finishDerivative(screen);
 
   await expect(phase(screen, "Listo")).toHaveAttribute("aria-current", "step", { timeout: 10_000 });
   for (const id of ["limite", "tangente", "derivada"]) {
@@ -89,8 +88,8 @@ test("AC-13 hacer una pregunta libre al terminar", async ({ app, screen }) => {
   await startSession(app, screen);
   await finishProbe(screen);
   await answer(screen, { text: "una recta", confidence: 3 });
-  await answer(screen, { option: "En la tangente", confidence: 4 });
-  await answer(screen, { option: "6", confidence: 5 });
+  await finishTangent(screen);
+  await finishDerivative(screen);
   await expect(phase(screen, "Listo")).toHaveAttribute("aria-current", "step", { timeout: 10_000 });
 
   await screen.getByRole("textbox", "Mensaje").fill("¿y para qué sirve?");

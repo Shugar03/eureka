@@ -2,7 +2,7 @@
 import { test } from "@e2e-dev/web";
 import { expect } from "e2e";
 import type { App, Screen } from "e2e";
-import { goTo, answer, finishProbe, phase, startSession } from "./helpers.ts";
+import { goTo, answer, finishDerivative, finishProbe, finishTangent, phase, startSession } from "./helpers.ts";
 
 const DERIVADA = "La derivada es la pendiente de la recta tangente";
 const nav = (screen: Screen) => screen.getByRole("navigation", "Navegación");
@@ -12,8 +12,8 @@ async function withGraph(app: App, screen: Screen, query = "") {
   await startSession(app, screen, "qué es una derivada", query);
   await finishProbe(screen);
   await answer(screen, { text: "una recta", confidence: 3 });
-  await answer(screen, { option: "En la tangente", confidence: 4 });
-  await answer(screen, { option: "6", confidence: 5 });
+  await finishTangent(screen);
+  await finishDerivative(screen);
   await expect(phase(screen, "Listo")).toHaveAttribute("aria-current", "step", { timeout: 10_000 });
   await expect(screen.getByTestId("graph-banner")).toContainText("Guardado", { timeout: 10_000 });
 }

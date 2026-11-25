@@ -80,10 +80,13 @@ fn keystore_available() -> bool {
         { false }
         #[cfg(not(target_os = "android"))]
         {
-            use keyring::Entry;
-            Entry::new(SERVICE, "__probe__").and_then(|e| e.set_password("probe")).is_ok()
-                && Entry::new(SERVICE, "__probe__").and_then(|e| e.get_password()).is_ok()
-                && Entry::new(SERVICE, "__probe__").and_then(|e| e.delete_credential()).is_ok()
+            static AVAILABLE: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+            *AVAILABLE.get_or_init(|| {
+                use keyring::Entry;
+                Entry::new(SERVICE, "__probe__").and_then(|e| e.set_password("probe")).is_ok()
+                    && Entry::new(SERVICE, "__probe__").and_then(|e| e.get_password()).is_ok()
+                    && Entry::new(SERVICE, "__probe__").and_then(|e| e.delete_credential()).is_ok()
+            })
         }
     }
 }

@@ -4,7 +4,7 @@ import { test } from "@e2e-dev/web";
 import { expect } from "e2e";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { answer, finishProbe, goTo, pending, phase, startSession } from "../e2e/helpers.ts";
+import { answer, finishDerivative, finishProbe, finishTangent, goTo, pending, phase, startSession } from "../e2e/helpers.ts";
 import { dataDir, fakeProvider } from "./launch.ts";
 
 const ledger = () => {
@@ -17,8 +17,8 @@ test("D-11 terminar una sesión la extrae al grafo y el profesor lo usa en la si
   await startSession(app, screen);
   await finishProbe(screen);
   await answer(screen, { text: "una recta", confidence: 3 });
-  await answer(screen, { option: "En la tangente", confidence: 4 });
-  await answer(screen, { option: "6", confidence: 5 });
+  await finishTangent(screen);
+  await finishDerivative(screen);
   await expect(phase(screen, "Listo")).toHaveAttribute("aria-current", "step", { timeout: 15_000 });
   await expect(screen.getByTestId("graph-banner")).toContainText("4 ideas · 2 cadenas", { timeout: 15_000 });
 
