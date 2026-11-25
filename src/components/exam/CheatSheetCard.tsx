@@ -10,6 +10,7 @@ interface Props {
 }
 
 const slug = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "").toLowerCase();
+const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
 /** AC-44: the final review sheet, to read, download or print. */
 export function CheatSheetCard({ exam, onChanged }: Props) {
@@ -43,9 +44,10 @@ export function CheatSheetCard({ exam, onChanged }: Props) {
     frame.style.cssText = "position:fixed;width:0;height:0;border:0;";
     document.body.appendChild(frame);
     const doc = frame.contentDocument!;
+    const safeName = escapeHtml(exam.name);
     doc.open();
     doc.write(
-      `<!doctype html><meta charset="utf-8"><title>${exam.name}</title><style>body{font:12px/1.45 system-ui,sans-serif;margin:24px;color:#111}h1{font-size:18px}h2{font-size:15px;margin:16px 0 4px;border-bottom:1px solid #ccc}table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:2px 6px}</style><h1>${exam.name} — hoja de repaso</h1>${html}`,
+      `<!doctype html><meta charset="utf-8"><title>${safeName}</title><style>body{font:12px/1.45 system-ui,sans-serif;margin:24px;color:#111}h1{font-size:18px}h2{font-size:15px;margin:16px 0 4px;border-bottom:1px solid #ccc}table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:2px 6px}</style><h1>${safeName} — hoja de repaso</h1>${html}`,
     );
     doc.close();
     frame.contentWindow?.focus();
